@@ -45,9 +45,9 @@ global.catalogo = fs.existsSync(catalogoPath) ? fs.readFileSync(catalogoPath) : 
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
-global.group = "https://whatsapp.com/channel/0029VaAN15BJP21BYCJ3tH04"
-global.community = "https://whatsapp.com/channel/0029VaAN15BJP21BYCJ3tH04"
-global.channel = "https://whatsapp.com/channel/0029VaAN15BJP21BYCJ3tH04"
+global.group = ""
+global.community = ""
+global.channel = ""
 global.github = ""
 global.gmail = ""
 //*_____________________________

@@ -211,10 +211,6 @@ const {connection, lastDisconnect, isNewLogin} = update;
 global.stopped = connection;
 if (isNewLogin) conn.isInit = true;
 const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.output?.payload?.statusCode;
-if (code && code !== DisconnectReason.loggedOut && conn?.ws.socket == null) {
-await global.reloadHandler(true).catch(console.error);
-global.timestamp.connect = new Date;
-}
 if (global.db.data == null) loadDatabase()
 if (update.qr && (opcion == '1' || methodCodeQR)) {
 global.latestQR = await QRCode.toDataURL(update.qr)
@@ -230,11 +226,27 @@ console.log(chalk.green.bold(`[ ✿ ]  Conectado a: ${userName}`))
 }
 let reason = new Boom(lastDisconnect?.error)?.output?.statusCode
 if (connection === "close") {
-if ([401, 440, 428, 405].includes(reason)) {
-console.log(chalk.red(`→ (${code}) › Cierra la session Principal.`));
+if (reason === 440) {
+console.log(chalk.red("→ (440) › WhatsApp reemplazó esta sesión. Detén cualquier otra instancia del bot y reinicia una sola vez."));
+return
 }
-console.log(chalk.yellow("→ Reconectando el Bot Principal..."));
-await global.reloadHandler(true).catch(console.error)
+if (reason === DisconnectReason.loggedOut || reason === 401) {
+console.log(chalk.red(`→ (${code || reason}) › La sesión fue cerrada. Vincula el bot nuevamente.`));
+return
+}
+if (global.reconnecting) return
+global.reconnecting = true
+console.log(chalk.yellow(`→ (${code || reason || 'desconocido'}) › Reconectando el Bot Principal en 5 segundos...`));
+setTimeout(async () => {
+try {
+await global.reloadHandler(true)
+global.timestamp.connect = new Date
+} catch (error) {
+console.error('Error reconectando el Bot Principal:', error)
+} finally {
+global.reconnecting = false
+}
+}, 5000)
 }};
 process.on('uncaughtException', console.error);
 let isInit = true;

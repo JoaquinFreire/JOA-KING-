@@ -9,7 +9,7 @@
 "plugins": "plugins"
 },
 "scripts": {
-"start": "node index.js",
+"start": "node start.cjs",
 "qr": "node index.js qr",
 "code": "node index.js code"
 },

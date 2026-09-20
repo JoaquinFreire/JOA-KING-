@@ -232,6 +232,16 @@ return
 }
 if (reason === DisconnectReason.loggedOut || reason === 401) {
 console.log(chalk.red(`→ (${code || reason}) › La sesión fue cerrada. Vincula el bot nuevamente.`));
+if (!global.authStateCleared) {
+global.authStateCleared = true
+try {
+rmSync(global.sessions, { recursive: true, force: true })
+mkdirSync(global.sessions, { recursive: true })
+console.log(chalk.yellow(`→ Sesión eliminada automáticamente de ${path.resolve(global.sessions)}.`))
+} catch (error) {
+console.error('No se pudo limpiar la sesión cerrada:', error)
+}
+}
 return
 }
 if (global.reconnecting) return

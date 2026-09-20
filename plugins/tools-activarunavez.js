@@ -28,9 +28,19 @@ const downloadMedia = async (media, type) => {
   return Buffer.concat(chunks)
 }
 
-const handler = async (m, { conn, text, isROwner, isAdmin }) => {
-  if (!m.isGroup && !isROwner) return conn.reply(m.chat, 'Solo el dueño puede cambiar esta opción.', m)
-  if (m.isGroup && !isROwner && !isAdmin) return conn.reply(m.chat, 'Solo un administrador puede cambiar esta opción.', m)
+const ownerNumbers = new Set((global.owner || []).map((number) => number.replace(/\D/g, '')))
+
+const isConfiguredOwner = async (conn, m, isROwner, isOwner) => {
+  if (isROwner || isOwner) return true
+  const candidates = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt]
+  if (candidates.some((jid) => ownerNumbers.has(String(jid || '').replace(/\D/g, '')))) return true
+  if (typeof conn.onWhatsApp !== 'function') return false
+  const resolved = await conn.onWhatsApp(m.sender).catch(() => [])
+  return resolved.some(({ jid }) => ownerNumbers.has(String(jid || '').replace(/\D/g, '')))
+}
+
+const handler = async (m, { conn, text, isROwner, isOwner }) => {
+  if (!await isConfiguredOwner(conn, m, isROwner, isOwner)) return conn.reply(m.chat, 'Solo el dueño puede usar este comando.', m)
 
   const value = (text || '').trim().toLowerCase()
   if (!['on', 'off', 'enable', 'disable', 'activar', 'desactivar'].includes(value)) {
@@ -70,6 +80,5 @@ handler.all = async function (m, { conn, chat }) {
 handler.help = ['activarunavez on/off']
 handler.tags = ['owner']
 handler.command = ['activarunavez']
-handler.rowner = true
 
 export default handler

@@ -347,11 +347,6 @@ Feliz Navidad y próspero año nuevo!!! 🎄🎉☃️
         contextInfo: {
             mentionedJid: [userId],
             isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: channelRD.id,
-                serverMessageId: '',
-                newsletterName: channelRD.name
-            },
             externalAdReply: {
                 title: botname,
                 body: textbot,

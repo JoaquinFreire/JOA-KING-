@@ -34,9 +34,9 @@ global.JoaKingSubBots = true
 
 global.botname = "✿JOA-KING✿"
 global.textbot = "✿JOA-KING✿ "
-global.dev = "© ⍴᥆ᥕᥱrᥱძ ᑲᥡ 𝙰𝚕𝚋𝚊𝟶𝟽𝟶𝟻𝟶𝟹"
-global.author = "© mᥲძᥱ ᥕі𝗍һ ᑲᥡ 𝙰𝚕𝚋𝚊𝟶𝟽𝟶𝟻𝟶𝟹"
-global.etiqueta = "𝙰𝚕𝚋𝚊𝟶𝟽𝟶𝟻𝟶𝟹"
+global.dev = ""
+global.author = ""
+global.etiqueta = ""
 global.currency = "¥otsucoins"
 global.banner = "https://qu.ax/iBlgz.jpg"
 global.icono = "https://qu.ax/zRNgk.jpg"
@@ -52,10 +52,7 @@ global.github = ""
 global.gmail = ""
 //*_____________________________
 
-global.ch = {
-ch1: '120363198641161536@newsletter',
-ch2: "120363198641161536@newsletter",
-ch3: "120363198641161536@newsletter"}
+global.ch = {}
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 

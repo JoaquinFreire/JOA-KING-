@@ -1,0 +1,6 @@
+node_modules/
+tmp/*
+!tmp/.gitkeep
+database.json
+__pycache__/
+npm-debug.log*

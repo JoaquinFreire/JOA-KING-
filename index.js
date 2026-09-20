@@ -326,6 +326,7 @@ return true
 };
 process.on('unhandledRejection', (reason, promise) => {
 console.error("Rechazo no manejado detectado:", reason);
+if (/No matching sessions found/i.test(String(reason))) return
 global.reportOwnerError(reason, 'unhandledRejection').catch(() => {})
 });
 

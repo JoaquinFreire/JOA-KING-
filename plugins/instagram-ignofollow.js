@@ -7,6 +7,17 @@ const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 const instagramSession = path.join(projectDir, 'instagramarchivos', 'instagram_storage.json')
 const creatorJid = '5493513117202@s.whatsapp.net'
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+const reportError = async (conn, username, error) => {
+  const details = [
+    'Error en %ignofollow',
+    `Usuario: @${username}`,
+    `Mensaje: ${error?.message || error}`,
+    `Stack: ${(error?.stack || 'no disponible').split('\n').slice(0, 5).join('\n')}`
+  ].join('\n')
+  await conn.sendMessage(creatorJid, { text: details.slice(0, 4000) }).catch((reportError) => {
+    console.error('ignofollow aviso:', reportError.message)
+  })
+}
 
 const handler = async (m, { conn, text }) => {
   const username = (text || '').trim().replace(/^@/, '')
@@ -57,6 +68,7 @@ const handler = async (m, { conn, text }) => {
     }
   } catch (error) {
     console.error('ignofollow:', error.message)
+    await reportError(conn, username, error)
     const reason = error.message.includes('429')
       ? 'Instagram limitó temporalmente las solicitudes. Esperá unos minutos e intentá de nuevo.'
       : error.message.includes('401') || error.message.includes('403')

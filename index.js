@@ -53,11 +53,12 @@ process.stdout.write(`No se pudo enviar el error al propietario: ${sendError.mes
 
 const originalConsoleError = console.error.bind(console)
 console.error = (...args) => {
-originalConsoleError(...args)
 const text = args.map((arg) => arg instanceof Error ? arg.stack || arg.message : String(arg)).join(' ')
 if (/Bad MAC|Failed to decrypt|Message absent from node/i.test(text)) {
 global.reportOwnerError(text, 'descifrado de WhatsApp').catch(() => {})
+return
 }}
+originalConsoleError(...args)
 
 const webServer = createServer(async (request, response) => {
 const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
@@ -165,6 +166,15 @@ console.log(chalk.bold.redBright(`No se permiten numeros que no sean 1 o 2, tamp
 } 
 
 console.info = () => { }
+
+if (process.env.RESET_WHATSAPP_SESSION === 'true') {
+try {
+rmSync(global.sessions, { recursive: true, force: true })
+console.log(`[ ✿ ] Sesion WhatsApp reiniciada: ${path.resolve(global.sessions)}`)
+} catch (error) {
+console.error('No se pudo reiniciar la sesion WhatsApp:', error)
+}
+}
 
 const connectionOptions = {
 logger: pino({ level: 'silent' }),

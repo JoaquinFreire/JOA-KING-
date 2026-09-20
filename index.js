@@ -157,28 +157,12 @@ const MethodMobile = process.argv.includes("mobile")
 const colors = chalk.bold.white
 const qrOption = chalk.blueBright
 const textOption = chalk.cyan
-let rl
-const question = async (texto) => {
-if (!rl) {
-const { createInterface } = await import('readline')
-rl = createInterface({ input: process.stdin, output: process.stdout })
-}
-return new Promise((resolver) => rl.question(texto, resolver))
-}
 let opcion
 if (methodCodeQR) {
 opcion = '1'
 }
 if (!methodCodeQR && !methodCode && !fs.existsSync(`./${sessions}/creds.json`)) {
-if (process.env.JOA_INTERACTIVE !== 'true') {
 opcion = '1'
-} else {
-do {
-opcion = await question(colors("Seleccione una opción:\n") + qrOption("1. Con código QR\n") + textOption("2. Con código de texto de 8 dígitos\n--> "))
-if (!/^[1-2]$/.test(opcion)) {
-console.log(chalk.bold.redBright(`No se permiten numeros que no sean 1 o 2, tampoco letras o símbolos especiales.`))
-}} while (opcion !== '1' && opcion !== '2' || fs.existsSync(`./${sessions}/creds.json`))
-}
 } 
 
 console.info = () => { }
@@ -227,24 +211,17 @@ if (!fs.existsSync(`./${sessions}/creds.json`)) {
 if (opcion === '2' || methodCode) {
 opcion = '2'
 if (!conn.authState.creds.registered) {
-let addNumber
-if (!!phoneNumber) {
-addNumber = phoneNumber.replace(/[^0-9]/g, '')
+const addNumber = phoneNumber?.replace(/[^0-9]/g, '')
+if (!addNumber) {
+console.error('Para usar el código de vinculación configure global.botNumber en settings.js o use QR.')
 } else {
-do {
-phoneNumber = await question(chalk.bgBlack(chalk.bold.greenBright(`[ ✿ ]  Por favor, Ingrese el número de WhatsApp.\n${chalk.bold.magentaBright('---> ')}`)))
-phoneNumber = phoneNumber.replace(/\D/g,'')
-if (!phoneNumber.startsWith('+')) {
-phoneNumber = `+${phoneNumber}`
-}} while (!await isValidPhoneNumber(phoneNumber))
-rl.close()
-addNumber = phoneNumber.replace(/\D/g, '')
 setTimeout(async () => {
 let codeBot = await conn.requestPairingCode(addNumber)
 codeBot = codeBot.match(/.{1,4}/g)?.join("-") || codeBot
 console.log(chalk.bold.white(chalk.bgMagenta(`[ ✿ ]  Código:`)), chalk.bold.white(chalk.white(codeBot)))
 }, 3000)
-}}}}
+}
+}}}
 conn.isInit = false;
 conn.well = false;
 conn.logger.info(`[ ✿ ]  H E C H O\n`)

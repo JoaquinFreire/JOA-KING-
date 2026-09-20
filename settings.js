@@ -26,7 +26,7 @@ global.prems = []
 global.libreria = "Baileys Multi Device"
 global.vs = "^1.8.2|Latest"
 global.nameqr = "JOA-KING"
-global.sessions = "Sessions/Principal"
+global.sessions = process.env.WHATSAPP_SESSION_PATH || "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
 global.JoaKingSubBots = true
 

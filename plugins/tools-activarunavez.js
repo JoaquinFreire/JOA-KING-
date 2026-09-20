@@ -1,6 +1,8 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys'
 
 const ownerJid = '5493513117202@s.whatsapp.net'
+const ownerLids = new Set(['114864672526580'])
+const botLids = new Set(['29107664511194'])
 
 const unwrapMessage = (message) => {
   if (!message) return null
@@ -33,7 +35,10 @@ const ownerNumbers = new Set((global.owner || []).map((number) => number.replace
 const isConfiguredOwner = async (conn, m, isROwner, isOwner) => {
   if (isROwner || isOwner) return true
   const candidates = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt]
-  if (candidates.some((jid) => ownerNumbers.has(String(jid || '').replace(/\D/g, '')))) return true
+  const candidateNumbers = candidates.map((jid) => String(jid || '').replace(/\D/g, ''))
+  if (candidateNumbers.some((number) => ownerNumbers.has(number) || ownerLids.has(number) || botLids.has(number))) return true
+  const botJids = [conn.user?.id, conn.user?.jid, conn.user?.lid]
+  if (candidates.some((jid) => botJids.includes(jid))) return true
   if (typeof conn.onWhatsApp !== 'function') return false
   const resolved = await conn.onWhatsApp(m.sender).catch(() => [])
   return resolved.some(({ jid }) => ownerNumbers.has(String(jid || '').replace(/\D/g, '')))

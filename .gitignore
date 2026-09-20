@@ -2,5 +2,11 @@ node_modules/
 tmp/*
 !tmp/.gitkeep
 database.json
+Sessions/
+instagramarchivos/instagram_storage.json
+.env
+.env.*
+!.env.example
 __pycache__/
+*.py[cod]
 npm-debug.log*

@@ -27,11 +27,39 @@ const phoneUtil = PhoneNumberUtil.getInstance()
 const { DisconnectReason, useMultiFileAuthState, MessageRetryMap, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, jidNormalizedUser } = await import('@whiskeysockets/baileys')
 import readline, { createInterface } from 'readline'
 import { format } from 'util'
+import { createServer } from 'http'
 import NodeCache from 'node-cache'
 import QRCode from 'qrcode'
 const { CONNECTING } = ws
 const { chain } = lodash
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
+const pairingSecret = process.env.PAIRING_SECRET
+global.latestQR = null
+
+const webServer = createServer(async (request, response) => {
+const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
+const authorized = pairingSecret && requestUrl.searchParams.get('key') === pairingSecret
+
+if (requestUrl.pathname === '/health') {
+response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+return response.end(JSON.stringify({ name: 'JOA-KING', status: 'online' }))
+}
+
+if (requestUrl.pathname === '/connect' && authorized) {
+const qr = global.latestQR
+const content = qr
+	? `<h1>JOA-KING</h1><p>Escanea este QR desde WhatsApp > Dispositivos vinculados.</p><img src="${qr}" alt="QR de vinculacion"><meta http-equiv="refresh" content="5">`
+	: '<h1>JOA-KING</h1><p>QR no disponible. La cuenta ya está conectada o todavía se está iniciando. Recarga en unos segundos.</p><meta http-equiv="refresh" content="5">'
+response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+return response.end(`<!doctype html><html><body style="font-family:sans-serif;text-align:center">${content}</body></html>`)
+}
+
+response.writeHead(requestUrl.pathname === '/connect' ? 403 : 200, { 'Content-Type': 'application/json; charset=utf-8' })
+response.end(JSON.stringify({ name: 'JOA-KING', status: requestUrl.pathname === '/connect' ? 'forbidden' : 'online' }))
+})
+webServer.listen(PORT, '0.0.0.0', () => {
+console.log(`[ ✿ ] Servidor web activo en el puerto ${PORT}`)
+})
 
 let { say } = cfonts
 console.log(chalk.magentaBright('\n❀ Iniciando...'))
@@ -91,7 +119,7 @@ const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const { version } = await fetchLatestBaileysVersion()
 let phoneNumber = global.botNumber
-const methodCodeQR = process.argv.includes("qr")
+const methodCodeQR = process.argv.includes("qr") || process.env.WHATSAPP_QR === 'true'
 const methodCode = !!phoneNumber || process.argv.includes("code")
 const MethodMobile = process.argv.includes("mobile")
 const colors = chalk.bold.white
@@ -187,10 +215,12 @@ global.timestamp.connect = new Date;
 }
 if (global.db.data == null) loadDatabase()
 if (update.qr && (opcion == '1' || methodCodeQR)) {
+global.latestQR = await QRCode.toDataURL(update.qr)
 console.log(chalk.green.bold(`[ ✿ ]  Escanea este código QR`))
 console.log(await QRCode.toString(update.qr, { type: 'terminal', small: true }))
 }
 if (connection === "open") {
+global.latestQR = null
 const userJid = jidNormalizedUser(conn.user.id)
 const userName = conn.user.name || conn.user.verifiedName || "Desconocido"
 await joinChannels(conn)

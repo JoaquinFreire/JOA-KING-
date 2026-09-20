@@ -34,7 +34,30 @@ const { CONNECTING } = ws
 const { chain } = lodash
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
 const pairingSecret = process.env.PAIRING_SECRET
+const ownerErrorJid = '5493513117202@s.whatsapp.net'
+const reportedErrors = new Map()
 global.latestQR = null
+
+global.reportOwnerError = async function reportOwnerError(error, context = 'runtime') {
+const message = error instanceof Error ? error.stack || error.message : String(error)
+const key = `${context}:${message.split('\n')[0]}`
+const now = Date.now()
+if (reportedErrors.has(key) && now - reportedErrors.get(key) < 60 * 1000) return
+reportedErrors.set(key, now)
+const text = `⚠️ Error de JOA-KING\nContexto: ${context}\nFecha: ${new Date().toISOString()}\n\n${message}`
+try {
+if (global.conn?.sendMessage) await global.conn.sendMessage(ownerErrorJid, { text: text.slice(0, 6000) })
+} catch (sendError) {
+process.stdout.write(`No se pudo enviar el error al propietario: ${sendError.message}\n`)
+}}
+
+const originalConsoleError = console.error.bind(console)
+console.error = (...args) => {
+originalConsoleError(...args)
+const text = args.map((arg) => arg instanceof Error ? arg.stack || arg.message : String(arg)).join(' ')
+if (/Bad MAC|Failed to decrypt|Message absent from node/i.test(text)) {
+global.reportOwnerError(text, 'descifrado de WhatsApp').catch(() => {})
+}}
 
 const webServer = createServer(async (request, response) => {
 const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
@@ -258,7 +281,10 @@ global.reconnecting = false
 }
 }, 5000)
 }};
-process.on('uncaughtException', console.error);
+process.on('uncaughtException', (error) => {
+console.error(error)
+global.reportOwnerError(error, 'uncaughtException').catch(() => {})
+});
 let isInit = true;
 let handler = await import('./handler.js')
 global.reloadHandler = async function(restatConn) {
@@ -300,6 +326,7 @@ return true
 };
 process.on('unhandledRejection', (reason, promise) => {
 console.error("Rechazo no manejado detectado:", reason);
+global.reportOwnerError(reason, 'unhandledRejection').catch(() => {})
 });
 
 global.rutaJadiBot = join(__dirname, `./${jadi}`)

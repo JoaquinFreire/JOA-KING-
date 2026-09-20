@@ -1,27 +1,12 @@
-import { execFile } from 'child_process'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { compareInstagramFollowing } from '../lib/instagram-compare.js'
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const pythonScript = path.join(projectDir, 'instagramarchivos', 'compare_following.py')
+const instagramSession = path.join(projectDir, 'instagramarchivos', 'instagram_storage.json')
 const creatorJid = '5493513117202@s.whatsapp.net'
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
-
-const runComparison = (username, outputFile) => new Promise((resolve, reject) => {
-  const python = process.env.PYTHON_EXECUTABLE || 'python'
-  execFile(python, [pythonScript, username, outputFile], {
-    cwd: projectDir,
-    timeout: 900000,
-    windowsHide: true,
-    maxBuffer: 1024 * 1024
-  }, (error, stdout, stderr) => {
-    if (error) {
-      const details = (stderr || stdout || error.message).trim().split('\n').slice(-3).join(' ')
-      reject(new Error(details || error.message))
-    } else resolve()
-  })
-})
 
 const handler = async (m, { conn, text }) => {
   const username = (text || '').trim().replace(/^@/, '')
@@ -44,7 +29,7 @@ const handler = async (m, { conn, text }) => {
 
   try {
     try {
-      await runComparison(username, outputFile)
+      await compareInstagramFollowing(username, outputFile, instagramSession)
     } catch (error) {
       if (!await fs.access(outputFile).then(() => true).catch(() => false)) throw error
     }

@@ -60,7 +60,7 @@ return
 }}
 originalConsoleError(...args)
 
-const webServer = createServer(async (request, response) => {
+const webRequestHandler = async (request, response) => {
 const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
 const authorized = pairingSecret && requestUrl.searchParams.get('key') === pairingSecret
 
@@ -80,10 +80,17 @@ return response.end(`<!doctype html><html><body style="font-family:sans-serif;te
 
 response.writeHead(requestUrl.pathname === '/connect' ? 403 : 200, { 'Content-Type': 'application/json; charset=utf-8' })
 response.end(JSON.stringify({ name: 'JOA-KING', status: requestUrl.pathname === '/connect' ? 'forbidden' : 'online' }))
-})
+}
+
+const webServer = global.__joaBootstrapServer || createServer(webRequestHandler)
+if (global.__joaBootstrapServer) {
+webServer.removeAllListeners('request')
+webServer.on('request', webRequestHandler)
+} else {
 webServer.listen(PORT, '0.0.0.0', () => {
 console.log(`[ ✿ ] Servidor web activo en el puerto ${PORT}`)
 })
+}
 
 let { say } = cfonts
 console.log(chalk.magentaBright('\n❀ Iniciando...'))

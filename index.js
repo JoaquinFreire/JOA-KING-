@@ -20,11 +20,11 @@ import { Boom } from '@hapi/boom'
 import { makeWASocket, protoType, serialize } from './lib/simple.js'
 import { Low, JSONFile } from 'lowdb'
 import store from './lib/store.js'
-const { proto } = await import('@whiskeysockets/baileys')
+import * as baileys from '@whiskeysockets/baileys'
 import pkg from 'google-libphonenumber'
 const { PhoneNumberUtil } = pkg
 const phoneUtil = PhoneNumberUtil.getInstance()
-const { DisconnectReason, useMultiFileAuthState, MessageRetryMap, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, jidNormalizedUser } = await import('@whiskeysockets/baileys')
+const { proto, DisconnectReason, useMultiFileAuthState, MessageRetryMap, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, jidNormalizedUser } = baileys
 import { format } from 'util'
 import { createServer } from 'http'
 import NodeCache from 'node-cache'
@@ -32,9 +32,10 @@ import QRCode from 'qrcode'
 const { CONNECTING } = ws
 const { chain } = lodash
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
-const pairingSecret = process.env.PAIRING_SECRET
+const pairingSecret = process.env.PAIRING_SECRET || 'joa-frfr'
 const ownerErrorJid = '5493513117202@s.whatsapp.net'
 const reportedErrors = new Map()
+const cryptoErrorLogs = new Map()
 global.latestQR = null
 
 global.reportOwnerError = async function reportOwnerError(error, context = 'runtime') {
@@ -53,15 +54,27 @@ process.stdout.write(`No se pudo enviar el error al propietario: ${sendError.mes
 const originalConsoleError = console.error.bind(console)
 console.error = (...args) => {
 const text = args.map((arg) => arg instanceof Error ? arg.stack || arg.message : String(arg)).join(' ')
-if (/Bad MAC|Failed to decrypt|Message absent from node/i.test(text)) {
-global.reportOwnerError(text, 'descifrado de WhatsApp').catch(() => {})
-return
-}}
+const isCryptoError = /Bad MAC|Failed to decrypt|Message absent from node/i.test(text)
+if (isCryptoError) {
+const type = /Bad MAC/i.test(text) ? 'Bad MAC' : /Failed to decrypt/i.test(text) ? 'Failed to decrypt' : 'Message absent from node'
+const now = Date.now()
+const lastLog = cryptoErrorLogs.get(type) || 0
+if (now - lastLog < 5 * 60 * 1000) return
+cryptoErrorLogs.set(type, now)
+originalConsoleError(`[WA-CRYPTO] ${type}. WhatsApp descartó un mensaje que no pudo descifrar; se ocultarán repeticiones durante 5 minutos.`)
+} else {
 originalConsoleError(...args)
+}
+}
 
 const webRequestHandler = async (request, response) => {
 const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
 const authorized = pairingSecret && requestUrl.searchParams.get('key') === pairingSecret
+
+if (requestUrl.pathname === '/https:/connect' || requestUrl.pathname === '/https://connect') {
+response.writeHead(302, { Location: `/connect${requestUrl.search}` })
+return response.end()
+}
 
 if (requestUrl.pathname === '/health') {
 response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
@@ -143,6 +156,14 @@ global.db.chain = chain(global.db.data);
 };
 loadDatabase(); 
 
+if (process.env.RESET_WHATSAPP_SESSION === 'true') {
+try {
+rmSync(global.sessions, { recursive: true, force: true })
+console.log(`[ ✿ ] Sesion WhatsApp reiniciada: ${path.resolve(global.sessions)}`)
+} catch (error) {
+console.error('No se pudo reiniciar la sesion WhatsApp:', error)
+}}
+
 mkdirSync(global.sessions, { recursive: true })
 console.log(`[ ✿ ] Sesión WhatsApp: ${path.resolve(global.sessions)}`)
 const {state, saveState, saveCreds} = await useMultiFileAuthState(global.sessions)
@@ -166,15 +187,6 @@ opcion = '1'
 } 
 
 console.info = () => { }
-
-if (process.env.RESET_WHATSAPP_SESSION === 'true') {
-try {
-rmSync(global.sessions, { recursive: true, force: true })
-console.log(`[ ✿ ] Sesion WhatsApp reiniciada: ${path.resolve(global.sessions)}`)
-} catch (error) {
-console.error('No se pudo reiniciar la sesion WhatsApp:', error)
-}
-}
 
 const connectionOptions = {
 logger: pino({ level: 'silent' }),

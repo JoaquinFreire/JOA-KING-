@@ -1,4 +1,5 @@
 const http = require('http')
+if (process.argv.includes('reset')) process.env.RESET_WHATSAPP_SESSION = 'true'
 const port = process.env.PORT || process.env.SERVER_PORT || 3000
 console.log('[ JOA-KING ] Bootstrap e2b677a: sin acceso a stdin')
 

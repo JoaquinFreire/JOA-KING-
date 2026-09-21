@@ -5,7 +5,8 @@ const command = m.text.slice(usedPrefix.length).trim().split(' ')[0].toLowerCase
 if (!command || command.length === 0) return
 const validCommand = (command, plugins) => {
 for (let plugin of Object.values(plugins)) {
-if (plugin.command && (Array.isArray(plugin.command) ? plugin.command : [plugin.command]).includes(command)) {
+const commands = plugin.command && (Array.isArray(plugin.command) ? plugin.command : [plugin.command])
+if (commands?.some(candidate => candidate instanceof RegExp ? candidate.test(command) : candidate === command)) {
 return true
 }}
 return false

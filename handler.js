@@ -24,6 +24,10 @@ if (!validMessages.length) return
 this.pushMessage(validMessages).catch(error => console.error("Error actualizando el almacenamiento de mensajes:", error))
 let m = validMessages[validMessages.length - 1]
 if (!m) return
+const rawMessageKeys = Object.keys(m.message || {})
+if (rawMessageKeys.some(key => /viewOnce|imageMessage|audioMessage|videoMessage|protocolMessage/i.test(key))) {
+console.log(`[RAW-MESSAGE] keys=${rawMessageKeys.join(',')} fromMe=${Boolean(m.key?.fromMe)} remote=${m.key?.remoteJid || ''}`)
+}
 if (global.db.data == null) await global.loadDatabase()
 try {
 m = smsg(this, m) || m
@@ -88,7 +92,7 @@ if (!("antiLink" in chat)) chat.antiLink = true
 if (!("nsfw" in chat)) chat.nsfw = false
 if (!("economy" in chat)) chat.economy = true;
 if (!("gacha" in chat)) chat.gacha = true
-if (!("captureViewOnce" in chat)) chat.captureViewOnce = false
+if (!("captureViewOnce" in chat)) chat.captureViewOnce = true
 } else global.db.data.chats[m.chat] = {
 isBanned: false,
 isMute: false,
@@ -102,7 +106,7 @@ antiLink: true,
 nsfw: false,
 economy: true,
 gacha: true,
-captureViewOnce: false
+captureViewOnce: true
 }
 let settings = global.db.data.settings[this.user.jid]
 if (typeof settings !== "object") global.db.data.settings[this.user.jid] = {}
@@ -124,11 +128,7 @@ if (typeof nuevo === "string" && nuevo.trim() && nuevo !== actual) {
 user.name = nuevo
 }} catch {}
 const chat = global.db.data.chats[m.chat]
-const settings = global.db.data.settings[this.user.jid]  
-const isROwner = global.owner.filter(Boolean).map(number => number.replace(/[^0-9]/g, "") + "@s.whatsapp.net").includes(m.sender)
-const isOwner = isROwner || m.fromMe
-const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").includes(m.sender) || user.premium == true
-const isOwners = [this.user.jid, ...global.owner.filter(Boolean).map(number => number + "@s.whatsapp.net")].includes(m.sender)
+const settings = global.db.data.settings[this.user.jid]
 if (opts["queque"] && m.text && !(isPrems)) {
 const queque = this.msgqueque, time = 1000 * 5
 const previousID = queque[queque.length - 1]
@@ -144,6 +144,14 @@ m.exp += Math.ceil(Math.random() * 10)
 let usedPrefix
 const groupMetadata = m.isGroup ? { ...(conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}), ...(((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants) && { participants: ((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants || []).map(p => ({ ...p, id: p.jid, jid: p.jid, lid: p.lid })) }) } : {}
 const participants = ((m.isGroup ? groupMetadata.participants : []) || []).map(participant => ({ id: participant.jid, jid: participant.jid, lid: participant.lid, admin: participant.admin }))
+const ownerJids = global.owner.filter(Boolean).map(number => number.replace(/[^0-9]/g, "") + "@s.whatsapp.net")
+const senderParticipant = participants.find(participant => participant.lid === m.sender)
+const senderJids = [m.sender, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid].filter(Boolean)
+const isROwner = ownerJids.some(ownerJid => senderJids.includes(ownerJid))
+const isBotSender = [this.user.jid, conn.user?.jid, conn.user?.lid].filter(Boolean).some(jid => senderJids.includes(jid))
+const isOwner = isROwner || isBotSender || m.fromMe
+const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").some(jid => senderJids.includes(jid)) || user.premium == true
+const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids].some(jid => senderJids.includes(jid))
 const userGroup = (m.isGroup ? participants.find((u) => conn.decodeJid(u.jid) === m.sender) : {}) || {}
 const botGroup = (m.isGroup ? participants.find((u) => conn.decodeJid(u.jid) == this.user.jid) : {}) || {}
 const isRAdmin = userGroup?.admin == "superadmin" || false

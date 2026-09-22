@@ -14,6 +14,28 @@ clearTimeout(this)
 resolve()
 }, ms))
 
+const antideleteCacheFile = path.join(process.cwd(), "tmp", "antidelete-cache.json")
+const loadAntideleteCache = () => {
+try {
+const file = fs.existsSync(antideleteCacheFile) ? fs.readFileSync(antideleteCacheFile, "utf8") : "{}"
+const parsed = JSON.parse(file)
+if (parsed && typeof parsed === "object") return new Map(Object.entries(parsed))
+} catch (error) {
+console.error("[ANTIDELETE] No se pudo cargar cache persistente:", error?.message || error)
+}
+return new Map()
+}
+const saveAntideleteCache = (map) => {
+try {
+fs.mkdirSync(path.dirname(antideleteCacheFile), { recursive: true })
+const safeData = Object.fromEntries([...map.entries()].slice(-5000))
+fs.writeFileSync(antideleteCacheFile, JSON.stringify(safeData, null, 2), "utf8")
+} catch (error) {
+console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.message || error)
+}
+}
+global.__antideleteMessages = global.__antideleteMessages || loadAntideleteCache()
+
 export async function handler(chatUpdate) {
 this.msgqueque = this.msgqueque || []
 this.uptime = this.uptime || Date.now()
@@ -21,6 +43,25 @@ if (!chatUpdate) return
 const messages = Array.isArray(chatUpdate.messages) ? chatUpdate.messages : []
 const validMessages = messages.filter(message => message?.message)
 if (!validMessages.length) return
+const antideleteMap = global.__antideleteMessages || (global.__antideleteMessages = loadAntideleteCache())
+for (const message of validMessages) {
+if (!message?.key?.id || message?.mtype === "protocolMessage") continue
+const snapshot = {
+...message,
+key: { ...(message.key || {}) },
+chat: message.chat || message.key?.remoteJid || "",
+sender: message.sender || message.key?.participant || "",
+timestamp: Date.now(),
+message: message.message || {}
+}
+antideleteMap.set(snapshot.key.id, snapshot)
+if (snapshot.chat) antideleteMap.set(`${snapshot.chat}:${snapshot.key.id}`, snapshot)
+if (antideleteMap.size > 5000) {
+const oldestKey = antideleteMap.keys().next().value
+if (oldestKey) antideleteMap.delete(oldestKey)
+}
+}
+saveAntideleteCache(antideleteMap)
 this.pushMessage(validMessages).catch(error => console.error("Error actualizando el almacenamiento de mensajes:", error))
 let m = validMessages[validMessages.length - 1]
 if (!m) return

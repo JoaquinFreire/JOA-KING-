@@ -1,20 +1,37 @@
+import fs from 'fs'
+import path from 'path'
 import { downloadContentFromMessage } from '@whiskeysockets/baileys'
 
 const handledDeletes = new Set()
 const deleteNotice = 'Borrá solo para vos, que yo quiero ver:'
+const antideleteCacheFile = path.join(process.cwd(), 'tmp', 'antidelete-cache.json')
+
+const loadAntideleteHistory = () => {
+  try {
+    if (!fs.existsSync(antideleteCacheFile)) return new Map()
+    const raw = fs.readFileSync(antideleteCacheFile, 'utf8')
+    const parsed = JSON.parse(raw)
+    return new Map(Object.entries(parsed || {}))
+  } catch (error) {
+    console.warn('[ANTIDELETE] Cache persistente no se pudo leer:', error?.message || error)
+    return new Map()
+  }
+}
 
 const isAuthorized = (m, isOwner, isAdmin) => !m.isGroup || isAdmin || isOwner
+const normalizeJid = (jid) => String(jid || '').replace(/:\d+/g, '').replace(/\s+/g, '').toLowerCase().replace(/@.*$/, '').replace(/\D+/g, '')
 
 const getOriginalMessage = (message) => {
-  const content = message?.message || {}
-  const type = Object.keys(content).find((key) => !['messageContextInfo', 'senderKeyDistributionMessage'].includes(key))
+  if (!message) return null
+  const source = message.message || message
+  const type = Object.keys(source || {}).find((key) => !['messageContextInfo', 'senderKeyDistributionMessage'].includes(key))
   if (!type) return null
-  return { type, content: content[type] }
+  return { type, content: source[type] }
 }
 
 const getText = (content) => typeof content === 'string'
   ? content
-  : content?.conversation || content?.extendedTextMessage?.text || content?.imageMessage?.caption || content?.videoMessage?.caption || ''
+  : content?.conversation || content?.text || content?.caption || content?.body || content?.extendedTextMessage?.text || content?.imageMessage?.caption || content?.videoMessage?.caption || ''
 
 const downloadMedia = async (content, type) => {
   const stream = await downloadContentFromMessage(content, type.replace('Message', '').toLowerCase())
@@ -23,48 +40,134 @@ const downloadMedia = async (content, type) => {
   return Buffer.concat(chunks)
 }
 
+const findCachedMessage = (conn, protocolKey) => {
+  const antideleteMap = global.__antideleteMessages || loadAntideleteHistory()
+  global.__antideleteMessages = antideleteMap
+  const candidateMessages = []
+
+  if (antideleteMap && protocolKey?.id) {
+    candidateMessages.push(antideleteMap.get(protocolKey.id))
+    candidateMessages.push(antideleteMap.get(`${protocolKey.remoteJid || ''}:${protocolKey.id}`))
+    for (const value of antideleteMap.values()) candidateMessages.push(value)
+  }
+
+  if (conn?.chats && typeof conn.chats === 'object') {
+    for (const chatEntry of Object.values(conn.chats)) {
+      if (!chatEntry || typeof chatEntry !== 'object') continue
+      const messages = chatEntry.messages || {}
+      for (const value of Object.values(messages)) candidateMessages.push(value)
+    }
+  }
+
+  if (conn?.store?.chats && typeof conn.store.chats === 'object') {
+    for (const chatEntry of Object.values(conn.store.chats)) {
+      if (!chatEntry || typeof chatEntry !== 'object') continue
+      const messages = chatEntry.messages || {}
+      for (const value of Object.values(messages)) candidateMessages.push(value)
+    }
+  }
+
+  const remoteJid = normalizeJid(protocolKey?.remoteJid)
+  const participant = normalizeJid(protocolKey?.participant)
+  const chatTarget = normalizeJid((conn?.chats && Object.keys(conn.chats).find((jid) => normalizeJid(jid) === remoteJid)) || protocolKey?.remoteJid)
+  let bestMatch = null
+  let bestScore = -1
+
+  for (const value of [...candidateMessages].reverse()) {
+    if (!value || typeof value !== 'object') continue
+    const valueKey = value.key || {}
+    const candidateId = valueKey.id || value.id
+    const valueRemote = normalizeJid(valueKey.remoteJid || value.chat || value.remoteJid)
+    const valueParticipant = normalizeJid(valueKey.participant || value.sender || value.participant)
+    const sameId = Boolean(protocolKey?.id && candidateId === protocolKey.id)
+    const sameRemote = Boolean(remoteJid && (valueRemote === remoteJid || valueRemote === chatTarget || chatTarget === remoteJid))
+    const sameParticipant = Boolean(participant && (valueParticipant === participant || valueParticipant === remoteJid || participant === remoteJid))
+
+    let score = 0
+    if (sameId) score = 100
+    else if (sameRemote && sameParticipant) score = 90
+    else if (sameRemote) score = 70
+    else if (sameParticipant) score = 60
+
+    if (score > bestScore) {
+      bestScore = score
+      bestMatch = value
+    }
+  }
+
+  if (bestMatch) return bestMatch
+
+  if (remoteJid) {
+    for (const value of [...candidateMessages].reverse()) {
+      if (!value || typeof value !== 'object') continue
+      const valueKey = value.key || {}
+      const valueRemote = normalizeJid(valueKey.remoteJid || value.chat || value.remoteJid)
+      if (valueRemote === remoteJid) return value
+    }
+  }
+
+  return null
+}
+
 const resendDeleted = async (conn, protocolKey) => {
   const original = typeof conn.loadMessage === 'function' ? conn.loadMessage(protocolKey.id) : null
-  const message = getOriginalMessage(original)
+  const cached = findCachedMessage(conn, protocolKey)
+  const sourceMessage = cached || original
+  const payload = sourceMessage?.message ? sourceMessage : sourceMessage
+  const message = getOriginalMessage(payload)
   if (!message) return false
+
+  const target = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
+  if (!target) return false
 
   const text = getText(message.content)
   if (text && message.type !== 'imageMessage' && message.type !== 'videoMessage') {
-    await conn.sendMessage(protocolKey.remoteJid, { text: `${deleteNotice}\n\n${text}` })
+    await conn.sendMessage(target, { text: `${deleteNotice}\n\n${text}` })
     return true
   }
 
   const mediaTypes = new Set(['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'])
-  if (!mediaTypes.has(message.type) || !message.content?.url && !message.content?.directPath) return false
+  if (!mediaTypes.has(message.type) || (!message.content?.url && !message.content?.directPath)) return false
 
   const buffer = await downloadMedia(message.content, message.type)
   if (!buffer.length) return false
   const caption = `${deleteNotice}${text ? `\n\n${text}` : ''}`
-  if (message.type === 'imageMessage') await conn.sendMessage(protocolKey.remoteJid, { image: buffer, caption })
-  else if (message.type === 'videoMessage') await conn.sendMessage(protocolKey.remoteJid, { video: buffer, caption })
-  else if (message.type === 'audioMessage') await conn.sendMessage(protocolKey.remoteJid, { audio: buffer, mimetype: message.content.mimetype || 'audio/ogg; codecs=opus', ptt: Boolean(message.content.ptt) })
-  else if (message.type === 'stickerMessage') await conn.sendMessage(protocolKey.remoteJid, { sticker: buffer })
-  else await conn.sendMessage(protocolKey.remoteJid, { document: buffer, fileName: message.content.fileName || 'mensaje-borrado', mimetype: message.content.mimetype || 'application/octet-stream', caption })
+  if (message.type === 'imageMessage') await conn.sendMessage(target, { image: buffer, caption })
+  else if (message.type === 'videoMessage') await conn.sendMessage(target, { video: buffer, caption })
+  else if (message.type === 'audioMessage') await conn.sendMessage(target, { audio: buffer, mimetype: message.content.mimetype || 'audio/ogg; codecs=opus', ptt: Boolean(message.content.ptt) })
+  else if (message.type === 'stickerMessage') await conn.sendMessage(target, { sticker: buffer })
+  else await conn.sendMessage(target, { document: buffer, fileName: message.content.fileName || 'mensaje-borrado', mimetype: message.content.mimetype || 'application/octet-stream', caption })
   return true
 }
 
 const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
-  const value = (text || '').trim().toLowerCase()
-  if (command !== 'on' && command !== 'off') return
-  if (value !== 'antidelete') return
+  const value = (text || '').trim().toLowerCase().replace(/\s+/g, ' ')
+  const action = (command || '').trim().toLowerCase()
+  if (!['on', 'off'].includes(action)) return
+
+  const normalized = value || ''
+  const isPrivateTarget = ['antideleteprivate', 'antideleteprivado', 'antidelete private', 'antidelete privado'].includes(normalized)
+  const isGroupTarget = normalized === 'antidelete'
+  if (!isPrivateTarget && !isGroupTarget) return
   if (!isAuthorized(m, isOwner, isAdmin)) return conn.reply(m.chat, 'Solo un administrador puede activar esto en grupos.', m)
 
-  const enabled = command === 'on'
-  chat.antidelete = enabled
+  const targetChat = chat || global.db.data.chats[m.chat] || {}
+  const enabled = action === 'on'
+  if (isPrivateTarget) targetChat.antideletePrivate = enabled
+  else targetChat.antidelete = enabled
   await global.db.write().catch(() => {})
-  return conn.reply(m.chat, `Antidelete ${enabled ? 'activado' : 'desactivado'} para este chat.`, m)
+  return conn.reply(m.chat, `Antidelete ${isPrivateTarget ? 'privado' : 'grupal'} ${enabled ? 'activado' : 'desactivado'} para este chat.`, m)
 }
 
 handler.all = async function (m, { chat }) {
   const conn = this
   const protocolMessage = m.message?.protocolMessage || (m.mtype === 'protocolMessage' ? m.msg : null)
   const protocolKey = protocolMessage?.key
-  if (!chat?.antidelete || !protocolKey?.id || handledDeletes.has(protocolKey.id)) return
+  const isPrivateChat = !String(m.chat || '').endsWith('@g.us')
+  const groupEnabled = Boolean(chat?.antidelete)
+  const privateEnabled = Boolean(chat?.antideletePrivate || chat?.antidelete)
+  const shouldRecover = isPrivateChat ? privateEnabled : groupEnabled
+  if (!shouldRecover || !protocolKey?.id || handledDeletes.has(protocolKey.id)) return
   handledDeletes.add(protocolKey.id)
   if (handledDeletes.size > 200) handledDeletes.delete(handledDeletes.values().next().value)
 
@@ -76,7 +179,7 @@ handler.all = async function (m, { chat }) {
   }
 }
 
-handler.help = ['on antidelete', 'off antidelete']
+handler.help = ['on antidelete', 'off antidelete', 'on antideleteprivate', 'off antideleteprivate']
 handler.tags = ['owner']
 handler.command = [/^on$/, /^off$/]
 

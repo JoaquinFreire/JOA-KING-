@@ -184,17 +184,31 @@ if (m.isBaileys) return
 m.exp += Math.ceil(Math.random() * 10)
 let usedPrefix
 const groupMetadata = m.isGroup ? { ...(conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}), ...(((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants) && { participants: ((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants || []).map(p => ({ ...p, id: p.jid, jid: p.jid, lid: p.lid })) }) } : {}
-const participants = ((m.isGroup ? groupMetadata.participants : []) || []).map(participant => ({ id: participant.jid, jid: participant.jid, lid: participant.lid, admin: participant.admin }))
+const participants = ((m.isGroup ? groupMetadata.participants : []) || []).map(participant => ({ id: participant.jid || participant.id, jid: participant.jid || participant.id, lid: participant.lid || participant.id, admin: participant.admin }))
+const normalizeJidKey = (value) => {
+if (!value) return ''
+const base = String(value).trim().replace(/:.*$/, '').replace(/@.*$/, '')
+return base.replace(/\D+/g, '')
+}
+const matchesNormalizedJid = (left, right) => {
+const a = normalizeJidKey(left)
+const b = normalizeJidKey(right)
+return !!a && !!b && a === b
+}
 const ownerJids = global.owner.filter(Boolean).map(number => number.replace(/[^0-9]/g, "") + "@s.whatsapp.net")
-const senderParticipant = participants.find(participant => participant.lid === m.sender)
-const senderJids = [m.sender, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid].filter(Boolean)
-const isROwner = ownerJids.some(ownerJid => senderJids.includes(ownerJid))
-const isBotSender = [this.user.jid, conn.user?.jid, conn.user?.lid].filter(Boolean).some(jid => senderJids.includes(jid))
+const senderParticipant = participants.find((participant) => [participant.id, participant.jid, participant.lid].some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn))) || null
+const senderJids = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid, senderParticipant?.id, senderParticipant?.lid].filter(Boolean)
+const isROwner = ownerJids.some((ownerJid) => senderJids.some((jid) => matchesNormalizedJid(jid, ownerJid)))
+const isBotSender = [this.user.jid, conn.user?.jid, conn.user?.lid].filter(Boolean).some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
 const isOwner = isROwner || isBotSender || m.fromMe
-const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").some(jid => senderJids.includes(jid)) || user.premium == true
-const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids].some(jid => senderJids.includes(jid))
-const userGroup = (m.isGroup ? participants.find((u) => conn.decodeJid(u.jid) === m.sender) : {}) || {}
-const botGroup = (m.isGroup ? participants.find((u) => conn.decodeJid(u.jid) == this.user.jid) : {}) || {}
+const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid))) || user.premium == true
+const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids].some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
+const senderDigits = normalizeJidKey(m.sender)
+const userGroup = (m.isGroup ? participants.find((u) => {
+const memberIds = [u.id, u.jid, u.lid].filter(Boolean)
+return memberIds.some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn)) || memberIds.some((candidate) => normalizeJidKey(candidate) === senderDigits)
+}) : {}) || {}
+const botGroup = (m.isGroup ? participants.find((u) => [u.id, u.jid, u.lid].some((candidate) => matchesNormalizedJid(candidate, this.user.jid) || matchesNormalizedJid(candidate, conn.user?.jid) || matchesNormalizedJid(candidate, conn.user?.lid))) : {}) || {}
 const isRAdmin = userGroup?.admin == "superadmin" || false
 const isAdmin = isRAdmin || userGroup?.admin == "admin" || false
 const isBotAdmin = botGroup?.admin || false
@@ -233,7 +247,7 @@ prefix : new RegExp(strRegex(prefix))
 return [regex.exec(m.text), regex]
 }) : typeof pluginPrefix === "string" ?
 [[new RegExp(strRegex(pluginPrefix)).exec(m.text), new RegExp(strRegex(pluginPrefix))]] :
-[[[], new RegExp]]).find(prefix => prefix[1])
+[[[], new RegExp]]).find(prefix => prefix[0] && prefix[0][0])
 if (typeof plugin.before === "function") {
 if (await plugin.before.call(this, m, {
 match,
@@ -260,13 +274,17 @@ continue
 if (typeof plugin !== "function") {
 continue
 }
-if ((usedPrefix = (match[0] || "")[0])) {
-const noPrefix = m.text.replace(usedPrefix, "")
-let [command, ...args] = noPrefix.trim().split(" ").filter(v => v)
+const matchedText = match?.[0]?.[0] || ""
+if (matchedText) {
+usedPrefix = matchedText
+const noPrefix = m.text.slice(matchedText.length)
+const strippedCommand = matchedText.replace(/^[@%]+/i, "").trim().toLowerCase()
+const remainder = noPrefix.trim().split(/\s+/).filter(v => v)
+let [command, ...args] = remainder
 args = args || []
-let _args = noPrefix.trim().split(" ").slice(1)
+let _args = remainder.slice(1)
 let text = _args.join(" ")
-command = (command || "").toLowerCase()
+command = (strippedCommand || command || "").toLowerCase()
 const fail = plugin.fail || global.dfail
 const isAccept = plugin.command instanceof RegExp ?
 plugin.command.test(command) :

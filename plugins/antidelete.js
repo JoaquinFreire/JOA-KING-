@@ -33,6 +33,88 @@ const getText = (content) => typeof content === 'string'
   ? content
   : content?.conversation || content?.text || content?.caption || content?.body || content?.extendedTextMessage?.text || content?.imageMessage?.caption || content?.videoMessage?.caption || ''
 
+const normalizeForDisplay = (jid) => {
+  const value = String(jid || '').trim()
+  if (!value) return null
+  const clean = value.split('@')[0]
+  if (!clean) return null
+  if (/^\d+$/.test(clean)) return `+${clean}`
+  return value
+}
+
+const resolveSenderIdentity = async (conn, sourceMessage, protocolKey) => {
+  const candidateJids = [...new Set([
+    sourceMessage?.key?.participant,
+    sourceMessage?.sender,
+    sourceMessage?.participant,
+    sourceMessage?.key?.remoteJid,
+    protocolKey?.participant,
+    protocolKey?.remoteJid,
+    sourceMessage?.key?.senderPn,
+    sourceMessage?.key?.remoteJidAlt,
+    sourceMessage?.key?.fromMe ? conn?.user?.jid : null,
+  ].filter(Boolean))]
+
+  let phone = null
+  let name = null
+
+  for (const jid of candidateJids) {
+    if (typeof conn?.getName === 'function') {
+      try {
+        const resolvedName = await conn.getName(jid)
+        if (resolvedName) name = resolvedName
+      } catch (error) {
+        // Ignorar resolución fallida de nombre
+      }
+    }
+
+    const normalized = normalizeForDisplay(jid)
+    if (normalized && /^\+\d+$/.test(normalized)) {
+      phone = normalized
+    }
+
+    if (phone && name) break
+  }
+
+  if (!phone) {
+    for (const jid of candidateJids) {
+      const raw = String(jid || '')
+      if (raw.includes('@lid')) {
+        const lid = raw.replace(/@.*$/, '')
+        const fallback = normalizeForDisplay(lid)
+        if (fallback) phone = fallback
+      }
+    }
+  }
+
+  if (!phone) {
+    for (const jid of candidateJids) {
+      const raw = String(jid || '')
+      if (raw.includes('@')) {
+        const fallback = normalizeForDisplay(raw)
+        if (fallback) phone = fallback
+      }
+    }
+  }
+
+  if (!name && phone) {
+    name = 'Desconocido'
+  }
+
+  if (!phone && candidateJids.length) {
+    phone = String(candidateJids[0]).replace(/@.*$/, '')
+  }
+
+  return { phone: phone || 'LID no disponible', name: name || 'Desconocido' }
+}
+
+const formatGroupDeleteNotice = async (conn, sourceMessage, protocolKey) => {
+  const { phone, name } = await resolveSenderIdentity(conn, sourceMessage, protocolKey)
+  const cleanName = String(name || 'Desconocido').trim()
+  const firstHandle = cleanName && cleanName !== 'Desconocido' ? cleanName : (phone || 'LID no disponible')
+  return `@${firstHandle.replace(/^\+/, '').replace(/\s+/g, '')} eliminó este mensaje`
+}
+
 const downloadMedia = async (content, type) => {
   const stream = await downloadContentFromMessage(content, type.replace('Message', '').toLowerCase())
   const chunks = []
@@ -126,14 +208,23 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   if (!targets.size) return false
 
   const text = getText(message.content)
+  const privateHeader = options.privateTarget ? await resolveSenderIdentity(conn, payload, protocolKey).then(({ phone, name }) => `${phone || 'LID no disponible'} ~ ${name || 'Desconocido'} eliminó este mensaje`) : null
+  const groupHeader = options.groupTarget ? await formatGroupDeleteNotice(conn, payload, protocolKey) : null
   const sendToTargets = async (payloadMessage) => {
     for (const target of targets) {
-      await conn.sendMessage(target, payloadMessage)
+      const isPrivateDestination = String(target) === (conn.user?.jid || conn.user?.id || conn.user?.lid || '')
+      const isGroupDestination = String(target).endsWith('@g.us') || String(target).endsWith('@s.whatsapp.net')
+      const finalText = isPrivateDestination && privateHeader
+        ? `${privateHeader}\n\n${payloadMessage.text || ''}`
+        : isGroupDestination && groupHeader
+          ? `${groupHeader}\n\n${payloadMessage.text || ''}`
+          : payloadMessage.text || ''
+      await conn.sendMessage(target, { ...payloadMessage, text: finalText })
     }
   }
 
   if (text && message.type !== 'imageMessage' && message.type !== 'videoMessage') {
-    await sendToTargets({ text: `${deleteNotice}\n\n${text}` })
+    await sendToTargets({ text: `${text}` })
     return true
   }
 
@@ -142,9 +233,16 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
 
   const buffer = await downloadMedia(message.content, message.type)
   if (!buffer.length) return false
-  const caption = `${deleteNotice}${text ? `\n\n${text}` : ''}`
-
   for (const target of targets) {
+    const isPrivateDestination = String(target) === (conn.user?.jid || conn.user?.id || conn.user?.lid || '')
+    const isGroupDestination = String(target).endsWith('@g.us') || String(target).endsWith('@s.whatsapp.net')
+    const captionPrefix = isPrivateDestination && privateHeader
+      ? `${privateHeader}${text ? `\n\n${text}` : ''}`
+      : isGroupDestination && groupHeader
+        ? `${groupHeader}${text ? `\n\n${text}` : ''}`
+        : `${deleteNotice}${text ? `\n\n${text}` : ''}`
+    const caption = captionPrefix
+
     if (message.type === 'imageMessage') await conn.sendMessage(target, { image: buffer, caption })
     else if (message.type === 'videoMessage') await conn.sendMessage(target, { video: buffer, caption })
     else if (message.type === 'audioMessage') await conn.sendMessage(target, { audio: buffer, mimetype: message.content.mimetype || 'audio/ogg; codecs=opus', ptt: Boolean(message.content.ptt) })

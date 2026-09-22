@@ -109,7 +109,7 @@ const findCachedMessage = (conn, protocolKey) => {
   return null
 }
 
-const resendDeleted = async (conn, protocolKey) => {
+const resendDeleted = async (conn, protocolKey, options = {}) => {
   const original = typeof conn.loadMessage === 'function' ? conn.loadMessage(protocolKey.id) : null
   const cached = findCachedMessage(conn, protocolKey)
   const sourceMessage = cached || original
@@ -117,12 +117,23 @@ const resendDeleted = async (conn, protocolKey) => {
   const message = getOriginalMessage(payload)
   if (!message) return false
 
-  const target = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
-  if (!target) return false
+  const targets = new Set()
+  const privateTarget = conn.user?.jid || conn.user?.id || conn.user?.lid || ''
+  const groupTarget = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
+
+  if (options.privateTarget && privateTarget) targets.add(privateTarget)
+  if (options.groupTarget && groupTarget && groupTarget !== privateTarget) targets.add(groupTarget)
+  if (!targets.size) return false
 
   const text = getText(message.content)
+  const sendToTargets = async (payloadMessage) => {
+    for (const target of targets) {
+      await conn.sendMessage(target, payloadMessage)
+    }
+  }
+
   if (text && message.type !== 'imageMessage' && message.type !== 'videoMessage') {
-    await conn.sendMessage(target, { text: `${deleteNotice}\n\n${text}` })
+    await sendToTargets({ text: `${deleteNotice}\n\n${text}` })
     return true
   }
 
@@ -132,11 +143,14 @@ const resendDeleted = async (conn, protocolKey) => {
   const buffer = await downloadMedia(message.content, message.type)
   if (!buffer.length) return false
   const caption = `${deleteNotice}${text ? `\n\n${text}` : ''}`
-  if (message.type === 'imageMessage') await conn.sendMessage(target, { image: buffer, caption })
-  else if (message.type === 'videoMessage') await conn.sendMessage(target, { video: buffer, caption })
-  else if (message.type === 'audioMessage') await conn.sendMessage(target, { audio: buffer, mimetype: message.content.mimetype || 'audio/ogg; codecs=opus', ptt: Boolean(message.content.ptt) })
-  else if (message.type === 'stickerMessage') await conn.sendMessage(target, { sticker: buffer })
-  else await conn.sendMessage(target, { document: buffer, fileName: message.content.fileName || 'mensaje-borrado', mimetype: message.content.mimetype || 'application/octet-stream', caption })
+
+  for (const target of targets) {
+    if (message.type === 'imageMessage') await conn.sendMessage(target, { image: buffer, caption })
+    else if (message.type === 'videoMessage') await conn.sendMessage(target, { video: buffer, caption })
+    else if (message.type === 'audioMessage') await conn.sendMessage(target, { audio: buffer, mimetype: message.content.mimetype || 'audio/ogg; codecs=opus', ptt: Boolean(message.content.ptt) })
+    else if (message.type === 'stickerMessage') await conn.sendMessage(target, { sticker: buffer })
+    else await conn.sendMessage(target, { document: buffer, fileName: message.content.fileName || 'mensaje-borrado', mimetype: message.content.mimetype || 'application/octet-stream', caption })
+  }
   return true
 }
 
@@ -163,16 +177,18 @@ handler.all = async function (m, { chat }) {
   const conn = this
   const protocolMessage = m.message?.protocolMessage || (m.mtype === 'protocolMessage' ? m.msg : null)
   const protocolKey = protocolMessage?.key
-  const isPrivateChat = !String(m.chat || '').endsWith('@g.us')
   const groupEnabled = Boolean(chat?.antidelete)
-  const privateEnabled = Boolean(chat?.antideletePrivate || chat?.antidelete)
-  const shouldRecover = isPrivateChat ? privateEnabled : groupEnabled
+  const privateEnabled = Boolean(chat?.antideletePrivate)
+  const shouldRecover = Boolean(groupEnabled || privateEnabled)
   if (!shouldRecover || !protocolKey?.id || handledDeletes.has(protocolKey.id)) return
   handledDeletes.add(protocolKey.id)
   if (handledDeletes.size > 200) handledDeletes.delete(handledDeletes.values().next().value)
 
   try {
-    const sent = await resendDeleted(conn, protocolKey)
+    const sent = await resendDeleted(conn, protocolKey, {
+      privateTarget: privateEnabled,
+      groupTarget: groupEnabled
+    })
     if (!sent) console.warn(`[ANTIDELETE] No se pudo recuperar el mensaje ${protocolKey.id}`)
   } catch (error) {
     console.error(`[ANTIDELETE] Error recuperando ${protocolKey.id}:`, error?.stack || error)

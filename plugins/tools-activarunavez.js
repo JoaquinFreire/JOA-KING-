@@ -19,7 +19,7 @@ const resolveOwnerJids = async (conn) => {
 }
 
 const isConfiguredOwner = async (conn, m, isROwner, isOwner) => {
-  if (isROwner || isOwner) return true
+  if (isROwner || isOwner || m.fromMe) return true
   const candidates = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt]
   const candidateNumbers = candidates.map((jid) => String(jid || '').replace(/\D/g, ''))
   if (candidateNumbers.some((number) => ownerNumbers.has(number) || ownerLids.has(number) || botLids.has(number))) return true
@@ -33,7 +33,8 @@ const isConfiguredOwner = async (conn, m, isROwner, isOwner) => {
 const handler = async (m, { conn, text, command, isROwner, isOwner }) => {
   const commandValue = (command || '').trim().toLowerCase()
   const textValue = (text || '').trim().toLowerCase()
-  if ((commandValue === 'on' || commandValue === 'off') && textValue === 'antidelete') return
+  const antiDeleteTargets = ['antidelete', 'antideleteprivate', 'antideleteprivado', 'antidelete private', 'antidelete privado']
+  if ((commandValue === 'on' || commandValue === 'off') && antiDeleteTargets.includes(textValue)) return
   if (!await isConfiguredOwner(conn, m, isROwner, isOwner)) return conn.reply(m.chat, 'Solo el dueño puede usar este comando.', m)
 
   const value = commandValue === 'on' && textValue === 'noveruna' ? 'on noveruna' : textValue
@@ -117,8 +118,8 @@ handler.all = async function (m, { chat }) {
   }
 }
 
-handler.help = ['on noveruna', 'activarunavez on/off']
+handler.help = ['activarunavez on noveruna', 'activarunavez on/off']
 handler.tags = ['owner']
-handler.command = ['activarunavez', /^on$/]
+handler.command = ['activarunavez']
 
 export default handler

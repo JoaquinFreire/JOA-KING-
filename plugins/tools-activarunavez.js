@@ -54,18 +54,12 @@ handler.all = async function (m, { chat }) {
   const conn = this
   const protocolMessage = m.message?.protocolMessage || (m.mtype === 'protocolMessage' ? m.msg : null)
   const protocolKey = protocolMessage?.key || null
-  if (protocolKey?.id && chat?.captureViewOnce && !handledProtocolMessages.has(protocolKey.id)) {
+  if (!chat?.captureViewOnce) return
+  if (protocolKey?.fromMe || m.fromMe) return
+  if (protocolKey?.id && !handledProtocolMessages.has(protocolKey.id)) {
     handledProtocolMessages.add(protocolKey.id)
     if (handledProtocolMessages.size > 100) handledProtocolMessages.delete(handledProtocolMessages.values().next().value)
-    try {
-      if (typeof conn.readMessages === 'function') await conn.readMessages([protocolKey])
-      if (protocolKey.remoteJid && typeof conn.sendMessage === 'function') {
-        await conn.sendMessage(protocolKey.remoteJid, { react: { text: '👀', key: protocolKey } })
-      }
-      console.log(`[VIEW-ONCE] Mensaje marcado id=${protocolKey.id}`)
-    } catch (markError) {
-      console.error('[VIEW-ONCE] No se pudo marcar el mensaje original:', markError?.message || markError)
-    }
+    console.log(`[VIEW-ONCE] Mensaje protocolo recibido id=${protocolKey.id} remote=${protocolKey.remoteJid || ''}`)
   }
   let media = getViewOnceMediaFromMessage(m)
   if (!media && protocolKey?.id && typeof conn.loadMessage === 'function') {
@@ -75,7 +69,6 @@ handler.all = async function (m, { chat }) {
   }
   if (m.fromMe && !media && !protocolMessage) return
   if (!media) return
-  if (!chat?.captureViewOnce) return
   console.log(`[VIEW-ONCE] Mensaje recibido chat=${m.chat} sender=${m.sender} mtype=${m.mtype} keys=${Object.keys(m.message || {}).join(',')}`)
   const ownerJids = await resolveOwnerJids(conn)
   console.log(`[VIEW-ONCE] Media detectada type=${media.type} destinos=${ownerJids.join(',') || 'ninguno'}`)

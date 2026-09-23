@@ -196,9 +196,11 @@ auth: {
 creds: state.creds,
 keys: makeCacheableSignalKeyStore(state.keys, Pino({ level: "fatal" }).child({ level: "fatal" })),
 },
-markOnlineOnConnect: false, 
-generateHighQualityLinkPreview: true, 
+markOnlineOnConnect: false,
+fireInitQueries: false,
+generateHighQualityLinkPreview: true,
 syncFullHistory: false,
+shouldSyncHistoryMessage: () => false,
 getMessage: async (key) => {
 try {
 let jid = jidNormalizedUser(key.remoteJid);

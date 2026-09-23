@@ -6,6 +6,14 @@ const handledDeletes = new Set()
 const deleteNotice = 'Borrá solo para vos, que yo quiero ver:'
 const antideleteCacheFile = path.join(process.cwd(), 'tmp', 'antidelete-cache.json')
 
+const getChatFlag = (chat, keys) => {
+  for (const key of keys) {
+    const value = chat?.[key]
+    if (value !== undefined) return Boolean(value)
+  }
+  return false
+}
+
 const loadAntideleteHistory = () => {
   try {
     if (!fs.existsSync(antideleteCacheFile)) return new Map()
@@ -21,6 +29,69 @@ const loadAntideleteHistory = () => {
 const isAuthorized = (m, isOwner, isAdmin) => !m.isGroup || isAdmin || isOwner
 const normalizeJid = (jid) => String(jid || '').replace(/:\d+/g, '').replace(/\s+/g, '').toLowerCase().replace(/@.*$/, '').replace(/\D+/g, '')
 
+const getProfileState = (chat, profileName) => {
+  const savedMode = String(chat?.[`${profileName}Mode`] || 'public').toLowerCase()
+  const publicEnabled = Boolean(chat?.[`${profileName}Public`] ?? chat?.[`${profileName}public`])
+  const privateEnabled = Boolean(chat?.[`${profileName}Private`] ?? chat?.[`${profileName}private`])
+  const legacyValue = Boolean(chat?.[profileName])
+
+  let resolvedMode = ['public', 'private'].includes(savedMode) ? savedMode : 'public'
+  let publicState = publicEnabled
+  let privateState = privateEnabled
+
+  if (publicState && privateState) {
+    if (resolvedMode === 'private') {
+      publicState = false
+    } else {
+      privateState = false
+    }
+  }
+
+  if (!publicState && !privateState && legacyValue) {
+    resolvedMode = savedMode === 'private' ? 'private' : 'public'
+    if (resolvedMode === 'private') privateState = true
+    else publicState = true
+  }
+
+  if (resolvedMode === 'private') {
+    publicState = false
+  } else {
+    privateState = false
+  }
+
+  return {
+    mode: resolvedMode,
+    publicEnabled: publicState,
+    privateEnabled: privateState,
+    legacyValue
+  }
+}
+
+const saveProfileState = (chat, profileName, enabled, mode) => {
+  const normalizedMode = ['public', 'private'].includes(mode) ? mode : 'public'
+  const publicState = Boolean(enabled && normalizedMode === 'public')
+  const privateState = Boolean(enabled && normalizedMode === 'private')
+
+  chat[`${profileName}Mode`] = normalizedMode
+  chat[`${profileName}Public`] = publicState
+  chat[`${profileName}Private`] = privateState
+  chat[`${profileName}public`] = publicState
+  chat[`${profileName}private`] = privateState
+  chat[profileName] = Boolean(enabled)
+  return chat
+}
+
+const resetProfileState = (chat, profileName) => {
+  const keys = [
+    `${profileName}Mode`,
+    `${profileName}Public`, `${profileName}Private`,
+    `${profileName}public`, `${profileName}private`,
+    profileName
+  ]
+  for (const key of keys) delete chat[key]
+  return chat
+}
+
 const getOriginalMessage = (message) => {
   if (!message) return null
   const source = message.message || message
@@ -32,6 +103,36 @@ const getOriginalMessage = (message) => {
 const getText = (content) => typeof content === 'string'
   ? content
   : content?.conversation || content?.text || content?.caption || content?.body || content?.extendedTextMessage?.text || content?.imageMessage?.caption || content?.videoMessage?.caption || ''
+
+const findSafePrivateTarget = (conn, candidates = []) => {
+  const botJids = new Set([
+    conn?.user?.jid,
+    conn?.user?.id,
+    conn?.user?.lid,
+    conn?.decodeJid?.(conn?.user?.jid),
+    conn?.decodeJid?.(conn?.user?.id),
+    conn?.decodeJid?.(conn?.user?.lid),
+    conn?.user?.verifiedName ? `${String(conn.user.verifiedName).replace(/\D/g, '')}@s.whatsapp.net` : null
+  ].filter(Boolean))
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const value = String(candidate).trim()
+    if (!value || value.endsWith('@g.us') || value.endsWith('@newsletter')) continue
+    const decoded = conn?.decodeJid?.(value) || value
+    const normalized = decoded.replace(/:.*$/, '')
+    if (!botJids.has(value) && !botJids.has(decoded) && !botJids.has(normalized)) return value
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const value = String(candidate).trim()
+    if (!value) continue
+    return value
+  }
+
+  return ''
+}
 
 const normalizeForDisplay = (jid) => {
   const value = String(jid || '').trim()
@@ -192,7 +293,7 @@ const findCachedMessage = (conn, protocolKey) => {
 }
 
 const resendDeleted = async (conn, protocolKey, options = {}) => {
-  const original = typeof conn.loadMessage === 'function' ? conn.loadMessage(protocolKey.id) : null
+  const original = typeof conn.loadMessage === 'function' ? await conn.loadMessage(protocolKey.id) : null
   const cached = findCachedMessage(conn, protocolKey)
   const sourceMessage = cached || original
   const payload = sourceMessage?.message ? sourceMessage : sourceMessage
@@ -200,11 +301,40 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   if (!message) return false
 
   const targets = new Set()
-  const privateTarget = conn.user?.jid || conn.user?.id || conn.user?.lid || ''
-  const groupTarget = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
+  const remoteTarget = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
+  const sameChatTarget = options.sameChatTarget || remoteTarget
+  const isPrivateChat = !!(remoteTarget && !String(remoteTarget).endsWith('@g.us') && !String(remoteTarget).endsWith('@newsletter'))
+  const botJids = new Set([
+    conn?.user?.jid,
+    conn?.user?.id,
+    conn?.user?.lid,
+    conn?.decodeJid?.(conn?.user?.jid),
+    conn?.decodeJid?.(conn?.user?.id),
+    conn?.decodeJid?.(conn?.user?.lid),
+  ].filter(Boolean))
+  const botPrivateTargets = [...new Set([
+    conn?.user?.jid,
+    conn?.user?.id,
+    conn?.user?.lid,
+    conn?.user?.verifiedName ? `${String(conn.user.verifiedName).replace(/\D/g, '')}@s.whatsapp.net` : null
+  ].filter(Boolean))]
 
-  if (options.privateTarget && privateTarget) targets.add(privateTarget)
-  if (options.groupTarget && groupTarget && groupTarget !== privateTarget) targets.add(groupTarget)
+  if (options.sendToSameChat && sameChatTarget) {
+    const chosenTarget = String(sameChatTarget).trim()
+    if (chosenTarget && !botJids.has(chosenTarget) && !botJids.has(conn?.decodeJid?.(chosenTarget) || '')) {
+      targets.add(chosenTarget)
+    }
+  }
+
+  if (!isPrivateChat && options.privateTarget) {
+    for (const jid of botPrivateTargets) targets.add(jid)
+  }
+
+  if (options.privateTarget && isPrivateChat && !options.sendToSameChat) {
+    for (const jid of botPrivateTargets) targets.add(jid)
+  }
+
+  if (options.groupTarget && remoteTarget && !isPrivateChat) targets.add(remoteTarget)
   if (!targets.size) return false
 
   const text = getText(message.content)
@@ -255,46 +385,146 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
 const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
   const value = (text || '').trim().toLowerCase().replace(/\s+/g, ' ')
   const action = (command || '').trim().toLowerCase()
-  if (!['on', 'off'].includes(action)) return
+  if (action === 'onoff') {
+    const targetChat = chat || global.db.data.chats[m.chat] || (global.db.data.chats[m.chat] = {})
+    const summary = [
+      ['antidelete public', getProfileState(targetChat, 'antidelete').publicEnabled],
+      ['antidelete private', getProfileState(targetChat, 'antidelete').privateEnabled],
+      ['antideletep public', getProfileState(targetChat, 'antideletep').publicEnabled],
+      ['antideletep private', getProfileState(targetChat, 'antideletep').privateEnabled],
+      ['welcome', Boolean(targetChat.welcome)],
+      ['detect', Boolean(targetChat.detect)],
+      ['antilink', Boolean(targetChat.antiLink)],
+      ['nsfw', Boolean(targetChat.nsfw)],
+      ['modoadmin', Boolean(targetChat.modoadmin)]
+    ]
+    const lines = summary.map(([label, enabled]) => `${label}: ${enabled ? 'activado' : 'apagado'}`)
+    return conn.reply(m.chat, `Estado del chat:\n${lines.join('\n')}`, m)
+  }
+
+  if (!['on', 'off', 'reset'].includes(action)) return
 
   const normalized = value || ''
-  const isPrivateTarget = ['antideleteprivate', 'antideleteprivado', 'antidelete private', 'antidelete privado'].includes(normalized)
-  const isGroupTarget = normalized === 'antidelete'
-  if (!isPrivateTarget && !isGroupTarget) return
+  const profileTargets = {
+    antidelete: {
+      public: ['antidelete', 'antidelete public', 'antidelete grupal', 'antidelete group'],
+      private: ['antideleteprivate', 'antidelete private', 'antideleteprivado', 'antidelete privado']
+    },
+    antideletep: {
+      public: ['antideletep', 'antideletep public', 'antideletep grupal', 'antideletep group'],
+      private: ['antideletepprivate', 'antideletep private', 'antideletepprivado', 'antideletep privado']
+    }
+  }
+
+  const matchedProfile = Object.entries(profileTargets).find(([, modes]) =>
+    Object.entries(modes).some(([, aliases]) => aliases.includes(normalized))
+  )
+
+  if (!matchedProfile && action === 'reset' && ['antidelete', 'antideletep'].includes(normalized)) {
+    const targetChat = chat || global.db.data.chats[m.chat] || {}
+    resetProfileState(targetChat, normalized)
+    await global.db.write().catch(() => {})
+    return conn.reply(m.chat, `Se reinició el estado de ${normalized} para este chat.`, m)
+  }
+
+  if (!matchedProfile) return
+  const [profileName, modes] = matchedProfile
+  const mode = Object.entries(modes).find(([, aliases]) => aliases.includes(normalized))?.[0] || 'public'
+
+  if (profileName === 'antidelete' && !m.isGroup) {
+    return conn.reply(m.chat, 'El antidelete sin la p solo puede activarse en grupos. Usa antideletep para chats privados.', m)
+  }
+
+  if (profileName === 'antideletep' && m.isGroup) {
+    return conn.reply(m.chat, 'antideletep no se puede activar en grupos. Solo en chats privados.', m)
+  }
+
   if (!isAuthorized(m, isOwner, isAdmin)) return conn.reply(m.chat, 'Solo un administrador puede activar esto en grupos.', m)
 
   const targetChat = chat || global.db.data.chats[m.chat] || {}
+  if (action === 'reset') {
+    resetProfileState(targetChat, profileName)
+    await global.db.write().catch(() => {})
+    return conn.reply(m.chat, `Se reinició ${profileName} para este chat.`, m)
+  }
+
   const enabled = action === 'on'
-  if (isPrivateTarget) targetChat.antideletePrivate = enabled
-  else targetChat.antidelete = enabled
+  const profileState = getProfileState(targetChat, profileName)
+
+  if (enabled && mode === 'private' && profileState.publicEnabled) {
+    return conn.reply(m.chat, `Primero desactiva ${profileName} public para poder activar ${profileName} private.`, m)
+  }
+
+  if (enabled && mode === 'public' && profileState.privateEnabled) {
+    return conn.reply(m.chat, `Primero desactiva ${profileName} private para poder activar ${profileName} public.`, m)
+  }
+
+  saveProfileState(targetChat, profileName, enabled, mode)
   await global.db.write().catch(() => {})
-  return conn.reply(m.chat, `Antidelete ${isPrivateTarget ? 'privado' : 'grupal'} ${enabled ? 'activado' : 'desactivado'} para este chat.`, m)
+
+  return conn.reply(m.chat, `${profileName} ${mode} ${enabled ? 'activado' : 'desactivado'} para este chat.`, m)
 }
 
 handler.all = async function (m, { chat }) {
   const conn = this
   const protocolMessage = m.message?.protocolMessage || (m.mtype === 'protocolMessage' ? m.msg : null)
   const protocolKey = protocolMessage?.key
-  const groupEnabled = Boolean(chat?.antidelete)
-  const privateEnabled = Boolean(chat?.antideletePrivate)
-  const shouldRecover = Boolean(groupEnabled || privateEnabled)
-  if (!shouldRecover || !protocolKey?.id || handledDeletes.has(protocolKey.id)) return
+  const isOwnDelete = Boolean(protocolKey?.fromMe || m.fromMe || m.key?.fromMe)
+  const isGroupDelete = !!(protocolKey?.remoteJid && String(protocolKey.remoteJid).endsWith('@g.us'))
+  const isPrivateDelete = !!(protocolKey?.remoteJid && !String(protocolKey.remoteJid).endsWith('@g.us') && !String(protocolKey.remoteJid).endsWith('@newsletter'))
+
+  const antideleteState = getProfileState(chat, 'antidelete')
+  const antideletepState = getProfileState(chat, 'antideletep')
+
+  const antideleteGroupPublicEnabled = Boolean(antideleteState.publicEnabled && isGroupDelete)
+  const antideleteGroupPrivateEnabled = Boolean(antideleteState.privateEnabled && isGroupDelete)
+  const antideletepPrivatePublicEnabled = Boolean(antideletepState.publicEnabled && isPrivateDelete)
+  const antideletepPrivatePrivateEnabled = Boolean(antideletepState.privateEnabled && isPrivateDelete)
+
+  const shouldRecover = Boolean(
+    antideleteGroupPublicEnabled ||
+    antideleteGroupPrivateEnabled ||
+    antideletepPrivatePublicEnabled ||
+    antideletepPrivatePrivateEnabled
+  )
+  if (isOwnDelete || !shouldRecover || !protocolKey?.id || handledDeletes.has(protocolKey.id)) return
   handledDeletes.add(protocolKey.id)
   if (handledDeletes.size > 200) handledDeletes.delete(handledDeletes.values().next().value)
 
   try {
-    const sent = await resendDeleted(conn, protocolKey, {
-      privateTarget: privateEnabled,
-      groupTarget: groupEnabled
-    })
+    const route = {
+      privateTarget: false,
+      groupTarget: false,
+      sendToSameChat: false,
+      sameChatTarget: findSafePrivateTarget(conn, [
+        m.sender,
+        protocolKey?.participant,
+        protocolKey?.remoteJid,
+        m.chat,
+        m.key?.remoteJid,
+        m.key?.participant,
+      ])
+    }
+
+    if (isGroupDelete) {
+      route.groupTarget = antideleteGroupPublicEnabled
+      route.privateTarget = antideleteGroupPrivateEnabled
+    }
+
+    if (isPrivateDelete) {
+      route.sendToSameChat = antideletepPrivatePublicEnabled
+      route.privateTarget = antideletepPrivatePrivateEnabled && !antideletepPrivatePublicEnabled
+    }
+
+    const sent = await resendDeleted(conn, protocolKey, route)
     if (!sent) console.warn(`[ANTIDELETE] No se pudo recuperar el mensaje ${protocolKey.id}`)
   } catch (error) {
     console.error(`[ANTIDELETE] Error recuperando ${protocolKey.id}:`, error?.stack || error)
   }
 }
 
-handler.help = ['on antidelete', 'off antidelete', 'on antideleteprivate', 'off antideleteprivate']
+handler.help = ['on antidelete public', 'off antidelete public', 'on antidelete private', 'off antidelete private', 'on antideletep public', 'off antideletep public', 'on antideletep private', 'off antideletep private', 'reset antidelete', 'reset antideletep', 'onoff']
 handler.tags = ['owner']
-handler.command = [/^on$/, /^off$/]
+handler.command = [/^on$/, /^off$/, /^reset$/, /^onoff$/]
 
 export default handler

@@ -9,7 +9,31 @@ import path from "path"
 
 //BETA: Si quiere evitar escribir el número que será bot en la consola, agregué desde aquí entonces:
 //Sólo aplica para opción 2 (ser bot con código de texto de 8 digitos)
-global.botNumber = "5493515925657" //Ejemplo: 5493513117202
+// IMPORTANTE: este valor es un DEFAULT para el emparejamiento del subbot, no se toma autom.áticamente del LID del usuario.
+global.botNumber = process.env.BOT_NUMBER || "" // Deja vacío para no forzar código de emparejamiento por defecto.
+global.subBotSettings = {
+  defaultPairingNumber: process.env.SUBBOT_NUMBER || global.botNumber || "",
+  allowSenderFallback: false,
+  preferExplicitNumber: true,
+  allowedNumbers: ["5493517076366"]
+}
+
+global.getSubBotPairingNumber = function (explicitValue = "", senderJid = "", fallback = global.subBotSettings?.defaultPairingNumber || global.botNumber || "") {
+  const normalize = (value = "") => String(value || "").replace(/\D/g, "")
+  const explicit = normalize(explicitValue)
+  if (explicit.length >= 8) return explicit
+
+  const sender = normalize(senderJid)
+  const senderIsLid = /@lid$/i.test(String(senderJid || ""))
+  const allowed = Array.isArray(global.subBotSettings?.allowedNumbers)
+    ? global.subBotSettings.allowedNumbers.map((value) => normalize(value)).filter(Boolean)
+    : []
+
+  if (!senderIsLid && sender.length >= 8 && global.subBotSettings?.allowSenderFallback !== false) return sender
+  if (allowed.length > 0) return allowed[0]
+  if (normalize(fallback).length >= 8) return normalize(fallback)
+  return ""
+}
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.owner = [

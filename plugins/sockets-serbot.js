@@ -1,4 +1,4 @@
-import baileys from '@whiskeysockets/baileys'
+import * as baileys from '@whiskeysockets/baileys'
 const { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore, fetchLatestBaileysVersion } = baileys
 import qrcode from "qrcode"
 import NodeCache from "node-cache"
@@ -37,7 +37,8 @@ return m.reply(`ꕥ No se han encontrado espacios para *Sub-Bots* disponibles.`)
 let mentionedJid = await m.mentionedJid
 let who = mentionedJid && mentionedJid[0] ? mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
 let id = `${who.split`@`[0]}`
-let pathJoaKingSubBot = path.join(`./${jadi}/`, id)
+const subBotRoot = path.resolve(process.cwd(), global.jadi || 'Sessions/SubBot')
+let pathJoaKingSubBot = path.join(subBotRoot, id)
 if (!fs.existsSync(pathJoaKingSubBot)){
 fs.mkdirSync(pathJoaKingSubBot, { recursive: true })
 }
@@ -58,8 +59,13 @@ export default handler
 
 export async function JoaKingSubBot(options) {
 let { pathJoaKingSubBot, m, conn, args, usedPrefix, command } = options
+const subBotRoot = path.resolve(process.cwd(), global.jadi || 'Sessions/SubBot')
+if (!pathJoaKingSubBot) {
+pathJoaKingSubBot = path.join(subBotRoot, String((m?.sender || Date.now()).split('@')[0] || Date.now()))
+}
 if (command === 'code') {
 command = 'qr'
+args = Array.isArray(args) ? [...args] : []
 args.unshift('code')
 }
 const mcode = args[0] && /(--code|code)/.test(args[0].trim()) ? true : args[1] && /(--code|code)/.test(args[1].trim()) ? true : false
@@ -122,11 +128,28 @@ setTimeout(() => { conn.sendMessage(m.sender, { delete: txtQR.key })}, 30000)
 return
 } 
 if (qr && mcode) {
-let secret = await sock.requestPairingCode((m.sender.split`@`[0]))
+const explicitNumber = (Array.isArray(args) ? args : [])
+  .map((item) => String(item || '').trim())
+  .find((item) => /\d{8,}/.test(String(item).replace(/\D/g, '')))
+const rawSenderNumber = String(m?.sender || '').replace(/@.*$/, '').replace(/\D/g, '')
+const pairingNumber = global.getSubBotPairingNumber ? global.getSubBotPairingNumber(explicitNumber, m?.sender, global.botNumber) : (
+  explicitNumber ? String(explicitNumber).replace(/\D/g, '') : String(global.botNumber || '').replace(/\D/g, '')
+)
+console.log('[SUBBOT-CODE] rawSender=', m?.sender || 'undefined')
+console.log('[SUBBOT-CODE] rawSenderNumber=', rawSenderNumber || 'empty')
+console.log('[SUBBOT-CODE] explicitNumber=', explicitNumber || 'none')
+console.log('[SUBBOT-CODE] global.botNumber=', global.botNumber || 'empty')
+console.log('[SUBBOT-CODE] selectedPairingNumber=', pairingNumber || 'INVALID')
+if (!pairingNumber || pairingNumber.length < 8) {
+await conn.sendMessage(m.chat, { text: '⚠️ No pude detectar un número válido para vincular el subbot. Usa %code 5493517076366 o configura `global.botNumber` o `global.subBotSettings.defaultPairingNumber` en settings.js.' }, { quoted: m })
+return
+}
+let secret = await sock.requestPairingCode(pairingNumber)
 secret = secret.match(/.{1,4}/g)?.join("-")
 txtCode = await conn.sendMessage(m.chat, {text : rtx2}, { quoted: m })
 codeBot = await m.reply(secret)
-console.log(secret)
+console.log('[SUBBOT-CODE] pairing secret=', secret)
+console.log('[SUBBOT-CODE] targetPhoneUsed=', pairingNumber)
 }
 if (txtCode && txtCode.key) {
 setTimeout(() => { conn.sendMessage(m.sender, { delete: txtCode.key })}, 30000)

@@ -171,9 +171,9 @@ const msgRetryCounterMap = new Map()
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const { version } = await fetchLatestBaileysVersion()
-let phoneNumber = global.botNumber
+let phoneNumber = String(global.botNumber || process.env.BOT_NUMBER || '').trim()
 const methodCodeQR = process.argv.includes("qr") || process.env.WHATSAPP_QR === 'true'
-const methodCode = !!phoneNumber || process.argv.includes("code")
+const methodCode = !!phoneNumber || process.argv.includes("code") || process.env.WHATSAPP_CODE === 'true'
 const MethodMobile = process.argv.includes("mobile")
 const colors = chalk.bold.white
 const qrOption = chalk.blueBright
@@ -242,7 +242,8 @@ conn.logger.info(`[ ✿ ]  H E C H O\n`)
 if (!opts['test']) {
 if (global.db) setInterval(async () => {
 if (global.db.data) await global.db.write()
-if (opts['autocleartmp'] && (global.support || {}).find) (tmp = [os.tmpdir(), 'tmp', `${jadi}`], tmp.forEach((filename) => cp.spawn('find', [filename, '-amin', '3', '-type', 'f', '-delete'])));
+const subBotTmpDir = global.jadi || 'Sessions/SubBot'
+if (opts['autocleartmp'] && (global.support || {}).find) (tmp = [os.tmpdir(), 'tmp', subBotTmpDir], tmp.forEach((filename) => cp.spawn('find', [filename, '-amin', '3', '-type', 'f', '-delete'])));
 }, 30 * 1000);
 }
 
@@ -347,19 +348,19 @@ if (/No matching sessions found/i.test(String(reason))) return
 global.reportOwnerError(reason, 'unhandledRejection').catch(() => {})
 });
 
-global.rutaJadiBot = join(__dirname, `./${jadi}`)
+global.rutaJadiBot = join(__dirname, `./${global.jadi || 'Sessions/SubBot'}`)
 if (global.JoaKingSubBots) {
 if (!existsSync(global.rutaJadiBot)) {
 mkdirSync(global.rutaJadiBot, { recursive: true }) 
-console.log(chalk.bold.cyan(`ꕥ La carpeta: ${jadi} se creó correctamente.`))
+console.log(chalk.bold.cyan(`ꕥ La carpeta: ${global.jadi || 'Sessions/SubBot'} se creó correctamente.`))
 } else {
-console.log(chalk.bold.cyan(`ꕥ La carpeta: ${jadi} ya está creada.`)) 
+console.log(chalk.bold.cyan(`ꕥ La carpeta: ${global.jadi || 'Sessions/SubBot'} ya está creada.`)) 
 }
-const readRutaJadiBot = readdirSync(rutaJadiBot)
+const readRutaJadiBot = readdirSync(global.rutaJadiBot)
 if (readRutaJadiBot.length > 0) {
 const creds = 'creds.json'
 for (const gjbts of readRutaJadiBot) {
-const botPath = join(rutaJadiBot, gjbts)
+const botPath = join(global.rutaJadiBot, gjbts)
 const readBotPath = readdirSync(botPath)
 if (readBotPath.includes(creds)) {
 JoaKingSubBot({pathJoaKingSubBot: botPath, m: null, conn, args: '', usedPrefix: '/', command: 'serbot'})

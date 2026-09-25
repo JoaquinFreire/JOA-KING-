@@ -1,0 +1,64 @@
+{
+    "uuids": {
+        "phone_id": "1daf323b-7ce3-4bdf-a5c5-beb9784450a8",
+        "uuid": "4a9473cd-54f5-4b1b-bfb4-5a4f6ad554ca",
+        "client_session_id": "f39a35cb-9b16-4a23-8782-c36834716476",
+        "advertising_id": "50ab34b1-f3bd-4831-9cd8-0ba21486124b",
+        "android_device_id": "android-9a910f8ce41c3ded",
+        "request_id": "460a2ba9-42e0-49f9-8389-919512b5f27b",
+        "tray_session_id": "b6402cb6-9e37-4991-8e5e-187b49ae32fb"
+    },
+    "mid": "araVQwABAAE3NkRkb7Ta10eEjOkn",
+    "ig_u_rur": "TTX",
+    "ig_www_claim": "hmac.AR3JuMKup5e2pd084h1tmjiAaMZHjTM8KidhML4aaN2rPpBZ",
+    "authorization_data": {
+        "ds_user_id": "80678472370",
+        "sessionid": "80678472370%3AEMYDiSYaGw4B2d%3A14%3AAYk4S_BtH-Ahr9kvevyxNVwt03EPhyCgLRAQf4OVFw"
+    },
+    "cookies": {
+        "rur": "GTN%2C17841480651104809%2C1791560273%3A01ffb8db36da31995d6d9d810c06c5597d0da732bf2d606b0ab0fa78bbab97c6e98cd8ac"
+    },
+    "last_login": 1790350807.6718788,
+    "device_settings": {
+        "android_version": 34,
+        "android_release": "14",
+        "dpi": "480dpi",
+        "resolution": "1344x2992",
+        "manufacturer": "Google/google",
+        "device": "husky",
+        "model": "Pixel 8 Pro",
+        "cpu": "husky",
+        "app_version": "448.0.0.0.20",
+        "version_code": "1065560286",
+        "bloks_versioning_id": "0bc46a03e177bfc9bc8d611918815acf248fa9c77754d807d6a5951dc9ce9432"
+    },
+    "user_agent": "Instagram 448.0.0.0.20 Android (34/14; 480dpi; 1344x2992; Google/google; Pixel 8 Pro; husky; husky; en_US; 1065560286)",
+    "country": "US",
+    "country_code": 1,
+    "locale": "en_US",
+    "timezone_offset": -14400,
+    "timezone_name": "GMT-04:00",
+    "push_disabled": true,
+    "request_timeout": 1,
+    "public_request_retries_count": 3,
+    "public_request_retries_timeout": 2,
+    "session_retry_total": 3,
+    "session_retry_backoff_factor": 2,
+    "session_retry_statuses": [
+        429,
+        500,
+        502,
+        503,
+        504
+    ],
+    "public_transport": "requests",
+    "private_transport": "curl",
+    "public_transport_impersonate": "chrome136",
+    "tls_verify": true,
+    "usdid": {
+        "usdid": "df251cbe-da6e-4d0b-9e54-2faec8caf168",
+        "kid": "XvxYZc2gNuf8oaObsBJOgraZFfVxHrKVBQWyNY2NGgU",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgl+kXESbnQNi8Zu+m\nAE4hK+6NZBWwGbiYuMpoqf42ElOhRANCAAQIVFe6crk0MuSMw8XK/XCIPFXB6bJ6\nR+VRDWvLNRiuHp9fnvKfCI0cJrwjvVrsyd+thzAvyFfHawZanIieYd+G\n-----END PRIVATE KEY-----",
+        "registered": true
+    }
+}

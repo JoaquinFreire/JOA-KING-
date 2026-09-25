@@ -15,6 +15,27 @@ resolve()
 }, ms))
 
 const antideleteCacheFile = path.join(process.cwd(), "tmp", "antidelete-cache.json")
+const getBotChatKey = (conn, chatId) => {
+const safeChatId = String(chatId || '').trim()
+const botJid = String(conn?.user?.jid || conn?.user?.id || conn?.jid || global.conn?.user?.jid || '').trim()
+if (!safeChatId) return safeChatId
+if (!botJid) return safeChatId
+return `${botJid}::${safeChatId}`
+}
+const getBotChat = (conn, chatId, create = false) => {
+const chats = global.db?.data?.chats || {}
+const safeChatId = String(chatId || '').trim()
+if (!safeChatId) return {}
+const scopedKey = getBotChatKey(conn, safeChatId)
+const scoped = chats[scopedKey]
+if (scoped && typeof scoped === 'object') return scoped
+if (create) {
+const base = chats[safeChatId] && typeof chats[safeChatId] === 'object' ? chats[safeChatId] : {}
+chats[scopedKey] = base
+return chats[scopedKey]
+}
+return chats[safeChatId] || {}
+}
 const loadAntideleteCache = () => {
 try {
 const file = fs.existsSync(antideleteCacheFile) ? fs.readFileSync(antideleteCacheFile, "utf8") : "{}"
@@ -118,8 +139,8 @@ afk: -1,
 afkReason: "",
 warn: 0
 }
-let chat = global.db.data.chats[m.chat]
-if (typeof chat !== "object") global.db.data.chats[m.chat] = {}
+let chat = getBotChat(this, m.chat, true)
+if (typeof chat !== "object") chat = getBotChat(this, m.chat, true)
 if (chat) {
 if (!("isBanned" in chat)) chat.isBanned = false
 if (!("isMute" in chat)) chat.isMute = false;
@@ -168,7 +189,7 @@ const nuevo = m.pushName || await this.getName(m.sender)
 if (typeof nuevo === "string" && nuevo.trim() && nuevo !== actual) {
 user.name = nuevo
 }} catch {}
-const chat = global.db.data.chats[m.chat]
+const chat = getBotChat(this, m.chat, true)
 const settings = global.db.data.settings[this.user.jid]
 if (opts["queque"] && m.text && !(isPrems)) {
 const queque = this.msgqueque, time = 1000 * 5
@@ -180,7 +201,7 @@ await delay(time)
 }, time)
 }
  
-if (m.isBaileys) return
+if (m.isBaileys && (m.fromMe || m.key?.fromMe)) return
 m.exp += Math.ceil(Math.random() * 10)
 let usedPrefix
 const groupMetadata = m.isGroup ? { ...(conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}), ...(((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants) && { participants: ((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants || []).map(p => ({ ...p, id: p.jid, jid: p.jid, lid: p.lid })) }) } : {}

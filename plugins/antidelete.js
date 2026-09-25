@@ -6,6 +6,29 @@ const handledDeletes = new Set()
 const deleteNotice = 'Borrá solo para vos, que yo quiero ver:'
 const antideleteCacheFile = path.join(process.cwd(), 'tmp', 'antidelete-cache.json')
 
+const getBotChatKey = (conn, chatId) => {
+  const safeChatId = String(chatId || '').trim()
+  const botJid = String(conn?.user?.jid || conn?.user?.id || conn?.jid || global.conn?.user?.jid || '').trim()
+  if (!safeChatId) return safeChatId
+  if (!botJid) return safeChatId
+  return `${botJid}::${safeChatId}`
+}
+
+const getBotChat = (conn, chatId, create = false) => {
+  const chats = global.db?.data?.chats || {}
+  const safeChatId = String(chatId || '').trim()
+  if (!safeChatId) return {}
+  const scopedKey = getBotChatKey(conn, safeChatId)
+  const scoped = chats[scopedKey]
+  if (scoped && typeof scoped === 'object') return scoped
+  if (create) {
+    const base = chats[safeChatId] && typeof chats[safeChatId] === 'object' ? chats[safeChatId] : {}
+    chats[scopedKey] = base
+    return chats[scopedKey]
+  }
+  return chats[safeChatId] || {}
+}
+
 const getChatFlag = (chat, keys) => {
   for (const key of keys) {
     const value = chat?.[key]
@@ -386,7 +409,7 @@ const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
   const value = (text || '').trim().toLowerCase().replace(/\s+/g, ' ')
   const action = (command || '').trim().toLowerCase()
   if (action === 'onoff') {
-    const targetChat = chat || global.db.data.chats[m.chat] || (global.db.data.chats[m.chat] = {})
+    const targetChat = getBotChat(conn, m.chat, true)
     const summary = [
       ['antidelete public', getProfileState(targetChat, 'antidelete').publicEnabled],
       ['antidelete private', getProfileState(targetChat, 'antidelete').privateEnabled],
@@ -421,7 +444,7 @@ const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
   )
 
   if (!matchedProfile && action === 'reset' && ['antidelete', 'antideletep'].includes(normalized)) {
-    const targetChat = chat || global.db.data.chats[m.chat] || {}
+    const targetChat = getBotChat(conn, m.chat, true)
     resetProfileState(targetChat, normalized)
     await global.db.write().catch(() => {})
     return conn.reply(m.chat, `Se reinició el estado de ${normalized} para este chat.`, m)
@@ -441,7 +464,7 @@ const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
 
   if (!isAuthorized(m, isOwner, isAdmin)) return conn.reply(m.chat, 'Solo un administrador puede activar esto en grupos.', m)
 
-  const targetChat = chat || global.db.data.chats[m.chat] || {}
+  const targetChat = getBotChat(conn, m.chat, true)
   if (action === 'reset') {
     resetProfileState(targetChat, profileName)
     await global.db.write().catch(() => {})
@@ -467,14 +490,15 @@ const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
 
 handler.all = async function (m, { chat }) {
   const conn = this
+  const botScopedChat = getBotChat(conn, m.chat, true)
   const protocolMessage = m.message?.protocolMessage || (m.mtype === 'protocolMessage' ? m.msg : null)
   const protocolKey = protocolMessage?.key
   const isOwnDelete = Boolean(protocolKey?.fromMe || m.fromMe || m.key?.fromMe)
   const isGroupDelete = !!(protocolKey?.remoteJid && String(protocolKey.remoteJid).endsWith('@g.us'))
   const isPrivateDelete = !!(protocolKey?.remoteJid && !String(protocolKey.remoteJid).endsWith('@g.us') && !String(protocolKey.remoteJid).endsWith('@newsletter'))
 
-  const antideleteState = getProfileState(chat, 'antidelete')
-  const antideletepState = getProfileState(chat, 'antideletep')
+  const antideleteState = getProfileState(botScopedChat, 'antidelete')
+  const antideletepState = getProfileState(botScopedChat, 'antideletep')
 
   const antideleteGroupPublicEnabled = Boolean(antideleteState.publicEnabled && isGroupDelete)
   const antideleteGroupPrivateEnabled = Boolean(antideleteState.privateEnabled && isGroupDelete)

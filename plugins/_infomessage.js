@@ -7,11 +7,10 @@ import fetch from 'node-fetch'
 const groupMetadataCache = new Map()
 const lidCache = new Map()
 const handler = m => m
-handler.before = async function (m, { conn, participants, groupMetadata }) {
+handler.before = async function (m, { conn, participants, groupMetadata, chat }) {
 if (!m.messageStubType || !m.isGroup) return
-const primaryBot = global.db.data.chats[m.chat].primaryBot
+const primaryBot = chat.primaryBot
 if (primaryBot && conn.user.jid !== primaryBot) throw !1
-const chat = global.db.data.chats[m.chat]
 const users = m.messageStubParameters[0]
 const usuario = await resolveLidToRealJid(m?.sender, conn, m?.chat)
 const groupAdmins = participants.filter(p => p.admin)

@@ -22,11 +22,10 @@ const caption = `❀ Adiós de *"_${groupMetadata.subject}_"*\n✰ _Usuario_ » 
 return { pp, caption, mentions: [userId] }
 }
 let handler = m => m
-handler.before = async function (m, { conn, participants, groupMetadata }) {
+handler.before = async function (m, { conn, participants, groupMetadata, chat }) {
 if (!m.messageStubType || !m.isGroup) return !0
-const primaryBot = global.db.data.chats[m.chat].primaryBot
+const primaryBot = chat.primaryBot
 if (primaryBot && conn.user.jid !== primaryBot) throw !1
-const chat = global.db.data.chats[m.chat]
 const userId = m.messageStubParameters[0]
 if (chat.welcome && m.messageStubType == WAMessageStubType.GROUP_PARTICIPANT_ADD) {
 const { pp, caption, mentions } = await generarBienvenida({ conn, userId, groupMetadata, chat })

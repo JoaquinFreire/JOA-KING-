@@ -1,5 +1,5 @@
-export async function before(m, { conn }) {
-const primaryBot = global.db.data.chats[m.chat].primaryBot
+export async function before(m, { conn, chat }) {
+const primaryBot = chat.primaryBot
 if (primaryBot && conn.user.jid !== primaryBot) throw !1
 const user = global.db.data.users[m.sender]
 user.coin = user.coin || 0

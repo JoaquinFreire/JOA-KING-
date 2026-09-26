@@ -1,7 +1,7 @@
-const handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) => {
-const primaryBot = global.db.data.chats[m.chat].primaryBot
+const handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, chat: chatConfig }) => {
+const primaryBot = chatConfig.primaryBot
 if (primaryBot && conn.user.jid !== primaryBot) throw !1
-const chat = global.db.data.chats[m.chat] = global.db.data.chats[m.chat] || {}
+const chat = chatConfig
 const { antiLink, detect, welcome, modoadmin, nsfw, economy, gacha } = chat
 let type = command.toLowerCase()
 let isEnable = chat[type] !== undefined ? chat[type] : false

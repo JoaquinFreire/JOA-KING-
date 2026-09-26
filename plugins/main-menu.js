@@ -192,10 +192,6 @@ let txt = `
 > 𓃦 Descubrir tu personalidad.
  ✿  *#afk* + [motivo]
 > 𓃦 Avisar que estás ausente.
- ✿  *#pokedex* + [Pokemon]
-> 𓃦 Consultar información de un Pokémon.
- ✿  *#infoanime* + [anime]
-> 𓃦 Consultar información de un anime/manga.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
 ╭───✱*.｡:｡✱*.:｡✧*✰PROFILES✰*.:｡✧*.｡:｡*.｡✱ ───
@@ -393,6 +389,14 @@ let txt = `
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯
 
 `.trim()
+txt = txt.replace(/ ✿  \*#(?:pokedex|infoanime)\*[^\n]*\n> 𓃦[^\n]*\n/g, '')
+const animeSection = txt.indexOf('ANIME✰')
+if (animeSection !== -1) {
+const sectionStart = txt.lastIndexOf('\n╭', animeSection)
+const sectionEnd = txt.indexOf('\n╰', animeSection)
+if (sectionStart !== -1 && sectionEnd !== -1) {
+txt = txt.slice(0, sectionStart) + txt.slice(txt.indexOf('\n', sectionEnd + 1))
+}}
 await conn.sendMessage(m.chat, { 
 text: txt.replaceAll('#', usedPrefix),
 contextInfo: {

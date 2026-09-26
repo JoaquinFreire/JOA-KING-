@@ -1,9 +1,8 @@
 import { promises as fs } from 'fs'
 
-const handler = async (m, {conn, participants, groupMetadata}) => {
-const chat = global.db.data.chats[m.chat]
+const handler = async (m, {conn, participants, groupMetadata, chat}) => {
 const pp = await conn.profilePictureUrl(m.chat, 'image').catch(() => 'https://files.catbox.moe/xr2m6u.jpg')
-const { antiLink, detect, welcome, sWelcome, sBye, modoadmin, nsfw, isBanned, economy, gacha, primaryBot } = global.db.data.chats[m.chat]
+const { antiLink, detect, welcome, sWelcome, sBye, modoadmin, nsfw, isBanned, economy, gacha, primaryBot } = chat
 const groupAdmins = participants.filter(p => p.admin)
 const owner = groupMetadata.owner || groupAdmins.find(p => p.admin === 'superadmin')?.id || m.chat.split`-`[0] + '@s.whatsapp.net'
 const creador = (!owner || owner.startsWith('1203') || owner.length < 15) ? 'No encontrado' : `@${owner.split('@')[0]}`

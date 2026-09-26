@@ -368,9 +368,11 @@ JoaKingSubBot({pathJoaKingSubBot: botPath, m: null, conn, args: '', usedPrefix: 
 
 const pluginFolder = join(__dirname, './plugins')
 const pluginFilter = (filename) => /\.js$/.test(filename)
+const temporarilyDisabledPlugin = (filename) => /^(?:anime-|nsfw-)/i.test(filename)
 global.plugins = {}
 async function filesInit() {
 for (const filename of readdirSync(pluginFolder).filter(pluginFilter)) {
+if (temporarilyDisabledPlugin(filename)) continue
 try {
 const file = global.__filename(join(pluginFolder, filename))
 const module = await import(file)
@@ -385,6 +387,10 @@ filesInit()
 
 global.reload = async (_ev, filename) => {
 if (pluginFilter(filename)) {
+if (temporarilyDisabledPlugin(filename)) {
+delete global.plugins[filename]
+return
+}
 const dir = global.__filename(join(pluginFolder, filename), true);
 if (filename in global.plugins) {
 if (existsSync(dir)) conn.logger.info(` updated plugin - '${filename}'`)

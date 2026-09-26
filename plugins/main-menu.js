@@ -86,54 +86,8 @@ let txt = `
 > 𓃦 Descargar un apk de Aptoide.
  ✿  *#ytsearch • #search* + [busqueda]
 > 𓃦 Buscar videos de YouTube.
-╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
-
-╭───✱*.｡:｡✱*.:｡✧*✰GACHA✰*.:｡✧*.｡:｡*.｡✱ ───
-> ✿ Comandos de *Gacha* para reclamar y colecciónar personajes.
- ✿  *#buycharacter • #buychar • #buyc* + [nombre]
-> 𓃦 Comprar un personaje en venta.
- ✿  *#charimage • #waifuimage • #cimage • #wimage* + [nombre]
-> 𓃦 Ver una imagen aleatoria de un personaje.
- ✿  *#charinfo • #winfo • #waifuinfo* + [nombre]
-> 𓃦 Ver información de un personaje.
- ✿  *#claim • #c • #reclamar* + {citar personaje}
-> 𓃦 Reclamar un personaje.
- ✿  *#delclaimmsg*
-> 𓃦 Restablecer el mensaje al reclamar un personaje
- ✿  *#deletewaifu • #delwaifu • #delchar* + [nombre]
-> 𓃦 Eliminar un personaje reclamado.
- ✿  *#favoritetop • #favtop*
-> 𓃦 Ver el top de personajes favoritos.
- ✿  *#gachainfo • #ginfo • #infogacha*
-> 𓃦 Ver tu información de gacha.
- ✿  *#giveallharem* + [@usuario]
-> 𓃦 Regalar todos tus personajes a otro usuario.
- ✿  *#givechar • #givewaifu • #regalar* + [@usuario] [nombre]
-> 𓃦 Regalar un personaje a otro usuario.
- ✿  *#robwaifu • #robarwaifu* + [@usuario]
-> 𓃦 Robar un personaje a otro usuario.
- ✿  *#harem • #waifus • #claims* + <@usuario>
-> 𓃦 Ver tus personajes reclamados.
- ✿  *#haremshop • #tiendawaifus • #wshop* + <Pagina>
-> 𓃦 Ver los personajes en venta.
- ✿  *#removesale • #removerventa* + [precio] [nombre]
-> 𓃦 Eliminar un personaje en venta.
- ✿  *#rollwaifu • #rw • #roll*
-> 𓃦 Waifu o husbando aleatorio
- ✿  *#sell • #vender* + [precio] [nombre]
-> 𓃦 Poner un personaje a la venta.
- ✿  *#serieinfo • #ainfo • #animeinfo* + [nombre]
-> 𓃦 Información de un anime.
- ✿  *#serielist • #slist • #animelist*
-> 𓃦 Listar series del bot
- ✿  *#setclaimmsg • #setclaim* + [mensaje]
-> 𓃦 Modificar el mensaje al reclamar un personaje
- ✿  *#trade • #intercambiar* + [Tu personaje] / [Personaje 2]
-> 𓃦 Intercambiar un personaje con otro usuario
- ✿  *#vote • #votar* + [nombre]
-> 𓃦 Votar por un personaje para subir su valor.
- ✿  *#waifusboard • #waifustop • #topwaifus • #wtop* + [número]
-> 𓃦 Ver el top de personajes con mayor valor.
+ ✿  *#spotify • #splay* + [Link / busqueda]
+> 𓃦 Descargar música de Spotify.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
 ╭───✱*.｡:｡✱*.:｡✧*✰SOCKETS✰*.:｡✧*.｡:｡*.｡✱ ───
@@ -198,6 +152,18 @@ let txt = `
 > 𓃦 Ver el estado de una página web.
  ✿  *#translate • #traducir • #trad*
 > 𓃦 Traducir palabras en otros idiomas.
+ ✿  *#whatmusic • #shazam* + {citar audio}
+> 𓃦 Identificar una canción.
+ ✿  *#tenor • #tenorsearch* + [busqueda]
+> 𓃦 Buscar GIFs.
+ ✿  *#lyrics* + [cancion]
+> 𓃦 Buscar la letra de una canción.
+ ✿  *#averiguar* + [nombre o CUIT | edad | provincia | localidad]
+> 𓃦 Consultar información disponible.
+ ✿  *#igstalk* + [usuario]
+> 𓃦 Consultar un perfil de Instagram.
+ ✿  *#ignofollow* + [usuario]
+> 𓃦 Comparar seguidores y seguidos de Instagram.
  ✿  *#ia • #gemini*
 > 𓃦 Preguntar a Chatgpt.
  ✿  *#iavoz • #aivoz*
@@ -212,6 +178,24 @@ let txt = `
 > 𓃦 Descargar paquetes de NPMJS.
  ✿  *#google*
 > 𓃦 Realizar búsquedas por Google.
+╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
+
+╭───✱*.｡:｡✱*.:｡✧*✰FUN✰*.:｡✧*.｡:｡*.｡✱ ───
+> ✿ Juegos y comandos para divertirse.
+ ✿  *#top*
+> 𓃦 Ver el top de usuarios.
+ ✿  *#sorteo*
+> 𓃦 Elegir usuarios al azar.
+ ✿  *#ship • #shippear • #formarpareja*
+> 𓃦 Probar compatibilidad entre usuarios.
+ ✿  *#personalidad*
+> 𓃦 Descubrir tu personalidad.
+ ✿  *#afk* + [motivo]
+> 𓃦 Avisar que estás ausente.
+ ✿  *#pokedex* + [Pokemon]
+> 𓃦 Consultar información de un Pokémon.
+ ✿  *#infoanime* + [anime]
+> 𓃦 Consultar información de un anime/manga.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
 ╭───✱*.｡:｡✱*.:｡✧*✰PROFILES✰*.:｡✧*.｡:｡*.｡✱ ───
@@ -236,8 +220,6 @@ let txt = `
 > 𓃦 Borrar tu fecha de cumpleaños.
  ✿  *#divorce*
 > 𓃦 Divorciarte de tu pareja.
- ✿  *#setfavourite • #setfav* + [Personaje]
-> 𓃦 Establecer tu claim favorito.
  ✿  *#deldescription • #deldesc*
 > 𓃦 Eliminar tu descripción.
  ✿  *#prem • #vip*
@@ -260,8 +242,6 @@ let txt = `
 > 𓃦 Descender a un usuario de administrador.
  ✿  *#economy* + [enable/disable]
 > 𓃦 Activar/desactivar los comandos de economía
- ✿  *#gacha* + [enable/disable]
-> 𓃦 Activar/desactivar los comandos de Gacha y Games.
  ✿  *#welcome • #bienvenida* + [enable/disable]
 > 𓃦 Activar/desactivar la bienvenida y despedida.
  ✿  *#setbye* + [texto]
@@ -272,8 +252,6 @@ let txt = `
 > 𓃦 Establecer un mensaje de bienvenida personalizado.
  ✿  *#kick* + <@usuario> | {mencion}
 > 𓃦 Expulsar a un usuario del grupo.
- ✿  *#nsfw* + [enable/disable]
-> 𓃦 Activar/desactivar los comandos NSFW
  ✿  *#onlyadmin* + [enable/disable]
 > 𓃦 Permitir que solo los administradores puedan utilizar los comandos.
  ✿  *#open • #abrir*
@@ -410,24 +388,11 @@ let txt = `
 > 𓃦 Tomarse de la mano
  ✿  *#wave • #ola • #hola* + <mencion>
 > 𓃦 Saludar con la mano
- ✿  *#waifu*
-> 𓃦 Buscar una waifu aleatoria.
  ✿  *#ppcouple • #ppcp*
 > 𓃦 Genera imágenes para amistades o parejas.
 ╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯
 
-╭┈ࠢ͜─ׄ֟፝͜─ׄ͜─ׄ͜╴𐔌 *NSFW* 𐦯╶͜─ׄ͜─ׄ֟፝͜─ׄ͜─ׄ͜
- ✿  *#danbooru • #dbooru* + [Tags]
-> 𓃦 Buscar imagenes en Danbooru
- ✿  *#gelbooru • #gbooru* + [Tags]
-> 𓃦 Buscar imagenes en Gelbooru
- ✿  *#rule34 • #r34* + [Tags]
-> 𓃦 Buscar imagenes en Rule34
- ✿  *#xvideos •#xvideosdl* + [Link]
-> 𓃦 Descargar un video Xvideos. 
- ✿  *#xnxx •#xnxxdl* + [Link]
-> 𓃦 Descargar un video Xnxx.
-╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───`.trim()
+`.trim()
 await conn.sendMessage(m.chat, { 
 text: txt.replaceAll('#', usedPrefix),
 contextInfo: {

@@ -1,28 +1,24 @@
+import { mentionText, participantMentionJid } from '../lib/group-mentions.js'
+
 const handler = async (m, {conn, participants, groupMetadata, args}) => {
 const chatConfig = global.db?.data?.chats?.[m.chat] || {}
 const primaryBot = chatConfig.primaryBot
 if (primaryBot && conn.user.jid !== primaryBot) throw !1
 
-const normalizeMentionJid = (value) => {
-  if (!value) return null
-  const raw = String(value).trim()
-  if (!raw) return null
-  const candidate = raw.includes('@') ? raw : `${raw.replace(/\D+/g, '')}@s.whatsapp.net`
-  const decoded = String(conn?.decodeJid ? conn.decodeJid(candidate) : candidate).trim()
-  if (!decoded || !decoded.includes('@')) return null
-  if (decoded.endsWith('@lid')) return `${decoded.split('@')[0]}@s.whatsapp.net`
-  if (decoded.endsWith('@s.whatsapp.net') || decoded.endsWith('@g.us')) return decoded
-  return `${decoded.replace(/\D+/g, '')}@s.whatsapp.net`
-}
-
 const sourceParticipants = (participants && participants.length ? participants : groupMetadata?.participants || [])
 const groupAdmins = [...new Set(sourceParticipants
-  .filter((p) => p?.admin)
-  .map((p) => normalizeMentionJid(p?.jid || p?.id || p?.lid))
+  .filter((p) => p?.admin || p?.isAdmin || p?.isSuperAdmin)
+  .map((p) => participantMentionJid(p, groupMetadata?.addressingMode))
   .filter(Boolean))]
-const owner = normalizeMentionJid(groupMetadata?.owner || groupAdmins.find((jid) => jid.endsWith('@s.whatsapp.net')) || m.chat.split`-`[0] + '@s.whatsapp.net')
+const ownerIds = [groupMetadata?.owner, groupMetadata?.ownerPn].filter(Boolean)
+const ownerParticipant = sourceParticipants.find((participant) =>
+  [participant.id, participant.jid, participant.lid, participant.phoneNumber]
+    .some((id) => ownerIds.includes(id)))
+const owner = participantMentionJid(ownerParticipant, groupMetadata?.addressingMode)
+  || participantMentionJid({ id: groupMetadata?.owner, phoneNumber: groupMetadata?.ownerPn }, groupMetadata?.addressingMode)
+  || groupAdmins[0]
 const mentionList = [...new Set([...groupAdmins, owner].filter(Boolean))]
-const listAdmin = mentionList.map((jid) => `● @${jid.split('@')[0]}`).join('\n')
+const listAdmin = mentionList.map((jid) => `● ${mentionText(jid)}`).join('\n')
 const pesan = args.join` `
 const oi = `» ${pesan}`
 const text = `『✦』Admins del grupo:  \n  \n${listAdmin}\n\n❍ Mensaje ${oi || 'Sin especificar'}`
@@ -36,7 +32,7 @@ await conn.sendMessage(m.chat, {
 
 handler.help = ['admins']
 handler.tags = ['grupo']
-handler.customPrefix = /^(?:@|%|#)?(?:admins|administradores|dmins)/i
+handler.customPrefix = /^(?:@|%|&|#)?(?:admins|administradores|dmins)/i
 handler.command = ['admins', 'administradores', 'dmins']
 handler.group = true
 

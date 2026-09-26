@@ -204,8 +204,19 @@ await delay(time)
 if (m.isBaileys && (m.fromMe || m.key?.fromMe)) return
 m.exp += Math.ceil(Math.random() * 10)
 let usedPrefix
-const groupMetadata = m.isGroup ? { ...(conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}), ...(((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants) && { participants: ((conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {}).participants || []).map(p => ({ ...p, id: p.jid, jid: p.jid, lid: p.lid })) }) } : {}
-const participants = ((m.isGroup ? groupMetadata.participants : []) || []).map(participant => ({ id: participant.jid || participant.id, jid: participant.jid || participant.id, lid: participant.lid || participant.id, admin: participant.admin }))
+const rawGroupMetadata = m.isGroup ? conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {} : {}
+const groupMetadata = m.isGroup ? {
+...rawGroupMetadata,
+participants: (rawGroupMetadata.participants || []).map(participant => ({
+...participant,
+id: participant.id || participant.jid,
+jid: participant.jid || participant.id,
+lid: participant.lid || (participant.id?.endsWith('@lid') ? participant.id : undefined),
+phoneNumber: participant.phoneNumber,
+admin: participant.admin || (participant.isSuperAdmin ? 'superadmin' : participant.isAdmin ? 'admin' : null)
+}))
+} : {}
+const participants = (groupMetadata.participants || []).map(participant => ({ ...participant }))
 const normalizeJidKey = (value) => {
 if (!value) return ''
 const base = String(value).trim().replace(/:.*$/, '').replace(/@.*$/, '')
@@ -299,7 +310,7 @@ const matchedText = match?.[0]?.[0] || ""
 if (matchedText) {
 usedPrefix = matchedText
 const noPrefix = m.text.slice(matchedText.length)
-const strippedCommand = matchedText.replace(/^[@%]+/i, "").trim().toLowerCase()
+const strippedCommand = matchedText.replace(/^[@%&#]+/i, "").trim().toLowerCase()
 const remainder = noPrefix.trim().split(/\s+/).filter(v => v)
 let [command, ...args] = remainder
 args = args || []

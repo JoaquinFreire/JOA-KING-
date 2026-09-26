@@ -390,13 +390,16 @@ let txt = `
 
 `.trim()
 txt = txt.replace(/ ✿  \*#(?:pokedex|infoanime)\*[^\n]*\n> 𓃦[^\n]*\n/g, '')
-const animeSection = txt.indexOf('ANIME✰')
-if (animeSection !== -1) {
-const sectionStart = txt.lastIndexOf('\n╭', animeSection)
-const sectionEnd = txt.indexOf('\n╰', animeSection)
+const removeMenuSection = (title) => {
+const sectionIndex = txt.indexOf(`${title}✰`)
+if (sectionIndex === -1) return
+const sectionStart = txt.lastIndexOf('\n╭', sectionIndex)
+const sectionEnd = txt.indexOf('\n╰', sectionIndex)
 if (sectionStart !== -1 && sectionEnd !== -1) {
 txt = txt.slice(0, sectionStart) + txt.slice(txt.indexOf('\n', sectionEnd + 1))
 }}
+removeMenuSection('ANIME')
+removeMenuSection('ECONOMY')
 await conn.sendMessage(m.chat, { 
 text: txt.replaceAll('#', usedPrefix),
 contextInfo: {

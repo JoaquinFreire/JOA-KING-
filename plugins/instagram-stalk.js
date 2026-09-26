@@ -84,7 +84,10 @@ const handler = async (m, { conn, text }) => {
     }
   } catch (error) {
     console.error('igstalk:', error.message)
-    await conn.reply(m.chat, `No se pudo consultar @${username}.\n${error.message}`, m)
+    const details = /No module named ['"]instagrapi['"]/.test(error.message)
+      ? 'Falta instagrapi en el Python que usa el bot. Desde la carpeta del proyecto ejecutá: python -m pip install -r instagramarchivos/igdata/requirements.txt. Si usás INSTAGRAM_PYTHON, instalalo en ese intérprete.'
+      : error.message
+    await conn.reply(m.chat, `No se pudo consultar @${username}.\n${details}`, m)
   } finally {
     global.igstalkRunning = false
   }

@@ -4,6 +4,7 @@ tmp/*
 database.json
 Sessions/
 instagramarchivos/instagram_storage.json
+instagramarchivos/igdata/session.json
 .env
 .env.*
 !.env.example

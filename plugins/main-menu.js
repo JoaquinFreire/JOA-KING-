@@ -132,6 +132,8 @@ let txt = `
 > 𓃦 Ver la foto de perfil de un usuario.
  ✿  *#say* + [texto]
 > 𓃦 Repetir un mensaje
+ ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML
+> 𓃦 Enviar una mini-app interactiva para WhatsApp Android.
  ✿  *#setmeta* + [autor] | [pack]
 > 𓃦 Establecer el pack y autor por defecto para tus stickers.
  ✿  *#sticker • #s • #wm* + {citar una imagen/video}

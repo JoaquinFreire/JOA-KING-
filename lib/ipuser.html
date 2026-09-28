@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>IP User</title>
+<style>
+:root{color-scheme:dark;--ink:#fff;--muted:#8993ad;--panel:#0a0e1a;--line:#20283d;--cyan:#00eaff;--green:#00ff88;--amber:#ffc400;--red:#ff4d67;--blue:#5eb7ff}
+*{box-sizing:border-box}
+body{margin:0;background:#050710;color:var(--ink);font-family:"Courier New",monospace;font-size:12px;overflow:auto;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.container{width:100%;max-width:430px;margin:auto;padding:10px}
+h1{font-size:18px;margin:0 0 10px;color:var(--cyan)}
+.section{border:1px solid var(--line);background:var(--panel);margin-bottom:8px;padding:9px;border-radius:6px}
+.title{color:var(--cyan);font-weight:bold;margin-bottom:6px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px solid #111727}
+.label{color:var(--muted)}
+.value{text-align:right;word-break:break-all}
+.ok{color:var(--green)}
+.error{color:var(--red)}
+.warn{color:var(--amber)}
+.info{color:var(--blue)}
+button{width:100%;border:1px solid var(--cyan);background:#07131c;color:var(--cyan);padding:10px;border-radius:5px;font:700 12px "Courier New",monospace;margin-bottom:8px;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+#debug{max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#aeb7c9;line-height:1.4}
+#sendStatus{line-height:1.5;word-break:break-word}
+#diagnosticStatus{min-height:30px;margin:0 0 8px;color:var(--blue);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🌐 Diagnóstico de red STUN</h1>
+<button id="refreshButton" onclick="runDiagnostic()">Aceptar y comenzar diagnóstico</button>
+<p id="consentNote" class="warn">Al aceptar, Google STUN recibirá tu IP para detectar la conexión. Si compartes el informe, el bot consultará esa IP en ipwho.is para estimar la zona.</p>
+<p id="diagnosticStatus" role="status" aria-live="polite">Esperando tu aceptación.</p>
+
+<div class="section" id="connectionSection">
+  <div class="title">🌍 CONEXIÓN PÚBLICA</div>
+  <div class="row"><span class="label">Estado</span><span class="value" id="connectionStatus">Detectando...</span></div>
+  <div class="row"><span class="label">IP pública</span><span class="value" id="publicIp">Detectando...</span></div>
+  <div class="row"><span class="label">IPv4 pública</span><span class="value" id="ipv4">Detectando...</span></div>
+  <div class="row"><span class="label">IPv6 pública</span><span class="value" id="ipv6">Detectando...</span></div>
+  <div class="row"><span class="label">IP privada</span><span class="value" id="privateIp">Detectando...</span></div>
+  <div class="row"><span class="label">Subred</span><span class="value" id="subnet">Detectando...</span></div>
+  <div class="row"><span class="label">Tipo conexión</span><span class="value" id="connectionType">Detectando...</span></div>
+  <div class="row"><span class="label">Velocidad estimada</span><span class="value" id="speed">Detectando...</span></div>
+  <div class="row"><span class="label">ISP / Organización</span><span class="value" id="isp">No disponible</span></div>
+  <div class="row"><span class="label">ASN</span><span class="value" id="asn">No disponible</span></div>
+  <div class="row"><span class="label">Hostname</span><span class="value" id="hostname">No disponible</span></div>
+</div>
+
+<div class="section" id="geoSection">
+  <div class="title">📍 GEOIP</div>
+  <div class="row"><span class="label">País</span><span class="value">No disponible</span></div>
+  <div class="row"><span class="label">Ciudad</span><span class="value">No disponible</span></div>
+  <div class="row"><span class="label">Latitud</span><span class="value">No disponible</span></div>
+  <div class="row"><span class="label">Longitud</span><span class="value">No disponible</span></div>
+  <div class="warn">GeoIP no disponible</div>
+</div>
+
+<div class="section" id="deviceSection">
+  <div class="title">📱 DISPOSITIVO</div>
+  <div class="row"><span class="label">Marca</span><span class="value" id="brand">Detectando...</span></div>
+  <div class="row"><span class="label">Modelo</span><span class="value" id="model">Detectando...</span></div>
+  <div class="row"><span class="label">Sistema</span><span class="value" id="os">Detectando...</span></div>
+  <div class="row"><span class="label">Android</span><span class="value" id="androidVersion">Detectando...</span></div>
+  <div class="row"><span class="label">Platform</span><span class="value" id="platform">Detectando...</span></div>
+  <div class="row"><span class="label">Arquitectura</span><span class="value" id="architecture">Detectando...</span></div>
+  <div class="row"><span class="label">CPU cores</span><span class="value" id="cores">Detectando...</span></div>
+  <div class="row"><span class="label">RAM</span><span class="value" id="ram">Detectando...</span></div>
+  <div class="row"><span class="label">Pantalla</span><span class="value" id="screen">Detectando...</span></div>
+  <div class="row"><span class="label">DPR</span><span class="value" id="dpr">Detectando...</span></div>
+  <div class="row"><span class="label">Touch</span><span class="value" id="touch">Detectando...</span></div>
+  <div class="row"><span class="label">Orientación</span><span class="value" id="orientation">Detectando...</span></div>
+</div>
+
+<div class="section" id="browserSection">
+  <div class="title">🌐 BROWSER / WEBVIEW</div>
+  <div class="row"><span class="label">Browser</span><span class="value" id="browser">Detectando...</span></div>
+  <div class="row"><span class="label">Chrome</span><span class="value" id="chrome">Detectando...</span></div>
+  <div class="row"><span class="label">WebView</span><span class="value" id="webview">Detectando...</span></div>
+  <div class="row"><span class="label">Idioma</span><span class="value" id="language">Detectando...</span></div>
+  <div class="row"><span class="label">Origin</span><span class="value" id="origin">Detectando...</span></div>
+  <div class="row"><span class="label">Protocol</span><span class="value" id="protocol">Detectando...</span></div>
+  <div class="row"><span class="label">Secure</span><span class="value" id="secure">Detectando...</span></div>
+  <div class="row"><span class="label">Base URI</span><span class="value" id="baseUri">Detectando...</span></div>
+</div>
+
+<div class="section" id="capabilitySection">
+  <div class="title">⚙️ CAPACIDADES</div>
+  <div class="row"><span class="label">Cookies</span><span class="value" id="cookies">-</span></div>
+  <div class="row"><span class="label" id="localLabel"></span><span class="value" id="localCapability">-</span></div>
+  <div class="row"><span class="label" id="sessionLabel"></span><span class="value" id="sessionCapability">-</span></div>
+  <div class="row"><span class="label">Fetch</span><span class="value" id="fetchSupport">-</span></div>
+  <div class="row"><span class="label">WebSocket</span><span class="value" id="websocket">-</span></div>
+  <div class="row"><span class="label">WebRTC</span><span class="value" id="webrtc">-</span></div>
+  <div class="row"><span class="label">MediaDevices</span><span class="value" id="mediaDevices">-</span></div>
+  <div class="row"><span class="label">Geolocation</span><span class="value" id="geolocation">-</span></div>
+  <div class="row"><span class="label">Notifications</span><span class="value" id="notifications">-</span></div>
+  <div class="row"><span class="label">Bluetooth</span><span class="value" id="bluetooth">-</span></div>
+  <div class="row"><span class="label">USB</span><span class="value" id="usb">-</span></div>
+  <div class="row"><span class="label">Clipboard</span><span class="value" id="clipboard">-</span></div>
+  <div class="row"><span class="label">Android Bridge</span><span class="value" id="androidBridge">-</span></div>
+</div>
+
+<div class="section" id="iceSection">
+  <div class="title">📡 WEBRTC / ICE</div>
+  <div class="row"><span class="label">Host candidates</span><span class="value" id="hostCandidates">0</span></div>
+  <div class="row"><span class="label">Srflx candidates</span><span class="value" id="srflxCandidates">0</span></div>
+  <div id="iceList"></div>
+</div>
+
+<div class="section">
+  <div class="title">📤 COMPARTIR POR WHATSAPP</div>
+  <button id="shareButton" disabled>Compartir diagnóstico</button>
+  <div id="sendStatus">Esperando diagnóstico...</div>
+</div>
+
+<div class="section">
+  <div class="title">🕒 FECHA / HORA</div>
+  <div id="dateTime">-</div>
+</div>
+
+<div class="section">
+  <div class="title">🐛 DEBUG</div>
+  <div id="debug"></div>
+</div>
+
+</div>
+<script>
+const botNumber='__BOT_NUMBER__';
+const debugEl=document.getElementById('debug');
+const shareButton=document.getElementById('shareButton');
+const refreshButton=document.getElementById('refreshButton');
+let reportData={};
+let hostCount=0;
+let srflxCount=0;
+let peerConnection=null;
+let stopWebRTC=null;
+let diagnosticAccepted=false;
+
+function log(message){
+  debugEl.textContent+='['+new Date().toLocaleTimeString()+'] '+message+'\n';
+  debugEl.scrollTop=debugEl.scrollHeight;
+}
+
+function setValue(id,value,cls){
+  const element=document.getElementById(id);
+  if(!element)return;
+  const text=value===undefined||value===null||value===''?'No disponible':String(value);
+  element.textContent=text;
+  if(cls)element.className='value '+cls;
+  const label=element.closest('.row')?.querySelector('.label')?.textContent;
+  if(label)reportData[label]=text;
+}
+
+function setStorageLabels(){
+  document.getElementById('localLabel').textContent='local'+'Storage';
+  document.getElementById('sessionLabel').textContent='session'+'Storage';
+}
+
+function detectDevice(){
+  const ua=navigator.userAgent||'';
+  const platform=navigator.platform||'';
+  let model='Desconocido',brand='Desconocida',android='Desconocido';
+  const androidMatch=ua.match(/Android\s+([0-9.]+)/i);
+  if(androidMatch)android=androidMatch[1];
+  if(/moto g54 5g/i.test(ua)){brand='Motorola';model='Motorola Moto G54 5G'}
+  else{
+    const deviceMatch=ua.match(/;\s*([^;)]+)\s+Build\//i);
+    if(deviceMatch){model=deviceMatch[1].trim();if(/moto|motorola/i.test(model))brand='Motorola'}
+  }
+  setValue('brand',brand);setValue('model',model);
+  setValue('os',android!=='Desconocido'?'Android':'Desconocido');
+  setValue('androidVersion',android);setValue('platform',platform||'Desconocido');
+  let architecture='Desconocida';
+  if(/aarch64|arm64/i.test(platform+' '+ua))architecture='ARM64 / aarch64';
+  else if(/arm/i.test(platform+' '+ua))architecture='ARM';
+  else if(/x86_64|amd64/i.test(platform+' '+ua))architecture='x86_64';
+  setValue('architecture',architecture);
+  setValue('cores',navigator.hardwareConcurrency||'No disponible');
+  setValue('ram',navigator.deviceMemory?navigator.deviceMemory+' GB aprox.':'No disponible');
+  setValue('screen',screen.width+' × '+screen.height);
+  setValue('dpr',window.devicePixelRatio||'1');
+  setValue('touch',navigator.maxTouchPoints>0?'Sí':'No');
+  setValue('orientation',screen.orientation?screen.orientation.type:'No disponible');
+}
+
+function detectBrowser(){
+  const ua=navigator.userAgent||'';
+  let browser='Desconocido';
+  if(/Chrome\/[\d.]+/i.test(ua))browser='Chrome';
+  if(/Firefox/i.test(ua))browser='Firefox';
+  if(/Edg/i.test(ua))browser='Edge';
+  setValue('browser',browser);
+  setValue('chrome',ua.match(/Chrome\/([\d.]+)/i)?.[1]||'No disponible');
+  setValue('webview',/\bwv\b|; wv\)/i.test(ua)?'Sí':'No');
+  setValue('language',navigator.language||'No disponible');
+  setValue('origin',location.origin||'null');
+  setValue('protocol',location.protocol||'No disponible');
+  setValue('secure',window.isSecureContext?'Sí':'No');
+  setValue('baseUri',document.baseURI||'No disponible');
+}
+
+function detectCapabilities(){
+  setValue('cookies',navigator.cookieEnabled?'Sí':'No');
+  const storageTests=[['local'+'Storage','localCapability'],['session'+'Storage','sessionCapability']];
+  for(const [storageName,id] of storageTests){
+    let available='No';
+    try{window[storageName].setItem('__test','1');window[storageName].removeItem('__test');available='Sí'}catch(error){}
+    setValue(id,available);
+  }
+  setValue('fetchSupport',typeof fetch==='function'?'Sí':'No');
+  setValue('websocket',typeof WebSocket==='function'?'Sí':'No');
+  setValue('webrtc',typeof RTCPeerConnection==='function'?'Sí':'No');
+  setValue('mediaDevices',navigator.mediaDevices?'Sí':'No');
+  setValue('geolocation',navigator.geolocation?'Sí':'No');
+  setValue('notifications',typeof Notification!=='undefined'?'Sí':'No');
+  setValue('bluetooth',navigator.bluetooth?'Sí':'No');
+  setValue('usb',navigator.usb?'Sí':'No');
+  setValue('clipboard',navigator.clipboard?'Sí':'No');
+  setValue('androidBridge',typeof window.android!=='undefined'?'EXISTE':'No');
+  log('Android Bridge: '+(typeof window.android!=='undefined'?'EXISTE':'NO EXISTE'));
+}
+
+function detectConnection(){
+  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  setValue('connectionType',connection?(connection.effectiveType||connection.type||'Desconocido'):'No disponible');
+  setValue('speed',connection?.downlink?connection.downlink+' Mbps':'No disponible');
+}
+
+function detectPrivateSubnet(ip){
+  const parts=ip.split('.');
+  if(parts.length===4)setValue('subnet',parts[0]+'.'+parts[1]+'.'+parts[2]+'.0/24');
+}
+
+function addCandidate(ip,type,port){
+  const row=document.createElement('div');row.className='row';
+  const label=document.createElement('span');label.className='label';label.textContent=type;
+  const value=document.createElement('span');value.className='value';value.textContent=ip+(port?':'+port:'');
+  row.append(label,value);document.getElementById('iceList').appendChild(row);
+  reportData[type+' candidate']=value.textContent;
+}
+
+function startWebRTC(){
+  return new Promise(resolve=>{
+    if(typeof RTCPeerConnection!=='function'){
+      setValue('webrtc','No','error');log('WebRTC NO DISPONIBLE.');
+      document.getElementById('diagnosticStatus').textContent='Este WebView no ofrece WebRTC; no se pudo detectar la IP.';
+      resolve();return;
+    }
+    log('Iniciando WebRTC');
+    try{
+      peerConnection=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+      peerConnection.createDataChannel('diagnostic');
+    }catch(error){
+      setValue('webrtc','Error: '+error.message,'error');
+      document.getElementById('diagnosticStatus').textContent='No se pudo iniciar WebRTC: '+error.message;
+      resolve();return;
+    }
+    let completed=false;
+    const finish=()=>{
+      if(completed)return;
+      completed=true;stopWebRTC=null;clearTimeout(timer);peerConnection?.close();peerConnection=null;resolve();
+    };
+    stopWebRTC=finish;
+    const timer=setTimeout(()=>{log('ICE timeout; compartiendo candidatos recibidos.');finish()},10000);
+    peerConnection.onicecandidate=event=>{
+      if(!event.candidate){log('ICE gathering finalizado.');finish();return}
+      const candidate=event.candidate.candidate||'';
+      const parts=candidate.split(/\s+/);
+      const ip=parts[4]||'';
+      const port=parts[5]||'';
+      if(!ip)return;
+      log('ICE candidate: '+candidate);
+      if(candidate.includes('typ host')){
+        hostCount++;setValue('hostCandidates',hostCount);
+        if(/^192\.168\./.test(ip)||/^10\./.test(ip)||/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)){
+          setValue('privateIp',ip,'ok');detectPrivateSubnet(ip);addCandidate(ip,'HOST',port);
+        }
+      }
+      if(candidate.includes('typ srflx')){
+        srflxCount++;setValue('srflxCandidates',srflxCount);addCandidate(ip,'SRFLX',port);
+        if(ip.includes(':')){setValue('ipv6',ip,'ok');setValue('publicIp',ip,'ok')}
+        else{setValue('publicIp',ip,'ok');setValue('ipv4',ip,'ok')}
+        setValue('connectionStatus','Conectado','ok');
+        document.getElementById('diagnosticStatus').textContent='IP pública detectada; esperando que termine el diagnóstico…';
+      }
+    };
+    peerConnection.createOffer()
+      .then(offer=>peerConnection?.setLocalDescription(offer))
+      .then(()=>log('Descripción local WebRTC establecida'))
+      .catch(error=>{log('ERROR WebRTC: '+error.message);setValue('connectionStatus','Error WebRTC','error');finish()});
+  });
+}
+
+function updateDateTime(){
+  const value=new Date().toString();
+  document.getElementById('dateTime').textContent=value;
+  reportData['Fecha / hora']=value;
+}
+
+async function runDiagnostic(){
+  diagnosticAccepted=true;
+  refreshButton.textContent='🔄 Actualizar diagnóstico';
+  document.getElementById('consentNote').textContent='Diagnóstico aceptado. El informe solo se comparte si pulsas Compartir y confirmas el envío en WhatsApp.';
+  document.getElementById('diagnosticStatus').textContent='Buscando IP pública mediante WebRTC/STUN…';
+  refreshButton.disabled=true;
+  shareButton.disabled=true;
+  document.getElementById('sendStatus').textContent='Esperando el diagnóstico...';
+  document.getElementById('debug').textContent='';
+  document.getElementById('iceList').replaceChildren();
+  reportData={};hostCount=0;srflxCount=0;
+  ['connectionStatus','publicIp','ipv4','ipv6','privateIp','subnet','connectionType','speed','isp','asn','hostname'].forEach(id=>setValue(id,'Detectando...'));
+  ['brand','model','os','androidVersion','platform','architecture','cores','ram','screen','dpr','touch','orientation','browser','chrome','webview','language','origin','protocol','secure','baseUri','cookies','localCapability','sessionCapability','fetchSupport','websocket','webrtc','mediaDevices','geolocation','notifications','bluetooth','usb','clipboard','androidBridge'].forEach(id=>setValue(id,'Detectando...'));
+  try{
+    log('================================');log('INICIANDO DIAGNÓSTICO');log('================================');
+    log('Origin: '+location.origin);log('Protocol: '+location.protocol);log('Secure: '+window.isSecureContext);
+    detectDevice();detectBrowser();detectCapabilities();detectConnection();updateDateTime();
+    log('INICIANDO WEBRTC');
+    await startWebRTC();
+    if(document.getElementById('publicIp').textContent==='Detectando...'){
+      setValue('publicIp','No detectada','error');
+      if(document.getElementById('connectionStatus').textContent==='Detectando...')setValue('connectionStatus','Sin IP pública','error');
+    }
+    shareButton.disabled=false;
+    document.getElementById('sendStatus').textContent='Listo para compartir.';
+    const publicIp=document.getElementById('publicIp').textContent;
+    document.getElementById('diagnosticStatus').textContent=publicIp==='No detectada'
+      ?'El WebView no recibió un candidato STUN público. Puedes compartir el diagnóstico restante.'
+      :`IP detectada: ${publicIp}. Pulsa Compartir y confirma Enviar para consultar GeoIP.`;
+  }catch(error){
+    log('ERROR: '+error.message);
+    setValue('connectionStatus','Error de diagnóstico','error');
+    document.getElementById('sendStatus').textContent='No se pudo terminar el diagnóstico.';
+    document.getElementById('diagnosticStatus').textContent='Falló el diagnóstico: '+error.message;
+  }finally{
+    refreshButton.disabled=false;
+  }
+}
+
+shareButton.addEventListener('click',()=>{
+  if(!diagnosticAccepted){document.getElementById('sendStatus').textContent='Acepta y completa el diagnóstico antes de compartir.';return}
+  const lines=Object.entries(reportData).map(([label,value])=>label+': '+value);
+  const message='IPUSER-DIAG\nDiagnóstico de red\n'+lines.join('\n');
+  window.location.assign('https://wa.me/'+botNumber+'?text='+encodeURIComponent(message));
+});
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&stopWebRTC)stopWebRTC();
+});
+
+setStorageLabels();
+</script>
+</body>
+</html>

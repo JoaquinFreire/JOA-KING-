@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { downloadContentFromMessage } from '@whiskeysockets/baileys'
+import { warmUpTranscription } from './tools-autotranscribe.js'
 
 const handledDeletes = new Set()
 const deleteNotice = 'Borrá solo para vos, que yo quiero ver:'
@@ -428,6 +429,27 @@ const handler = async (m, { conn, text, command, isOwner, isAdmin, chat }) => {
   if (!['on', 'off', 'reset'].includes(action)) return
 
   const normalized = value || ''
+  if (['on', 'off'].includes(action) && normalized === 'autotranscribe') {
+    if (!isAuthorized(m, isOwner, isAdmin)) {
+      return conn.reply(m.chat, 'Solo un administrador puede cambiar la transcripción automática en grupos.', m)
+    }
+    const targetChat = getBotChat(conn, m.chat, true)
+    const wasEnabled = Boolean(targetChat.autoTranscribe)
+    targetChat.autoTranscribe = action === 'on'
+    await global.db.write().catch(() => {})
+    if (targetChat.autoTranscribe && !wasEnabled) {
+      await conn.reply(m.chat, 'Transcripción automática activada. Preparando el modelo local; esto solo tarda en el primer uso.', m)
+      void warmUpTranscription().then(() => {
+        conn.reply(m.chat, 'Modelo de transcripción listo para las notas de voz.', m).catch(() => {})
+      }).catch(error => {
+        console.error('[AUTO-TRANSCRIBE] No se pudo preparar el modelo:', error)
+        conn.reply(m.chat, `Se activó la opción, pero no se pudo preparar Whisper: ${error.message}`, m).catch(() => {})
+      })
+      return
+    }
+    return conn.reply(m.chat, `Transcripción automática de notas de voz ${targetChat.autoTranscribe ? 'activada' : 'desactivada'} para este chat.`, m)
+  }
+
   const profileTargets = {
     antidelete: {
       public: ['antidelete', 'antidelete public', 'antidelete grupal', 'antidelete group'],
@@ -547,7 +569,7 @@ handler.all = async function (m, { chat }) {
   }
 }
 
-handler.help = ['on antidelete public', 'off antidelete public', 'on antidelete private', 'off antidelete private', 'on antideletep public', 'off antideletep public', 'on antideletep private', 'off antideletep private', 'reset antidelete', 'reset antideletep', 'onoff']
+handler.help = ['on antidelete public', 'off antidelete public', 'on antidelete private', 'off antidelete private', 'on antideletep public', 'off antideletep public', 'on antideletep private', 'off antideletep private', 'on autotranscribe', 'off autotranscribe', 'reset antidelete', 'reset antideletep', 'onoff']
 handler.tags = ['owner']
 handler.command = [/^on$/, /^off$/, /^reset$/, /^onoff$/]
 

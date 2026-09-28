@@ -307,11 +307,13 @@ return
 }}
 
 const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins")
+const isIpUserDiagnostic = typeof m.text === 'string' && /^IPUSER-DIAG\s*$/m.test(m.text.split(/\r?\n/, 1)[0].replace(/^\u200e+/, '').trim())
+const isAutotranscribeToggle = typeof m.text === 'string' && /^[@%&#]*\s*(?:on|off)\s+autotranscribe(?:\s|$)/i.test(m.text.trim())
 for (const name in global.plugins) {
 const plugin = global.plugins[name]
 if (!plugin) continue
 if (plugin.disabled) continue
-if (isSelfMessage && name !== 'owner-banned.js') continue
+if (isSelfMessage && name !== 'owner-banned.js' && !(name === 'tools-ipuser.js' && isIpUserDiagnostic) && !(name === 'antidelete.js' && isAutotranscribeToggle)) continue
 const __filename = join(___dirname, name)
 if (typeof plugin.all === "function") {
 try {

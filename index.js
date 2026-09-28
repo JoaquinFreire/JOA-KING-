@@ -370,6 +370,7 @@ const pluginFolder = join(__dirname, './plugins')
 const pluginFilter = (filename) => /\.js$/.test(filename)
 const temporarilyDisabledPlugin = (filename) => /^(?:anime-|nsfw-)/i.test(filename)
 global.plugins = {}
+global.pluginLoadErrors = {}
 async function filesInit() {
 for (const filename of readdirSync(pluginFolder).filter(pluginFilter)) {
 if (temporarilyDisabledPlugin(filename)) continue
@@ -377,8 +378,10 @@ try {
 const file = global.__filename(join(pluginFolder, filename))
 const module = await import(file)
 global.plugins[filename] = module.default || module
+delete global.pluginLoadErrors[filename]
 } catch (e) {
 conn.logger.error(`[PLUGIN LOAD] No se pudo cargar '${filename}': ${e?.stack || e}`)
+global.pluginLoadErrors[filename] = String(e?.stack || e).slice(0, 1200)
 global.reportOwnerError(e, `plugin-load:${filename}`).catch(() => {})
 delete global.plugins[filename]
 }}}
@@ -408,8 +411,10 @@ else {
 try {
 const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`));
 global.plugins[filename] = module.default || module;
+delete global.pluginLoadErrors[filename]
 } catch (e) {
 conn.logger.error(`[PLUGIN RELOAD] No se pudo cargar '${filename}': ${format(e)}`)
+global.pluginLoadErrors[filename] = format(e).slice(0, 1200)
 global.reportOwnerError(e, `plugin-reload:${filename}`).catch(() => {})
 } finally {
 global.plugins = Object.fromEntries(Object.entries(global.plugins).sort(([a], [b]) => a.localeCompare(b)))

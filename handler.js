@@ -285,7 +285,7 @@ return
 const isBotSender = [this.user.jid, conn.user?.jid, conn.user?.lid].filter(Boolean).some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
 const isOwner = isROwner || isBotSender || m.fromMe
 const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid))) || user.premium == true
-const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids].some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
+const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids, ...ownerLids].some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
 const senderDigits = normalizeJidKey(m.sender)
 const userGroup = (m.isGroup ? participants.find((u) => {
 const memberIds = [u.id, u.jid, u.lid].filter(Boolean)
@@ -295,6 +295,16 @@ const botGroup = (m.isGroup ? participants.find((u) => [u.id, u.jid, u.lid].some
 const isRAdmin = userGroup?.admin == "superadmin" || false
 const isAdmin = isRAdmin || userGroup?.admin == "admin" || false
 const isBotAdmin = botGroup?.admin || false
+
+const htmlCommand = typeof m.text === 'string' ? m.text.match(/^%\s*(ejecutar|arkanoid)\b/i)?.[1]?.toLowerCase() : ''
+if (htmlCommand) {
+const pluginName = htmlCommand === 'ejecutar' ? 'tools-ejecutar.js' : 'games-arkanoid.js'
+if (!global.plugins[pluginName]) {
+const loadError = global.pluginLoadErrors?.[pluginName]
+const details = (isOwner || isROwner) && loadError ? `\n${loadError}` : ''
+await conn.reply(m.chat, `El comando ${htmlCommand} no está disponible porque su plugin no se cargó.${details}`, m)
+return
+}}
 
 const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins")
 for (const name in global.plugins) {
@@ -475,7 +485,13 @@ try {
 await plugin.call(this, m, extra)
 } catch (err) {
 m.error = err
+if (['tools-ejecutar.js', 'games-arkanoid.js'].includes(name)) {
+const detail = [err?.name, err?.code, err?.message || String(err)].filter(Boolean).join(' | ').slice(0, 1200)
+console.error(`[${name}] Error completo:`, err?.stack || err)
+await conn.reply(m.chat, `Error en ${name === 'tools-ejecutar.js' ? 'ejecutar' : 'Arkanoid'}:\n${detail}`, m).catch(() => {})
+} else {
 console.error(err)
+}
 } finally {
 if (typeof plugin.after === "function") {
 try {

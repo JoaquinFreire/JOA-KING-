@@ -184,6 +184,8 @@ let txt = `
 
 ╭───✱*.｡:｡✱*.:｡✧*✰FUN✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Juegos y comandos para divertirse.
+ ✿  *%arkanoid*
+> 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
  ✿  *#top*
 > 𓃦 Ver el top de usuarios.
  ✿  *#sorteo*

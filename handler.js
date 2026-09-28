@@ -326,7 +326,9 @@ return [regex.exec(m.text), regex]
 [[new RegExp(strRegex(pluginPrefix)).exec(m.text), new RegExp(strRegex(pluginPrefix))]] :
 [[[], new RegExp]]).find(prefix => prefix[0] && prefix[0][0])
 if (typeof plugin.before === "function") {
-if (await plugin.before.call(this, m, {
+let skipPlugin = false
+try {
+skipPlugin = await plugin.before.call(this, m, {
 match,
 conn: this,
 participants,
@@ -345,8 +347,11 @@ __filename,
 user,
 chat,
 settings
-}))
-continue
+})
+} catch (err) {
+console.error(`Error en before del plugin ${name}:`, err)
+}
+if (skipPlugin) continue
 }
 if (typeof plugin !== "function") {
 continue

@@ -252,6 +252,10 @@ let txt = `
 > 𓃦 Establecer un mensaje de bienvenida personalizado.
  ✿  *#kick* + <@usuario> | {mencion}
 > 𓃦 Expulsar a un usuario del grupo.
+ ✿  *%ban* + <@usuario> | {responder mensaje}
+> 𓃦 Impedir que un usuario use los comandos del bot.
+ ✿  *%unban* + <@usuario> | {responder mensaje}
+> 𓃦 Restaurar el acceso a los comandos del bot.
  ✿  *#onlyadmin* + [enable/disable]
 > 𓃦 Permitir que solo los administradores puedan utilizar los comandos.
  ✿  *#open • #abrir*

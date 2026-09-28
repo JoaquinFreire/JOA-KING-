@@ -106,6 +106,7 @@ if (rawMessageKeys.some(key => /viewOnce|imageMessage|audioMessage|videoMessage|
 console.log(`[RAW-MESSAGE] keys=${rawMessageKeys.join(',')} fromMe=${Boolean(m.key?.fromMe)} remote=${m.key?.remoteJid || ''}`)
 }
 if (global.db.data == null) await global.loadDatabase()
+let ignoredBannedMessage = false
 try {
 m = smsg(this, m) || m
 if (!m) return
@@ -246,7 +247,7 @@ await delay(time)
 }, time)
 }
  
-if (m.isBaileys && (m.fromMe || m.key?.fromMe)) return
+const isSelfMessage = Boolean(m.isBaileys && (m.fromMe || m.key?.fromMe))
 m.exp += Math.ceil(Math.random() * 10)
 let usedPrefix
 const rawGroupMetadata = m.isGroup ? conn.chats[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(_ => null) || {} : {}
@@ -273,9 +274,14 @@ const b = normalizeJidKey(right)
 return !!a && !!b && a === b
 }
 const ownerJids = global.owner.filter(Boolean).map(number => number.replace(/[^0-9]/g, "") + "@s.whatsapp.net")
+const ownerLids = (global.ownerLids || []).filter(Boolean).map(lid => `${String(lid).replace(/[^0-9]/g, "")}@lid`)
 const senderParticipant = participants.find((participant) => [participant.id, participant.jid, participant.lid].some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn))) || null
 const senderJids = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid, senderParticipant?.id, senderParticipant?.lid].filter(Boolean)
-const isROwner = ownerJids.some((ownerJid) => senderJids.some((jid) => matchesNormalizedJid(jid, ownerJid)))
+const isROwner = [...ownerJids, ...ownerLids].some((ownerJid) => senderJids.some((jid) => matchesNormalizedJid(jid, ownerJid)))
+if (!isROwner && senderJids.some(jid => global.db.data.users[jid]?.banned)) {
+ignoredBannedMessage = true
+return
+}
 const isBotSender = [this.user.jid, conn.user?.jid, conn.user?.lid].filter(Boolean).some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
 const isOwner = isROwner || isBotSender || m.fromMe
 const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid))) || user.premium == true
@@ -295,6 +301,7 @@ for (const name in global.plugins) {
 const plugin = global.plugins[name]
 if (!plugin) continue
 if (plugin.disabled) continue
+if (isSelfMessage && name !== 'owner-banned.js') continue
 const __filename = join(___dirname, name)
 if (typeof plugin.all === "function") {
 try {
@@ -392,6 +399,7 @@ chat.primaryBot = null
 }
 
 if (!isAccept) continue
+if (isSelfMessage && !['ban', 'unban'].includes(command)) continue
 m.plugin = name
 global.db.data.users[m.sender].commands++
 if (chat) {
@@ -403,12 +411,7 @@ const aviso = `ꕥ El bot *${botname}* está desactivado en este grupo\n\n>  ✿
 await m.reply(aviso)
 return
 }}
-if (m.text && user.banned && !isROwner) {
-const mensaje = `ꕥ Estas baneado/a, no puedes usar comandos en este bot!\n\n> ● *Razón ›* ${user.bannedReason}\n\n> ● Si este Bot es cuenta oficial y tienes evidencia que respalde que este mensaje es un error, puedes exponer tu caso con un moderador.`.trim()
-if (!primaryBotId || primaryBotId === botId) {
-m.reply(mensaje)
-return
-}}}
+}
 const adminMode = chat.modoadmin || false
 const wa = plugin.botAdmin || plugin.admin || plugin.group || plugin || noPrefix || pluginPrefix || m.text.slice(0, 1) === pluginPrefix || plugin.command
 if (adminMode && !isOwner && m.isGroup && !isAdmin && wa) return
@@ -489,11 +492,11 @@ this.msgqueque.splice(quequeIndex, 1)
 }
 let user = global.db.data.users[m.sender]
 if (m) {
-if (m.sender && user) {
+if (!ignoredBannedMessage && m.sender && user) {
 user.exp += m.exp
 }}
 try {
-if (!opts["noprint"]) await (await import("./lib/print.js")).default(m, this)
+if (!ignoredBannedMessage && !opts["noprint"]) await (await import("./lib/print.js")).default(m, this)
 } catch (err) {
 console.warn(err)
 console.log(m.message)

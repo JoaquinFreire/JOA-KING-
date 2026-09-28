@@ -62,6 +62,21 @@ this.msgqueque = this.msgqueque || []
 this.uptime = this.uptime || Date.now()
 if (!chatUpdate) return
 const messages = Array.isArray(chatUpdate.messages) ? chatUpdate.messages : []
+if (process.env.DEBUG_WA_MESSAGES === 'true') {
+const summaries = messages.map(message => {
+const remoteJid = message?.key?.remoteJid || ''
+const destination = remoteJid === 'status@broadcast' ? 'status' : remoteJid.endsWith('@g.us') ? 'group' : 'direct/other'
+const keys = Object.keys(message?.message || {}).join(',') || 'no-message'
+return `fromMe=${Boolean(message?.key?.fromMe)} destination=${destination} keys=${keys}`
+})
+console.log(`[WA-DEBUG] upsert=${chatUpdate.type || 'unknown'} count=${messages.length} ${summaries.join(' | ')}`)
+}
+if (messages.length > 1) {
+for (const message of messages) {
+await handler.call(this, { ...chatUpdate, messages: [message] })
+}
+return
+}
 const validMessages = messages.filter(message => message?.message)
 if (!validMessages.length) return
 const antideleteMap = global.__antideleteMessages || (global.__antideleteMessages = loadAntideleteCache())
@@ -94,6 +109,36 @@ if (global.db.data == null) await global.loadDatabase()
 try {
 m = smsg(this, m) || m
 if (!m) return
+if (!m.mtype) {
+const serializedKeys = Object.keys(m.message || {})
+const prototypeName = Object.getPrototypeOf(m)?.constructor?.name || 'none'
+console.error(`[WA-SERIALIZER-EMPTY] rawKeys=${rawMessageKeys.join(',') || 'none'} currentKeys=${serializedKeys.join(',') || 'none'} prototype=${prototypeName} hasMtype=${'mtype' in m} textType=${typeof m.text}`)
+}
+const decodeMessageJid = (jid) => {
+if (typeof jid !== 'string' || !jid) return ''
+try {
+const decoded = this.decodeJid?.(jid)
+if (typeof decoded === 'string' && decoded) return decoded
+} catch {}
+return jid.trim()
+}
+const messageKey = m.key || {}
+const rawRemoteJid = messageKey.remoteJid || ''
+const fallbackChat = rawRemoteJid || m.message?.senderKeyDistributionMessage?.groupId || ''
+const fallbackSender = messageKey.fromMe
+? this.user?.id || this.user?.jid || messageKey.participant
+: m.participant || messageKey.participant || messageKey.participantAlt || messageKey.senderPn ||
+(rawRemoteJid && !rawRemoteJid.endsWith('@g.us') && rawRemoteJid !== 'status@broadcast'
+? messageKey.remoteJidAlt || rawRemoteJid
+: '')
+if ((!m.sender || !m.chat) && (fallbackSender || fallbackChat)) {
+if (!m.sender && fallbackSender) Object.defineProperty(m, 'sender', { value: decodeMessageJid(fallbackSender), configurable: true, enumerable: true, writable: true })
+if (!m.chat && fallbackChat) Object.defineProperty(m, 'chat', { value: decodeMessageJid(fallbackChat), configurable: true, enumerable: true, writable: true })
+}
+if (typeof m.sender !== 'string' || !m.sender || typeof m.chat !== 'string' || !m.chat) {
+console.warn(`[WA-SKIP] sender=${m.sender ? 'present' : 'missing'} chat=${m.chat ? 'present' : 'missing'} messageType=${m.constructor?.name || typeof m} hasSenderGetter=${'sender' in m} hasChatGetter=${'chat' in m} fromMe=${Boolean(messageKey.fromMe)} participant=${Boolean(messageKey.participant)} participantAlt=${Boolean(messageKey.participantAlt)} senderPn=${Boolean(messageKey.senderPn)} remoteJidAlt=${Boolean(messageKey.remoteJidAlt)} remote=${rawRemoteJid || 'missing'}`)
+return
+}
 m.exp = 0
 try {
 let user = global.db.data.users[m.sender]

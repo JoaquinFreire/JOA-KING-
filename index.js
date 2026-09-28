@@ -378,7 +378,8 @@ const file = global.__filename(join(pluginFolder, filename))
 const module = await import(file)
 global.plugins[filename] = module.default || module
 } catch (e) {
-conn.logger.error(e)
+conn.logger.error(`[PLUGIN LOAD] No se pudo cargar '${filename}': ${e?.stack || e}`)
+global.reportOwnerError(e, `plugin-load:${filename}`).catch(() => {})
 delete global.plugins[filename]
 }}}
 filesInit()
@@ -408,7 +409,8 @@ try {
 const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`));
 global.plugins[filename] = module.default || module;
 } catch (e) {
-conn.logger.error(`error require plugin '${filename}\n${format(e)}'`)
+conn.logger.error(`[PLUGIN RELOAD] No se pudo cargar '${filename}': ${format(e)}`)
+global.reportOwnerError(e, `plugin-reload:${filename}`).catch(() => {})
 } finally {
 global.plugins = Object.fromEntries(Object.entries(global.plugins).sort(([a], [b]) => a.localeCompare(b)))
 }}}}

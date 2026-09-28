@@ -47,13 +47,13 @@ const handler = async (m, { conn, isROwner, usedPrefix, command }) => {
     return conn.reply(m.chat, `Respondé a un mensaje con HTML o escribilo después de ${usedPrefix}${command}.`, m)
   }
 
-  const report = checkHtmlApp(html, { maxBytes: MAX_HTML_BYTES })
-  if (!report.ok) {
-    const problems = report.problems.slice(0, 4).map(problem => `• ${problem}`).join('\n')
-    return conn.reply(m.chat, `No se puede enviar esta mini-app:\n${problems}`, m)
-  }
-
   try {
+    const report = checkHtmlApp(html, { maxBytes: MAX_HTML_BYTES })
+    if (!report.ok) {
+      const problems = report.problems.slice(0, 4).map(problem => `• ${problem}`).join('\n')
+      return conn.reply(m.chat, `No se puede enviar esta mini-app:\n${problems}`, m)
+    }
+
     await sendHtmlApp(conn, m.chat, html, {
       title: 'JOA-KING | Mini app',
       label: 'Mini app interactiva (WhatsApp Android)',
@@ -62,8 +62,9 @@ const handler = async (m, { conn, isROwner, usedPrefix, command }) => {
       guard: true
     })
   } catch (error) {
-    const detail = String(error?.message || error).slice(0, 700)
-    await conn.reply(m.chat, `No se pudo enviar la mini-app.\n${detail}`, m)
+    const detail = [error?.name, error?.code, error?.message || String(error)].filter(Boolean).join(' | ').slice(0, 1200)
+    console.error('[EJECUTAR HTML] Error completo:', error?.stack || error)
+    await conn.reply(m.chat, `Error en el comando ejecutar:\n${detail}`, m)
   }
 }
 

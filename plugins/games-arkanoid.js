@@ -8,13 +8,13 @@ const scrollControls = { target: '#__wrap' }
 
 const handler = async (m, { conn }) => {
   console.log(`[ARKANOID] Comando recibido chat=${m.chat}`)
-  const report = checkHtmlApp(html, { maxBytes: 256 * 1024 })
-  if (!report.ok) {
-    const problems = report.problems.slice(0, 4).map(problem => `• ${problem}`).join('\n')
-    return conn.reply(m.chat, `No se pudo iniciar Arkanoid:\n${problems}`, m)
-  }
-
   try {
+    const report = checkHtmlApp(html, { maxBytes: 256 * 1024 })
+    if (!report.ok) {
+      const problems = report.problems.slice(0, 4).map(problem => `• ${problem}`).join('\n')
+      return conn.reply(m.chat, `No se pudo iniciar Arkanoid:\n${problems}`, m)
+    }
+
     await sendHtmlApp(conn, m.chat, html, {
       title: 'Arkanoid / Brick Breaker',
       label: 'Arkanoid: rompe los bloques y supera los 10 niveles.',
@@ -24,9 +24,9 @@ const handler = async (m, { conn }) => {
     })
     console.log(`[ARKANOID] Mini-app enviada chat=${m.chat}`)
   } catch (error) {
-    const detail = String(error?.message || error).slice(0, 700)
+    const detail = [error?.name, error?.code, error?.message || String(error)].filter(Boolean).join(' | ').slice(0, 1200)
     console.error('[ARKANOID] Error de envío:', error)
-    await conn.reply(m.chat, `No se pudo enviar Arkanoid.\n${detail}`, m)
+    await conn.reply(m.chat, `Error en el comando Arkanoid:\n${detail}`, m)
   }
 }
 

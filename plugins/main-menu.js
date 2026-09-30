@@ -244,7 +244,7 @@ let txt = `
 > 𓃦 Activar/desactivar las alertas de promote/demote
  ✿  *#antilink • #antienlace* + [enable/disable]
 > 𓃦 Activar/desactivar el antienlace
- ✿  *#bot* + [enable/disable]
+ ✿  *%off bot • %on bot*
 > 𓃦 Activar/desactivar al bot
  ✿  *#close • #cerrar*
 > 𓃦 Cerrar el grupo para que solo los administradores puedan enviar mensajes.

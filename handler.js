@@ -309,10 +309,15 @@ return
 const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins")
 const isIpUserDiagnostic = typeof m.text === 'string' && /^IPUSER-DIAG\s*$/m.test(m.text.split(/\r?\n/, 1)[0].replace(/^\u200e+/, '').trim())
 const isAutotranscribeToggle = typeof m.text === 'string' && /^[@%&#]*\s*(?:on|off)\s+autotranscribe(?:\s|$)/i.test(m.text.trim())
+const commandPrefix = typeof m.text === 'string' ? global.prefix.exec(m.text)?.[0] : null
+const isBotResumeCommand = commandPrefix && /^(?:on\s+bot|bot\s+(?:on|enable))$/i.test(m.text.slice(commandPrefix.length).trim())
+const canResumeBot = isROwner || (m.isGroup && isAdmin)
+if (chat.isBanned && !(isBotResumeCommand && canResumeBot)) return
 for (const name in global.plugins) {
 const plugin = global.plugins[name]
 if (!plugin) continue
 if (plugin.disabled) continue
+if (chat.isBanned && name !== 'group-banchat.js') continue
 if (isSelfMessage && name !== 'owner-banned.js' && !(name === 'tools-ipuser.js' && isIpUserDiagnostic) && !(name === 'antidelete.js' && isAutotranscribeToggle)) continue
 const __filename = join(___dirname, name)
 if (typeof plugin.all === "function") {
@@ -414,16 +419,6 @@ if (!isAccept) continue
 if (isSelfMessage && !['ban', 'unban'].includes(command)) continue
 m.plugin = name
 global.db.data.users[m.sender].commands++
-if (chat) {
-const botId = this.user.jid
-const primaryBotId = chat.primaryBot
-if (name !== "group-banchat.js" && chat?.isBanned && !isROwner) {
-if (!primaryBotId || primaryBotId === botId) {
-const aviso = `ꕥ El bot *${botname}* está desactivado en este grupo\n\n>  ✿  Un *administrador* puede activarlo con el comando:\n> » *${usedPrefix}bot on*`.trim()
-await m.reply(aviso)
-return
-}}
-}
 const adminMode = chat.modoadmin || false
 const wa = plugin.botAdmin || plugin.admin || plugin.group || plugin || noPrefix || pluginPrefix || m.text.slice(0, 1) === pluginPrefix || plugin.command
 if (adminMode && !isOwner && m.isGroup && !isAdmin && wa) return

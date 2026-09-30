@@ -15,6 +15,19 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
   const settings = getPrimarySettings(conn)
   if (!settings) return
 
+  if (command === 'list') {
+    const listType = String(text || '').trim().toLowerCase()
+    if (listType !== 'piropo') {
+      return conn.reply(m.chat, `Formato: *${usedPrefix}list piropo*`, m)
+    }
+
+    const piropos = Array.isArray(settings.piropos) ? settings.piropos : []
+    if (!piropos.length) return conn.reply(m.chat, 'Todavía no hay piropos en la lista.', m)
+
+    const list = piropos.map((piropo, index) => `${index + 1}. ${piropo.text} — ${piropo.author}`).join('\n')
+    return conn.reply(m.chat, `💌 *Lista de piropos (${piropos.length})*\n\n${list}`, m)
+  }
+
   if (command === 'addpiropo') {
     const separator = String(text || '').indexOf('+')
     if (separator < 0) {
@@ -58,8 +71,8 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
   return conn.sendMessage(m.chat, { text: message, mentions }, { quoted: m })
 }
 
-handler.help = ['addpiropo creador + piropo', 'piropo @usuario']
+handler.help = ['addpiropo creador + piropo', 'piropo @usuario', 'list piropo']
 handler.tags = ['fun']
-handler.command = ['addpiropo', 'piropo']
+handler.command = ['addpiropo', 'piropo', 'list']
 
 export default handler

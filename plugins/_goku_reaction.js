@@ -1,4 +1,5 @@
 const handler = (m) => m
+handler.disabled = true
 
 function extractText(value, seen = new WeakSet()) {
   if (!value) return ''

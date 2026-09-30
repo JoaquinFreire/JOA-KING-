@@ -55,6 +55,14 @@ fs.writeFileSync(antideleteCacheFile, JSON.stringify(safeData, null, 2), "utf8")
 console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.message || error)
 }
 }
+const isUnsupportedAntideleteContent = (content) => {
+if (!content || typeof content !== "object") return false
+for (const [type, value] of Object.entries(content)) {
+if (/^viewOnceMessage/.test(type) || type === "audioMessage" || value?.viewOnce) return true
+if (["ephemeralMessage", "documentWithCaptionMessage"].includes(type) && isUnsupportedAntideleteContent(value?.message)) return true
+}
+return false
+}
 global.__antideleteMessages = global.__antideleteMessages || loadAntideleteCache()
 
 export async function handler(chatUpdate) {
@@ -82,6 +90,7 @@ if (!validMessages.length) return
 const antideleteMap = global.__antideleteMessages || (global.__antideleteMessages = loadAntideleteCache())
 for (const message of validMessages) {
 if (!message?.key?.id || message?.mtype === "protocolMessage") continue
+if (isUnsupportedAntideleteContent(message.message)) continue
 const snapshot = {
 ...message,
 key: { ...(message.key || {}) },

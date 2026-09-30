@@ -124,6 +124,15 @@ const getOriginalMessage = (message) => {
   return { type, content: source[type] }
 }
 
+const isUnsupportedAntideleteContent = (content) => {
+  if (!content || typeof content !== 'object') return false
+  for (const [type, value] of Object.entries(content)) {
+    if (/^viewOnceMessage/.test(type) || type === 'audioMessage' || value?.viewOnce) return true
+    if (['ephemeralMessage', 'documentWithCaptionMessage'].includes(type) && isUnsupportedAntideleteContent(value?.message)) return true
+  }
+  return false
+}
+
 const getText = (content) => typeof content === 'string'
   ? content
   : content?.conversation || content?.text || content?.caption || content?.body || content?.extendedTextMessage?.text || content?.imageMessage?.caption || content?.videoMessage?.caption || ''
@@ -250,77 +259,41 @@ const downloadMedia = async (content, type) => {
 const findCachedMessage = (conn, protocolKey) => {
   const antideleteMap = global.__antideleteMessages || loadAntideleteHistory()
   global.__antideleteMessages = antideleteMap
-  const candidateMessages = []
-
-  if (antideleteMap && protocolKey?.id) {
-    candidateMessages.push(antideleteMap.get(protocolKey.id))
-    candidateMessages.push(antideleteMap.get(`${protocolKey.remoteJid || ''}:${protocolKey.id}`))
-    for (const value of antideleteMap.values()) candidateMessages.push(value)
-  }
-
-  if (conn?.chats && typeof conn.chats === 'object') {
-    for (const chatEntry of Object.values(conn.chats)) {
-      if (!chatEntry || typeof chatEntry !== 'object') continue
-      const messages = chatEntry.messages || {}
-      for (const value of Object.values(messages)) candidateMessages.push(value)
-    }
-  }
-
-  if (conn?.store?.chats && typeof conn.store.chats === 'object') {
-    for (const chatEntry of Object.values(conn.store.chats)) {
-      if (!chatEntry || typeof chatEntry !== 'object') continue
-      const messages = chatEntry.messages || {}
-      for (const value of Object.values(messages)) candidateMessages.push(value)
-    }
-  }
-
-  const remoteJid = normalizeJid(protocolKey?.remoteJid)
-  const participant = normalizeJid(protocolKey?.participant)
-  const chatTarget = normalizeJid((conn?.chats && Object.keys(conn.chats).find((jid) => normalizeJid(jid) === remoteJid)) || protocolKey?.remoteJid)
-  let bestMatch = null
-  let bestScore = -1
-
-  for (const value of [...candidateMessages].reverse()) {
-    if (!value || typeof value !== 'object') continue
+  if (!protocolKey?.id) return null
+  const remoteJid = normalizeJid(protocolKey.remoteJid)
+  const matchesDelete = (value) => {
+    if (!value || typeof value !== 'object') return false
     const valueKey = value.key || {}
-    const candidateId = valueKey.id || value.id
+    const valueId = valueKey.id || value.id
     const valueRemote = normalizeJid(valueKey.remoteJid || value.chat || value.remoteJid)
-    const valueParticipant = normalizeJid(valueKey.participant || value.sender || value.participant)
-    const sameId = Boolean(protocolKey?.id && candidateId === protocolKey.id)
-    const sameRemote = Boolean(remoteJid && (valueRemote === remoteJid || valueRemote === chatTarget || chatTarget === remoteJid))
-    const sameParticipant = Boolean(participant && (valueParticipant === participant || valueParticipant === remoteJid || participant === remoteJid))
-
-    let score = 0
-    if (sameId) score = 100
-    else if (sameRemote && sameParticipant) score = 90
-    else if (sameRemote) score = 70
-    else if (sameParticipant) score = 60
-
-    if (score > bestScore) {
-      bestScore = score
-      bestMatch = value
-    }
+    return valueId === protocolKey.id && (!remoteJid || valueRemote === remoteJid)
+  }
+  const keys = [`${protocolKey.remoteJid || ''}:${protocolKey.id}`, protocolKey.id]
+  for (const key of keys) {
+    const candidate = antideleteMap?.get(key)
+    if (matchesDelete(candidate)) return candidate
   }
 
-  if (bestMatch) return bestMatch
-
-  if (remoteJid) {
-    for (const value of [...candidateMessages].reverse()) {
-      if (!value || typeof value !== 'object') continue
-      const valueKey = value.key || {}
-      const valueRemote = normalizeJid(valueKey.remoteJid || value.chat || value.remoteJid)
-      if (valueRemote === remoteJid) return value
+  const stores = [conn?.chats, conn?.store?.chats]
+  for (const store of stores) {
+    if (!store || typeof store !== 'object') continue
+    for (const chatEntry of Object.values(store)) {
+      const messages = chatEntry?.messages
+      if (!messages || typeof messages !== 'object') continue
+      for (const candidate of Object.values(messages)) {
+        if (matchesDelete(candidate)) return candidate
+      }
     }
   }
-
   return null
 }
 
 const resendDeleted = async (conn, protocolKey, options = {}) => {
-  const original = typeof conn.loadMessage === 'function' ? await conn.loadMessage(protocolKey.id) : null
   const cached = findCachedMessage(conn, protocolKey)
-  const sourceMessage = cached || original
-  const payload = sourceMessage?.message ? sourceMessage : sourceMessage
+  const original = typeof conn.loadMessage === 'function' ? await conn.loadMessage(protocolKey.id) : null
+  const sourceMessage = cached || (original?.key?.id === protocolKey.id && (!original.key.remoteJid || normalizeJid(original.key.remoteJid) === normalizeJid(protocolKey.remoteJid)) ? original : null)
+  const payload = sourceMessage
+  if (isUnsupportedAntideleteContent(payload?.message || payload)) return false
   const message = getOriginalMessage(payload)
   if (!message) return false
 

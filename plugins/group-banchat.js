@@ -9,7 +9,12 @@ if (chat.isBanned) return
 return conn.reply(m.chat, 'Solo el owner puede usar este comando en privado; en grupos también pueden hacerlo los administradores.', m)
 }
 
-if (!action || (directAction && target !== 'bot')) {
+if (directAction && target !== 'bot') {
+if (target) return
+return conn.reply(m.chat, `Usa *${usedPrefix}off bot* o *${usedPrefix}on bot*.`, m)
+}
+
+if (!action) {
 const estado = chat.isBanned ? '✗ Desactivado' : '✓ Activado'
 const info = `「✦」Usa *${usedPrefix}off bot* o *${usedPrefix}on bot* para cambiar el estado de ${botname}.\n\n✧ Estado actual » *${estado}*`
 return conn.reply(m.chat, info, m)

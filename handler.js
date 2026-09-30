@@ -237,7 +237,7 @@ user.name = nuevo
 }} catch {}
 const chat = getBotChat(this, m.chat, true)
 const settings = global.db.data.settings[this.user.jid]
-if (opts["queque"] && m.text && !(isPrems)) {
+if (opts["queque"] && m.text) {
 const queque = this.msgqueque, time = 1000 * 5
 const previousID = queque[queque.length - 1]
 queque.push(m.id || m.key.id)
@@ -432,10 +432,6 @@ continue
 }
 if (plugin.owner && !isOwner) {
 fail("owner", m, this)
-continue
-}
-if (plugin.premium && !isPrems) {
-fail("premium", m, this)
 continue
 }
 if (plugin.group && !m.isGroup) {

@@ -60,13 +60,6 @@ const menuSections = {
         ],
         description: 'Comandos de *Trabajos* para ganar dinero.'
     },
-    'premium': {
-        title: 'PREMIUM',
-        commands: [
-            ' 🎄  *#premium • #vip* + [numero] [h/d/s/m]\n> ☃️ Comprar *premium*.',
-        ],
-        description: 'Comandos *VIP*.'
-    },
     'download': {
         title: 'DOWNLOAD',
         commands: [
@@ -143,7 +136,6 @@ const menuSections = {
             ' 🎄  *#divorce*\n> ☃️ Divorciarte de tu pareja.',
             ' 🎄  *#setfavourite • #setfav* + [Personaje]\n> ☃️ Establecer tu claim favorito.',
             ' 🎄  *#deldescription • #deldesc*\n> ☃️ Eliminar tu descripción.',
-            ' 🎄  *#prem • #vip*\n> ☃️ Comprar membresía premium.'
         ],
         description: 'Comandos de *Perfil* para ver y configurar tu perfil.'
     },

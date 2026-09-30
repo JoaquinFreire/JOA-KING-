@@ -59,6 +59,5 @@ handler.command = ['r34', 'rule34', 'rule', 'danbooru', 'dbooru', 'gelbooru', 'g
 handler.help = ['r34', 'danbooru', 'gelbooru']
 handler.tags = ['nsfw']
 handler.group = true
-handler.premium = true
 
 export default handler

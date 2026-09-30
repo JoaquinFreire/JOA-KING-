@@ -20,62 +20,12 @@ let txt = `
 │✿ *Tipo* » ${(conn.user.jid == global.conn.user.jid ? 'Principal' : 'Socket')}
 │ꕥ *Plugins* » ${totalCommands}
 
-╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('ECONOMY')}✰*.:｡✧*.｡:｡*.｡✱ ───
-> ✿ Comandos de *Economía* para ganar dinero.
- ✿  *#w • #work • #trabajar*
-> 𓃦 Ganar coins trabajando.
- ✿  *#slut • #protituirse*
-> 𓃦 Ganar coins prostituyéndote.
- ✿  *#coinflip • #flip • #cf* + [cantidad] <cara/cruz>
-> 𓃦 Apostar coins en un cara o cruz.
- ✿  *#crime • #crimen*
-> 𓃦 Ganar coins rapido.
- ✿  *#roulette • #rt* + [red/black] [cantidad]
-> 𓃦 Apostar coins en una ruleta.
- ✿  *#casino • #apostar* • *#slot* + [cantidad]
-> 𓃦 Apuestar coins en el casino.
- ✿  *#balance • #bal • #bank* + <usuario>
-> 𓃦 Ver cuantos coins tienes en el banco.
- ✿  *#deposit • #dep • #depositar • #d* + [cantidad] | all
-> 𓃦 Depositar tus coins en el banco.
- ✿  *#withdraw • #with • #retirar* + [cantidad] | all
-> 𓃦 Retirar tus coins del banco.
- ✿  *#economyinfo • #einfo*
-> 𓃦 Ver tu información de economía en el grupo.
- ✿  *#givecoins • #pay • #coinsgive* + [usuario] [cantidad]
-> 𓃦 Dar coins a un usuario.
- ✿  *#miming • #minar • #mine*
-> 𓃦 Realizar trabajos de minería y ganar coins.
- ✿  *#daily • #diario*
-> 𓃦 Reclamar tu recompensa diaria.
- ✿  *#cofre* • *#coffer*
-> 𓃦 Reclamar tu cofre diario.
- ✿  *#weekly • #semanal*
-> 𓃦 Reclamar tu recompensa semanal.
- ✿  *#monthly • #mensual*
-> 𓃦 Reclamar tu recompensa mensual.
- ✿  *#steal • #robar • #rob* + [@mencion]
-> 𓃦 Intentar robar coins a un usuario.
- ✿  *#economyboard • #eboard • #baltop* + <pagina>
-> 𓃦 Ver tu información de economía en el grupo.
- ✿  *#aventura • #adventure*
-> 𓃦 Aventuras para ganar coins y exp.
- ✿  *#curar • #heal*
-> 𓃦 Curar salud para salir de aventuras.
- ✿  *#cazar • #hunt*
-> 𓃦 cazar animales para ganar coins y exp.
- ✿  *#fish • #pescar*
-> 𓃦 Ganar coins y exp pescando.
- ✿  *#mazmorra • #dungeon*
-> 𓃦 Explorar mazmorras para ganar coins y exp.
-╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
-
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('DESCARGAS')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de *Descargas* para descargar archivos de varias fuentes.
  ✿  *#tiktok • #tt* + [Link] / [busqueda]
 > 𓃦 Descargar un video de TikTok.
- ✿  *#wagroups • #wpgroups* + [busqueda]
-> 𓃦 Buscar grupos de WhatsApp.
+ ✿  *#wagroups • #wpgroups* + [tema]
+> 𓃦 Buscar enlaces de grupos públicos de WhatsApp.
  ✿  *#mediafire • #mf* + [Link]
 > 𓃦 Descargar un archivo de MediaFire.
  ✿  *#mega • #mg* + [Link]
@@ -158,6 +108,8 @@ let txt = `
 > 𓃦 Mejorar calidad de una imagen.
  ✿  *#letra • #style* 
 > 𓃦 Cambia la fuente de las letras.
+ ✿  *%textgirar • %textblack*
+> 𓃦 Girar el texto o convertirlo en letras cuadradas.
  ✿  *#read • #readviewonce*
 > 𓃦 Ver imágenes viewonce.
  ✿  *#ss • #ssweb*
@@ -232,8 +184,6 @@ let txt = `
 > 𓃦 Divorciarte de tu pareja.
  ✿  *#deldescription • #deldesc*
 > 𓃦 Eliminar tu descripción.
- ✿  *#prem • #vip*
-> 𓃦 Comprar membresía premium.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('GROUPS')}✰*.:｡✧*.｡:｡*.｡✱ ───
@@ -250,8 +200,6 @@ let txt = `
 > 𓃦 Cerrar el grupo para que solo los administradores puedan enviar mensajes.
  ✿  *#demote* + <@usuario> | {mencion}
 > 𓃦 Descender a un usuario de administrador.
- ✿  *#economy* + [enable/disable]
-> 𓃦 Activar/desactivar los comandos de economía
  ✿  *#welcome • #bienvenida* + [enable/disable]
 > 𓃦 Activar/desactivar la bienvenida y despedida.
  ✿  *#setbye* + [texto]
@@ -417,7 +365,6 @@ if (sectionStart !== -1 && sectionEnd !== -1) {
 txt = txt.slice(0, sectionStart) + txt.slice(txt.indexOf('\n', sectionEnd + 1))
 }}
 removeMenuSection('ANIME')
-removeMenuSection('ECONOMY')
 await conn.sendMessage(m.chat, { 
 text: txt.replaceAll('#', usedPrefix),
 contextInfo: {

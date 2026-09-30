@@ -156,6 +156,10 @@ let txt = `
 > 𓃦 Probar compatibilidad entre usuarios.
  ✿  *#personalidad*
 > 𓃦 Descubrir tu personalidad.
+ ✿  *%addpiropo creador + piropo*
+> 𓃦 Agregar un piropo a la lista.
+ ✿  *%piropo @usuario*
+> 𓃦 Dedicar un piropo aleatorio.
  ✿  *#afk* + [motivo]
 > 𓃦 Avisar que estás ausente.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

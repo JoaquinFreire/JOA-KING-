@@ -1,3 +1,13 @@
+const toRegionalText = (text) => text
+.split(' ')
+.map((word) => Array.from(word).map((character) => {
+const normalized = character.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+return /^[A-Z]$/.test(normalized)
+? String.fromCodePoint(0x1F1E6 + normalized.charCodeAt(0) - 65)
+: character
+}).join(' '))
+.join('   ')
+
 let handler = async (m, { conn, args, usedPrefix }) => {
 let mentionedJid = await m.mentionedJid
 let userId = mentionedJid && mentionedJid[0] ? mentionedJid[0] : m.sender
@@ -10,7 +20,7 @@ let txt = `
 │✿ *Tipo* » ${(conn.user.jid == global.conn.user.jid ? 'Principal' : 'Socket')}
 │ꕥ *Plugins* » ${totalCommands}
 
-╭───✱*.｡:｡✱*.:｡✧*✰ECONOMY✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('ECONOMY')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de *Economía* para ganar dinero.
  ✿  *#w • #work • #trabajar*
 > 𓃦 Ganar coins trabajando.
@@ -60,7 +70,7 @@ let txt = `
 > 𓃦 Explorar mazmorras para ganar coins y exp.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰DESCARGAS✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('DESCARGAS')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de *Descargas* para descargar archivos de varias fuentes.
  ✿  *#tiktok • #tt* + [Link] / [busqueda]
 > 𓃦 Descargar un video de TikTok.
@@ -90,7 +100,7 @@ let txt = `
 > 𓃦 Descargar música de Spotify.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰SOCKETS✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('SOCKETS')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos para registrar tu propio Bot.
  ✿  *#qr • #code*
 > 𓃦 Crear un Sub-Bot con un codigo QR/Code
@@ -114,7 +124,7 @@ let txt = `
 > 𓃦 Cambiar el nombre de usuario
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰UTILITIES✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('UTILITIES')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de *Útilidades*.
  ✿  *#help • #menu*
 > 𓃦 Ver el menú de comandos.
@@ -182,7 +192,7 @@ let txt = `
 > 𓃦 Realizar búsquedas por Google.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰FUN✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('FUN')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Juegos y comandos para divertirse.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
@@ -198,7 +208,7 @@ let txt = `
 > 𓃦 Avisar que estás ausente.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰PROFILES✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('PROFILES')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de *Perfil* para ver y configurar tu perfil.
  ✿  *#leaderboard • #lboard • #top* + <Paginá>
 > 𓃦 Top de usuarios con más experiencia.
@@ -226,7 +236,7 @@ let txt = `
 > 𓃦 Comprar membresía premium.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
 
-╭───✱*.｡:｡✱*.:｡✧*✰GROUPS✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('GROUPS')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos para *Administradores* de grupos.
  ✿  *#tag • #hidetag • #invocar • #tagall* + [mensaje]
 > 𓃦 Envía un mensaje mencionando a todos los usuarios del grupo.
@@ -294,7 +304,7 @@ let txt = `
 > 𓃦 Ver enlace de invitación del grupo.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───ׅ
 
-╭───✱*.｡:｡✱*.:｡✧*✰ANIME✰*.:｡✧*.｡:｡*.｡✱ ───
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('ANIME')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de reacciones de anime.
  ✿  *#angry • #enojado* + <mencion>
 > 𓃦 Estar enojado

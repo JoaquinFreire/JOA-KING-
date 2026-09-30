@@ -206,6 +206,8 @@ let txt = `
 > 𓃦 Activar/desactivar el antienlace
  ✿  *%off bot • %on bot*
 > 𓃦 Activar/desactivar al bot
+ ✿  *%off @bot • %on @bot*
+> 𓃦 Activar/desactivar solo al bot mencionado.
  ✿  *#close • #cerrar*
 > 𓃦 Cerrar el grupo para que solo los administradores puedan enviar mensajes.
  ✿  *#demote* + <@usuario> | {mencion}

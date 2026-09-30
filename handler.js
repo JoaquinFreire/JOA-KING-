@@ -319,7 +319,7 @@ const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./pl
 const isIpUserDiagnostic = typeof m.text === 'string' && /^IPUSER-DIAG\s*$/m.test(m.text.split(/\r?\n/, 1)[0].replace(/^\u200e+/, '').trim())
 const isAutotranscribeToggle = typeof m.text === 'string' && /^[@%&#]*\s*(?:on|off)\s+autotranscribe(?:\s|$)/i.test(m.text.trim())
 const commandPrefix = typeof m.text === 'string' ? global.prefix.exec(m.text)?.[0] : null
-const isBotResumeCommand = commandPrefix && /^(?:on\s+bot|bot\s+(?:on|enable))$/i.test(m.text.slice(commandPrefix.length).trim())
+const isBotResumeCommand = commandPrefix && /^(?:on(?:\s+.*)?|bot\s+(?:on|enable)(?:\s+.*)?)$/i.test(m.text.slice(commandPrefix.length).trim())
 const canResumeBot = isROwner || (m.isGroup && isAdmin)
 if (chat.isBanned && !(isBotResumeCommand && canResumeBot)) return
 for (const name in global.plugins) {

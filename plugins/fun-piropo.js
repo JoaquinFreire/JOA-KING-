@@ -1,17 +1,11 @@
-const scriptLetters = Array.from('𝒶𝒷𝒸𝒹ℯ𝒻ℊ𝒽𝒾𝒿𝓀𝓁𝓂𝓃ℴ𝓅𝓆𝓇𝓈𝓉𝓊𝓋𝓌𝓍𝓎𝓏')
+const italicLetters = Array.from('𝑎𝑏𝑐𝑑𝑒𝑓𝑔ℎ𝑖𝑗𝑘𝑙𝑚𝑛𝑜𝑝𝑞𝑟𝑠𝑡𝑢𝑣𝑤𝑥𝑦𝑧')
 
 const formatAuthor = (value) => Array.from(String(value).normalize('NFD').toLowerCase(), (character) => {
   const codePoint = character.codePointAt(0)
-  return codePoint >= 97 && codePoint <= 122 ? scriptLetters[codePoint - 97] : character
+  return codePoint >= 97 && codePoint <= 122 ? italicLetters[codePoint - 97] : character
 }).join('')
 
-const formatCompliment = (value) => Array.from(String(value).normalize('NFD'), (character) => {
-  const codePoint = character.codePointAt(0)
-  if (codePoint >= 65 && codePoint <= 90) return String.fromCodePoint(codePoint - 65 + 0x1d5d4)
-  if (codePoint >= 97 && codePoint <= 122) return String.fromCodePoint(codePoint - 97 + 0x1d5ee)
-  if (codePoint >= 48 && codePoint <= 57) return String.fromCodePoint(codePoint - 48 + 0x1d7ec)
-  return character
-}).join('')
+const formatPiropo = (piropo) => `♡ ───────────── ♡\n   _*${piropo.text}*_\n♡ ───────────── ♡\n\n> _${formatAuthor(piropo.author)}_`
 
 const getPrimarySettings = (conn) => {
   const primaryJid = global.conn?.user?.jid || global.conn?.user?.id
@@ -26,7 +20,7 @@ const getPrimarySettings = (conn) => {
   return settings[primaryJid]
 }
 
-const handler = async (m, { conn, command, text, usedPrefix }) => {
+const handler = async (m, { conn, command, text, usedPrefix, participants }) => {
   const settings = getPrimarySettings(conn)
   if (!settings) return
 
@@ -39,7 +33,7 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
     const piropos = Array.isArray(settings.piropos) ? settings.piropos : []
     if (!piropos.length) return conn.reply(m.chat, 'Todavía no hay piropos en la lista.', m)
 
-    const list = piropos.map((piropo, index) => `${index + 1}. ${formatCompliment(piropo.text)} — ${formatAuthor(piropo.author)}`).join('\n')
+    const list = piropos.map((piropo, index) => `${index + 1}. ${formatPiropo(piropo)}`).join('\n\n')
     return conn.reply(m.chat, `💌 *Lista de piropos (${piropos.length})*\n\n${list}`, m)
   }
 
@@ -112,12 +106,34 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
     ...(Array.isArray(rawMentions) ? rawMentions : [rawMentions])
   ].filter((jid) => typeof jid === 'string' && jid))]
   const recipient = mentionedJid[0]
-  const recipientNumber = recipient ? String(recipient).split('@')[0].split(':')[0] : null
-  const dedication = recipient
+  const noRecipient = usedPrefix === '&' && /^nadie$/i.test(String(text || '').trim())
+  let target = noRecipient ? null : recipient
+  if (!noRecipient && !target && usedPrefix === '%') {
+    if (!m.isGroup) {
+      return conn.reply(m.chat, 'Este modo elige a alguien al azar y solo funciona en grupos. Usa %piropo @usuario para dedicarlo en privado.', m)
+    }
+
+    const normalizeJid = (jid) => String(jid || '').replace(/:\d+(?=@)/g, '').toLowerCase()
+    const botJids = new Set([
+      conn.user?.jid,
+      conn.user?.id,
+      conn.user?.lid,
+      global.conn?.user?.jid,
+      global.conn?.user?.id,
+      global.conn?.user?.lid
+    ].filter(Boolean).map(normalizeJid))
+    const candidates = [...new Set((Array.isArray(participants) ? participants : [])
+      .map((participant) => participant.jid || participant.id || participant.lid)
+      .filter((jid) => typeof jid === 'string' && jid && !botJids.has(normalizeJid(jid))))]
+    if (!candidates.length) return conn.reply(m.chat, 'No encontré participantes para dedicarle el piropo.', m)
+    target = candidates[Math.floor(Math.random() * candidates.length)]
+  }
+  const recipientNumber = target ? String(target).split('@')[0].split(':')[0] : null
+  const dedication = target
     ? `💌 @${sender} le dedica con cariño un piropo a @${recipientNumber}`
     : `@${sender} no le dedica esto a nadie porque es una persona triste`
-  const message = `${dedication}\n\n*_${formatCompliment(compliment.text)}_*\n\n> _${formatAuthor(compliment.author)}_`
-  const mentions = [...new Set([m.sender, recipient].filter(Boolean))]
+  const message = `${dedication}\n\n${formatPiropo(compliment)}`
+  const mentions = [...new Set([m.sender, target].filter(Boolean))]
 
   return conn.sendMessage(m.chat, { text: message, mentions }, { quoted: m })
 }
@@ -125,5 +141,6 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
 handler.help = ['addpiropo creador + piropo', 'edit piropo número autor + piropo', 'eliminar piropo número', 'piropo @usuario', 'list piropo']
 handler.tags = ['fun']
 handler.command = ['addpiropo', 'edit', 'eliminar', 'piropo', 'list']
+handler.customPrefix = /^(?:%|&)/
 
 export default handler

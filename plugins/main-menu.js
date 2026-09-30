@@ -158,6 +158,12 @@ let txt = `
 > 𓃦 Descubrir tu personalidad.
  ✿  *%addpiropo creador + piropo*
 > 𓃦 Agregar un piropo a la lista.
+ ✿  *%edit piropo número autor + piropo*
+> 𓃦 Editar un piropo de la lista.
+ ✿  *%eliminar piropo número*
+> 𓃦 Eliminar un piropo de la lista.
+ ✿  *%list piropo*
+> 𓃦 Ver todos los piropos numerados.
  ✿  *%piropo @usuario*
 > 𓃦 Dedicar un piropo aleatorio.
  ✿  *#afk* + [motivo]

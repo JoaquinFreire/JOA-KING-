@@ -20,9 +20,13 @@ const getPrimarySettings = (conn) => {
   return settings[primaryJid]
 }
 
-const handler = async (m, { conn, command, text, usedPrefix, participants }) => {
+const handler = async (m, { conn, command, text, usedPrefix, participants, isOwner }) => {
   const settings = getPrimarySettings(conn)
   if (!settings) return
+
+  if (['list', 'edit', 'eliminar'].includes(command) && !isOwner) {
+    return conn.reply(m.chat, 'Solo el owner puede listar, editar o eliminar piropos.', m)
+  }
 
   if (command === 'list') {
     const listType = String(text || '').trim().toLowerCase()
@@ -142,6 +146,5 @@ handler.help = ['addpiropo creador + piropo', 'edit piropo número autor + pirop
 handler.tags = ['fun']
 handler.command = ['addpiropo', 'edit', 'eliminar', 'piropo', 'list']
 handler.customPrefix = /^(?:%|&)/
-handler.owner = true
 
 export default handler

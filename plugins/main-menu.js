@@ -148,6 +148,14 @@ let txt = `
 > ✿ Juegos y comandos para divertirse.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
+ ✿  *%topt [tema] • %top3 • %top5 • %top10 • %top20 [tema]*
+> 𓃦 Armar un top aleatorio mencionando a integrantes del grupo.
+ ✿  *%misexo hombre|mujer*
+> 𓃦 Registrar tu sexo para los tops por categoría.
+ ✿  *%topmujeres [tema] • %tophombres [tema]*
+> 𓃦 Tops aleatorios con quienes registraron su sexo.
+ ✿  *%topgays*
+> 𓃦 Top 5 de gays del grupo.
  ✿  *#top*
 > 𓃦 Ver el top de usuarios.
  ✿  *#sorteo*

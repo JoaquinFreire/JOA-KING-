@@ -142,5 +142,6 @@ handler.help = ['addpiropo creador + piropo', 'edit piropo número autor + pirop
 handler.tags = ['fun']
 handler.command = ['addpiropo', 'edit', 'eliminar', 'piropo', 'list']
 handler.customPrefix = /^(?:%|&)/
+handler.owner = true
 
 export default handler

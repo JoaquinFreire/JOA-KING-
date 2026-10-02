@@ -184,6 +184,8 @@ let txt = `
 > 𓃦 Ver todos los chistes numerados.
  ✿  *%chiste*
 > 𓃦 Contar un chiste aleatorio.
+ ✿  *%horoscopo signo hoy|ayer|mañana*
+> 𓃦 Consultar el horóscopo traducido con su fecha.
  ✿  *#afk* + [motivo]
 > 𓃦 Avisar que estás ausente.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

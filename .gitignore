@@ -3,6 +3,7 @@ node_modules/
 tmp/*
 !tmp/.gitkeep
 database.json
+chistes.json
 Sessions/
 instagramarchivos/instagram_storage.json
 instagramarchivos/igdata/session.json

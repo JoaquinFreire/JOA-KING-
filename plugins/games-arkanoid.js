@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
-import { checkHtmlApp, sendHtmlApp } from '@yudzxml/baileys'
+import { checkHtmlApp } from '@yudzxml/baileys/lib/Utils/html-app.js'
+import { sendHtmlApp } from '@yudzxml/baileys/lib/MessageBuilder/extras.js'
 
 const html = readFileSync(fileURLToPath(new URL('../lib/arkanoid.html', import.meta.url)), 'utf8')
 const appHeight = { min: 720, max: 900, settleMs: 180, maxReports: 24 }

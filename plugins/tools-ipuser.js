@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { isIP } from 'net'
-import { checkHtmlApp, sendHtmlApp } from '@yudzxml/baileys'
+import { checkHtmlApp } from '@yudzxml/baileys/lib/Utils/html-app.js'
+import { sendHtmlApp } from '@yudzxml/baileys/lib/MessageBuilder/extras.js'
 
 const handler = async (m, { conn }) => {
   try {

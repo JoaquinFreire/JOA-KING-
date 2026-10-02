@@ -1,4 +1,5 @@
-import { checkHtmlApp, sendHtmlApp } from '@yudzxml/baileys'
+import { checkHtmlApp } from '@yudzxml/baileys/lib/Utils/html-app.js'
+import { sendHtmlApp } from '@yudzxml/baileys/lib/MessageBuilder/extras.js'
 
 const MAX_HTML_BYTES = 256 * 1024
 const APP_AUTO_HEIGHT = { min: 720, max: 900, settleMs: 180, maxReports: 24 }

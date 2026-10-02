@@ -1,4 +1,7 @@
 const italicLetters = Array.from('𝑎𝑏𝑐𝑑𝑒𝑓𝑔ℎ𝑖𝑗𝑘𝑙𝑚𝑛𝑜𝑝𝑞𝑟𝑠𝑡𝑢𝑣𝑤𝑥𝑦𝑧')
+const superscriptDigits = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+
+const formatNumber = (number) => Array.from(String(number), (digit) => superscriptDigits[Number(digit)]).join('')
 
 const formatAuthor = (value) => Array.from(String(value).normalize('NFD').toLowerCase(), (character) => {
   const codePoint = character.codePointAt(0)
@@ -37,7 +40,7 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
     const piropos = Array.isArray(settings.piropos) ? settings.piropos : []
     if (!piropos.length) return conn.reply(m.chat, 'Todavía no hay piropos en la lista.', m)
 
-    const list = piropos.map((piropo, index) => `${index + 1}. ${formatPiropo(piropo)}`).join('\n\n')
+    const list = piropos.map((piropo, index) => `${formatNumber(index + 1)} ${formatPiropo(piropo)}`).join('\n\n')
     return conn.reply(m.chat, `💌 *Lista de piropos (${piropos.length})*\n\n${list}`, m)
   }
 
@@ -101,7 +104,8 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
   const piropos = Array.isArray(settings.piropos) ? settings.piropos : []
   if (!piropos.length) return conn.reply(m.chat, 'Todavía no hay piropos en la lista.', m)
 
-  const compliment = piropos[Math.floor(Math.random() * piropos.length)]
+  const complimentIndex = Math.floor(Math.random() * piropos.length)
+  const compliment = piropos[complimentIndex]
   const sender = String(m.sender || '').split('@')[0].split(':')[0]
   const resolvedMentions = await m.mentionedJid
   const rawMentions = m.msg?.contextInfo?.mentionedJid || m.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
@@ -136,7 +140,7 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
   const dedication = target
     ? `💌 @${sender} le dedica con cariño un piropo a @${recipientNumber}`
     : `@${sender} no le dedica esto a nadie porque es una persona triste`
-  const message = `${dedication}\n\n${formatPiropo(compliment)}`
+  const message = `${formatNumber(complimentIndex + 1)} ${dedication}\n\n${formatPiropo(compliment)}`
   const mentions = [...new Set([m.sender, target].filter(Boolean))]
 
   return conn.sendMessage(m.chat, { text: message, mentions }, { quoted: m })
@@ -146,5 +150,11 @@ handler.help = ['addpiropo creador + piropo', 'edit piropo número autor + pirop
 handler.tags = ['fun']
 handler.command = ['addpiropo', 'edit', 'eliminar', 'piropo', 'list']
 handler.customPrefix = /^(?:%|&)/
+handler.before = (m, { match }) => {
+  const prefix = match?.[0]?.[0]
+  if (!prefix || typeof m.text !== 'string') return false
+  const [action, type] = m.text.slice(prefix.length).trim().split(/\s+/, 2)
+  return ['list', 'edit', 'eliminar'].includes(String(action).toLowerCase()) && String(type || '').toLowerCase() !== 'piropo'
+}
 
 export default handler

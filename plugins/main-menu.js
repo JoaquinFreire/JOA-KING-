@@ -174,6 +174,16 @@ let txt = `
 > 𓃦 Ver todos los piropos numerados.
  ✿  *%piropo @usuario*
 > 𓃦 Dedicar un piropo aleatorio.
+ ✿  *%addchiste autor + chiste*
+> 𓃦 Agregar un chiste a la lista.
+ ✿  *%edit chiste número autor + chiste*
+> 𓃦 Editar un chiste de la lista.
+ ✿  *%eliminar chiste número*
+> 𓃦 Eliminar un chiste de la lista.
+ ✿  *%list chiste*
+> 𓃦 Ver todos los chistes numerados.
+ ✿  *%chiste*
+> 𓃦 Contar un chiste aleatorio.
  ✿  *#afk* + [motivo]
 > 𓃦 Avisar que estás ausente.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

@@ -5,7 +5,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 if (!m.quoted && !text) return conn.reply(m.chat, `❀ Por favor, escribe el texto que deseas repetir.`, m)
 let mentionedJid = await m.mentionedJid
 let htextos = text ? text : (m.quoted && m.quoted.text) ? m.quoted.text : "¡¡¡Hola!!!"
-htextos = `\u200B${htextos}`
+htextos = `'${htextos}`
 if ((mentionedJid && mentionedJid.length) || (m.quoted && m.quoted.mentionedJid && m.quoted.mentionedJid.length)) {
 let copy = htextos
 let list = mentionedJid || m.quoted.mentionedJid

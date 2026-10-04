@@ -30,8 +30,8 @@ let txt = `
 > 𓃦 Descargar un archivo de MediaFire.
  ✿  *#mega • #mg* + [Link]
 > 𓃦 Descargar un archivo de MEGA.
- ✿  *#play • #play2 • #ytmp3 • #ytmp4* + [Cancion] / [Link]
-> 𓃦 Descargar una cancion o vídeo de YouTube.
+ ✿  *#playc • #playv* + [Canción / Link]
+> 𓃦 Descargar audio (#playc) o vídeo (#playv) de YouTube.
  ✿  *#facebook • #fb* + [Link]
 > 𓃦 Descargar un video de Facebook.
  ✿  *#twitter • #x* + [Link]

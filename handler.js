@@ -119,6 +119,17 @@ let ignoredBannedMessage = false
 try {
 m = smsg(this, m) || m
 if (!m) return
+const nativeFlowReply = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage
+if (nativeFlowReply?.name === 'quick_reply' && typeof nativeFlowReply.paramsJson === 'string') {
+try {
+const replyId = JSON.parse(nativeFlowReply.paramsJson)?.id
+const replyCommands = {
+joa_misex_hombre: '%misexo hombre',
+joa_misex_mujer: '%misexo mujer'
+}
+if (replyCommands[replyId]) m.text = replyCommands[replyId]
+} catch {}
+}
 if (!m.mtype) {
 const serializedKeys = Object.keys(m.message || {})
 const prototypeName = Object.getPrototypeOf(m)?.constructor?.name || 'none'

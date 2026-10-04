@@ -63,15 +63,12 @@ const handler = async (m, { conn, text, usedPrefix }) => {
       throw new Error('La API devolvió una respuesta incompleta.')
     }
 
-    if (data.date !== requestedDate) {
-      const dateMessage = dayOffsets[day] === 0
-        ? 'La API devolvió una fecha distinta a la de hoy.'
-        : 'La API gratuita solo ofrece la lectura del día actual; no tiene horóscopos reales para ayer o mañana.'
-      return conn.reply(m.chat, `🌙 ${dateMessage}\nFecha disponible: *${formatDate(data.date)}*`, m)
+    if (data.date !== requestedDate && dayOffsets[day] !== 0) {
+      return conn.reply(m.chat, `🌙 La API gratuita no ofrece una lectura para esa fecha.\nFecha disponible: *${formatDate(data.date)}*`, m)
     }
 
     const translated = await translate(data.horoscope, { to: 'es', autoCorrect: true })
-    const dateLabel = formatDate(data.date)
+    const dateLabel = formatDate(requestedDate)
     const periodLabel = day === 'manana' ? 'MAÑANA' : day.toUpperCase()
     const message = `🌙 *HORÓSCOPO ${sign.label.toUpperCase()}*\n📅 ${dateLabel}\n🔮 *${periodLabel}*\n\n${translated.text.trim()}\n\n_Para entretenimiento y reflexión._`
     return conn.reply(m.chat, message, m)

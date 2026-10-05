@@ -128,6 +128,8 @@ let txt = `
 > 𓃦 Buscar la letra de una canción.
  ✿  *#averiguar* + [nombre o CUIT | edad | provincia | localidad]
 > 𓃦 Consultar información disponible.
+ ✿  *%geoip [IP]*
+> 𓃦 Consultar datos aproximados de una IP pública y ver su ubicación en un mapa.
  ✿  *#igstalk* + [usuario]
 > 𓃦 Consultar un perfil de Instagram.
  ✿  *#ignofollow* + [usuario]

@@ -1,7 +1,9 @@
 node_modules/
+chistes.json
 .venv/
 tmp/*
 !tmp/.gitkeep
+chistes.json
 database.json
 chistes.json
 Sessions/

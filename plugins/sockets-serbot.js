@@ -99,7 +99,9 @@ msgRetry,
 msgRetryCache, 
 browser: ['Windows', 'Firefox'],
 version: version,
-generateHighQualityLinkPreview: true
+generateHighQualityLinkPreview: true,
+syncFullHistory: false,
+shouldSyncHistoryMessage: () => false
 }
 let sock = makeWASocket(connectionOptions)
 sock.isInit = false

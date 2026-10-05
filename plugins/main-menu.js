@@ -42,6 +42,8 @@ let txt = `
 > 𓃦 Buscar y descargar imagenes de Pinterest.
  ✿  *#image • #imagen* + [busqueda]
 > 𓃦 Buscar y descargar imagenes de Google.
+ ✿  *%imgg [busqueda]*
+> 𓃦 Buscar una imagen en Google Imágenes.
  ✿  *#apk • #modapk* + [busqueda]
 > 𓃦 Descargar un apk de Aptoide.
  ✿  *#ytsearch • #search* + [busqueda]
@@ -92,6 +94,8 @@ let txt = `
 > 𓃦 Ver la foto de perfil de un usuario.
  ✿  *#say* + [texto]
 > 𓃦 Repetir un mensaje
+ ✿  *%vozloquendo • %vozloquendo2 • %vozanime* + [texto]
+> 𓃦 Generar audio con voz alternativa o anime; Loquendo original requiere acceso autorizado.
  ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML
 > 𓃦 Enviar una mini-app interactiva para WhatsApp Android.
  ✿  *#setmeta* + [autor] | [pack]
@@ -148,6 +152,8 @@ let txt = `
 > ✿ Juegos y comandos para divertirse.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
+ ✿  *%flappy*
+> 𓃦 Jugar Flappy Bird: toca o pulsa espacio para volar.
  ✿  *%topt [tema] • %top3 • %top5 • %top10 • %top20 [tema]*
 > 𓃦 Armar un top aleatorio mencionando a integrantes del grupo.
  ✿  *%misexo hombre|mujer*

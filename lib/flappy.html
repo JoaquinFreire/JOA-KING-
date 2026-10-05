@@ -1,0 +1,1349 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+</head>
+<body style="margin:0;background:#050710;font-family:'Courier New',monospace;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;color:#fff">
+<div style="width:100%;max-width:430px;margin:auto;padding:10px;box-sizing:border-box">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px">
+<div><span style="color:#00eaff">SCORE</span> <b id="score">0</b></div>
+<div><span style="color:#ffe600">BEST</span> <b id="best">0</b></div>
+<button id="mute" style="border:1px solid #263b73;border-radius:7px;background:#0b1126;color:#00eaff;height:30px;padding:0 12px;font:14px 'Courier New',monospace">🔊</button>
+</div>
+
+<div style="position:relative;width:100%">
+<canvas id="c" width="400" height="600" style="display:block;width:100%;height:auto;background:#5bc7f5;border:1px solid #18234a;border-radius:8px;box-shadow:0 0 20px rgba(0,180,255,.12)"></canvas>
+
+<div id="msg" style="display:flex;position:absolute;left:0;top:0;width:100%;height:100%;align-items:center;justify-content:center;text-align:center;background:rgba(3,5,15,.32);border-radius:8px">
+<div>
+<div id="msgTitle" style="font-size:32px;font-weight:bold;color:#fff;text-shadow:3px 3px 0 #333;margin-bottom:12px">FLAPPY</div>
+<div id="msgText" style="font-size:13px;color:#fff;line-height:1.8;text-shadow:1px 1px 0 #333">TOCA PARA VOLAR<br><br>🐤</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;gap:8px;margin-top:9px">
+<button id="flap" style="flex:1;height:52px;border:1px solid #263b73;border-radius:9px;background:#0b1126;color:#ffe600;font-size:22px;font-weight:bold">FLAP</button>
+<button id="restart" style="width:95px;height:52px;border:1px solid #263b73;border-radius:9px;background:#0b1126;color:#fff;font-size:15px">RESTART</button>
+</div>
+
+<div id="stage" style="height:25px;text-align:center;font-size:11px;color:#7d8fc9;margin-top:5px"></div>
+
+</div>
+
+<script>
+const cv=document.getElementById('c'),
+ctx=cv.getContext('2d'),
+W=cv.width,
+H=cv.height,
+scoreEl=document.getElementById('score'),
+bestEl=document.getElementById('best'),
+stageEl=document.getElementById('stage'),
+msg=document.getElementById('msg'),
+msgTitle=document.getElementById('msgTitle'),
+msgText=document.getElementById('msgText'),
+muteBtn=document.getElementById('mute'),
+flapBtn=document.getElementById('flap'),
+restartBtn=document.getElementById('restart');
+
+const appStorage=(()=>{const values=new Map();return{getItem(key){return values.has(String(key))?values.get(String(key)):null},setItem(key,value){values.set(String(key),String(value))},removeItem(key){values.delete(String(key))},clear(){values.clear()}}})();
+let score=0,
+best=0,
+started=false,
+gameOver=false,
+muted=false,
+audio=null,
+musicTimer=null,
+musicStep=0,
+last=performance.now(),
+groundX=0,
+shake=0;
+
+try{
+ best=Number(appStorage.getItem('flappyBest')||0)
+}catch(e){}
+
+bestEl.textContent=best;
+
+const bird={
+ x:95,
+ y:285,
+ w:32,
+ h:24,
+ vy:0,
+ rotation:0,
+ wing:0
+};
+
+let pipes=[],
+particles=[];
+
+const stages=[
+ {from:0,color:'#65b82e',dark:'#3d801b',gap:155,speed:2.6,name:'EASY'},
+ {from:10,color:'#d8b52a',dark:'#917b13',gap:150,speed:3.0,name:'MEDIUM'},
+ {from:20,color:'#e87922',dark:'#a5420c',gap:144,speed:3.4,name:'HARD'},
+ {from:30,color:'#d94343',dark:'#8e2020',gap:138,speed:3.8,name:'VERY HARD'},
+ {from:40,color:'#a34ed1',dark:'#64238a',gap:132,speed:4.2,name:'INSANE'},
+ {from:50,color:'#f03c74',dark:'#94163e',gap:126,speed:4.6,name:'EXTREME'}
+];
+
+function getStage(){
+ let s=stages[0];
+
+ for(let i=0;i<stages.length;i++){
+  if(score>=stages[i].from)s=stages[i];
+ }
+
+ return s;
+}
+
+function updateStage(){
+ const s=getStage();
+
+ stageEl.textContent=
+  s.name+
+  ' • GAP '+
+  s.gap+
+  ' • SPEED '+
+  s.speed.toFixed(1);
+}
+
+function initAudio(){
+
+ try{
+
+  if(!audio)
+   audio=new(window.AudioContext||window.webkitAudioContext)();
+
+  if(audio.state==='suspended')
+   audio.resume();
+
+ }catch(e){}
+}
+
+function tone(freq,dur,type,vol,delay){
+
+ if(muted)return;
+
+ try{
+
+  initAudio();
+
+  if(!audio)return;
+
+  const o=audio.createOscillator();
+  const g=audio.createGain();
+
+  o.type=type||'square';
+
+  o.frequency.setValueAtTime(
+   freq,
+   audio.currentTime+(delay||0)
+  );
+
+  g.gain.setValueAtTime(
+   .001,
+   audio.currentTime+(delay||0)
+  );
+
+  g.gain.exponentialRampToValueAtTime(
+   vol||.025,
+   audio.currentTime+(delay||0)+.008
+  );
+
+  g.gain.exponentialRampToValueAtTime(
+   .001,
+   audio.currentTime+(delay||0)+dur
+  );
+
+  o.connect(g);
+  g.connect(audio.destination);
+
+  o.start(
+   audio.currentTime+(delay||0)
+  );
+
+  o.stop(
+   audio.currentTime+(delay||0)+dur+.02
+  );
+
+ }catch(e){}
+}
+
+function flapSound(){
+ tone(520,.08,'square',.035);
+ tone(700,.06,'square',.025,.035);
+}
+
+function scoreSound(){
+ tone(880,.07,'square',.04);
+ tone(1175,.11,'square',.035,.055);
+}
+
+function hitSound(){
+ tone(150,.16,'sawtooth',.05);
+ tone(80,.25,'sawtooth',.035,.08);
+}
+
+function stageSound(){
+ tone(500,.08,'triangle',.03);
+ tone(700,.08,'triangle',.03,.08);
+ tone(950,.12,'triangle',.03,.16);
+}
+
+function startMusic(){
+
+ if(muted||musicTimer)return;
+
+ initAudio();
+
+ const notes=[
+  261.63,
+  329.63,
+  392,
+  329.63,
+  293.66,
+  349.23,
+  440,
+  349.23
+ ];
+
+ musicStep=0;
+
+ musicTimer=setInterval(function(){
+
+  if(!muted&&!gameOver){
+
+   const n=notes[musicStep%notes.length];
+
+   tone(n,.12,'triangle',.012);
+
+   if(musicStep%4===0)
+    tone(n/2,.18,'sine',.008);
+
+   musicStep++;
+  }
+
+ },230);
+}
+
+function stopMusic(){
+
+ if(musicTimer){
+  clearInterval(musicTimer);
+  musicTimer=null;
+ }
+}
+
+function toggleMute(){
+
+ muted=!muted;
+
+ muteBtn.textContent=
+  muted?'🔇':'🔊';
+
+ if(muted)
+  stopMusic();
+ else if(started&&!gameOver)
+  startMusic();
+}
+
+function resetBird(){
+
+ bird.x=95;
+ bird.y=285;
+ bird.vy=0;
+ bird.rotation=0;
+ bird.wing=0;
+}
+
+function resetGame(){
+
+ score=0;
+ scoreEl.textContent='0';
+
+ started=false;
+ gameOver=false;
+
+ pipes=[];
+ particles=[];
+
+ shake=0;
+
+ resetBird();
+
+ msg.style.display='flex';
+
+ msgTitle.textContent='FLAPPY';
+
+ msgText.innerHTML=
+  'TOCA PARA VOLAR<br><br>🐤';
+
+ updateStage();
+
+ stopMusic();
+}
+
+function startGame(){
+
+ if(gameOver){
+
+  resetGame();
+
+  started=true;
+  gameOver=false;
+
+  msg.style.display='none';
+
+  bird.vy=-7.2;
+
+  flapSound();
+
+  startMusic();
+
+  return;
+ }
+
+ if(!started){
+
+  started=true;
+
+  msg.style.display='none';
+
+  bird.vy=-7.2;
+
+  flapSound();
+
+  startMusic();
+ }
+}
+
+function flap(){
+
+ if(gameOver)return;
+
+ initAudio();
+
+ if(!started){
+
+  startGame();
+
+  return;
+ }
+
+ bird.vy=-7.2;
+ bird.wing=1;
+
+ flapSound();
+
+ addParticles(
+  bird.x+5,
+  bird.y+15,
+  '#fff',
+  4
+ );
+}
+
+function createPipe(){
+
+ const s=getStage();
+
+ const ground=H-68;
+ const minTop=52;
+ const maxTop=ground-s.gap-52;
+
+ let center;
+
+ if(pipes.length){
+
+  const previous=
+   pipes[pipes.length-1].gapY+
+   pipes[pipes.length-1].gap/2;
+
+  center=
+   previous+
+   (Math.random()-.5)*90;
+
+ }else{
+
+  center=
+   minTop+
+   s.gap/2+
+   Math.random()*
+   (maxTop-minTop);
+ }
+
+ const minCenter=
+  minTop+s.gap/2;
+
+ const maxCenter=
+  maxTop+s.gap/2;
+
+ center=Math.max(
+  minCenter,
+  Math.min(maxCenter,center)
+ );
+
+ const gapY=
+  center-s.gap/2;
+
+ pipes.push({
+  x:W+20,
+  w:58,
+  gapY:gapY,
+  gap:s.gap,
+  passed:false
+ });
+}
+
+function addParticles(x,y,color,count){
+
+ for(let i=0;i<count;i++){
+
+  particles.push({
+   x:x,
+   y:y,
+   vx:(Math.random()-.5)*3,
+   vy:(Math.random()-.5)*3,
+   life:300+Math.random()*300,
+   color:color,
+   size:2+Math.random()*3
+  });
+ }
+}
+
+function updateParticles(dt){
+
+ for(let i=particles.length-1;i>=0;i--){
+
+  const p=particles[i];
+
+  p.x+=p.vx*dt;
+  p.y+=p.vy*dt;
+
+  p.vy+=.05*dt;
+
+  p.life-=16.66*dt;
+
+  if(p.life<=0)
+   particles.splice(i,1);
+ }
+}
+
+function flapBird(dt){
+
+ bird.vy+=.42*dt;
+
+ bird.vy=Math.min(
+  10,
+  bird.vy
+ );
+
+ bird.y+=bird.vy*dt;
+
+ bird.rotation=
+  Math.max(
+   -.45,
+   Math.min(
+    1.35,
+    bird.vy*.09
+   )
+  );
+
+ bird.wing+=.35*dt;
+}
+
+function updatePipes(dt){
+
+ const s=getStage();
+
+ const spawnDistance=
+  s.speed>=4.2?190:
+  s.speed>=3.8?195:
+  205;
+
+ if(
+  !pipes.length||
+  pipes[pipes.length-1].x<
+  W-spawnDistance
+ ){
+  createPipe();
+ }
+
+ for(let i=pipes.length-1;i>=0;i--){
+
+  const p=pipes[i];
+
+  p.x-=s.speed*dt;
+
+  if(
+   !p.passed&&
+   p.x+p.w<bird.x
+  ){
+
+   p.passed=true;
+
+   score++;
+
+   scoreEl.textContent=score;
+
+   scoreSound();
+
+   addParticles(
+    bird.x,
+    bird.y,
+    '#ffe600',
+    8
+   );
+
+   if(
+    score===10||
+    score===20||
+    score===30||
+    score===40||
+    score===50
+   ){
+    stageSound();
+   }
+
+   updateStage();
+
+   if(score>best){
+
+    best=score;
+
+    bestEl.textContent=best;
+
+    try{
+     appStorage.setItem(
+      'flappyBest',
+      String(best)
+     );
+    }catch(e){}
+   }
+  }
+
+  if(p.x+p.w<-20)
+   pipes.splice(i,1);
+ }
+}
+
+/*
+COLISIÓN MUY ESTRICTA.
+
+El pájaro se dibuja con rotación.
+Por eso una sola caja rectangular no representa
+correctamente la cabeza y el pico.
+
+Usamos varias zonas circulares:
+1. cuerpo
+2. cabeza
+3. pico
+
+Si cualquiera de ellas toca el tubo,
+se pierde inmediatamente.
+*/
+
+function circleRectCollision(cx,cy,r,rx,ry,rw,rh){
+
+ const nearestX=
+  Math.max(
+   rx,
+   Math.min(cx,rx+rw)
+  );
+
+ const nearestY=
+  Math.max(
+   ry,
+   Math.min(cy,ry+rh)
+  );
+
+ const dx=cx-nearestX;
+ const dy=cy-nearestY;
+
+ return(
+  dx*dx+
+  dy*dy<=
+  r*r
+ );
+}
+
+function getBirdCollisionPoints(){
+
+ const cx=
+  bird.x+bird.w/2;
+
+ const cy=
+  bird.y+bird.h/2;
+
+ const angle=
+  bird.rotation;
+
+ function point(localX,localY){
+
+  return{
+   x:
+    cx+
+    localX*Math.cos(angle)-
+    localY*Math.sin(angle),
+
+   y:
+    cy+
+    localX*Math.sin(angle)+
+    localY*Math.cos(angle)
+  };
+ }
+
+ /*
+ Las posiciones están basadas directamente
+ en el dibujo del pájaro.
+ */
+
+ return{
+
+  body:{
+   p:point(0,0),
+   r:14
+  },
+
+  head:{
+   p:point(8,-6),
+   r:7
+  },
+
+  beak:{
+   p:point(21,3),
+   r:7
+  },
+
+  leftEdge:{
+   p:point(-12,2),
+   r:5
+  },
+
+  lowerBody:{
+   p:point(-3,8),
+   r:7
+  }
+ };
+}
+
+function collision(){
+
+ /*
+ TECHO Y SUELO.
+
+ Aquí usamos prácticamente todo el cuerpo
+ visible del pájaro.
+ */
+
+ const top=
+  bird.y-3;
+
+ const bottom=
+  bird.y+bird.h+3;
+
+ if(top<=0)
+  return true;
+
+ if(bottom>=H-68)
+  return true;
+
+ const zones=
+  getBirdCollisionPoints();
+
+ for(let i=0;i<pipes.length;i++){
+
+  const p=pipes[i];
+
+  /*
+  Rectángulo completo del tubo superior.
+  */
+
+  const topPipe={
+   x:p.x,
+   y:0,
+   w:p.w,
+   h:p.gapY
+  };
+
+  /*
+  Rectángulo completo del tubo inferior.
+  */
+
+  const bottomPipe={
+   x:p.x,
+   y:p.gapY+p.gap,
+   w:p.w,
+   h:H-(p.gapY+p.gap)-68
+  };
+
+  const list=[
+   zones.body,
+   zones.head,
+   zones.beak,
+   zones.leftEdge,
+   zones.lowerBody
+  ];
+
+  for(let j=0;j<list.length;j++){
+
+   const z=list[j];
+
+   if(
+    circleRectCollision(
+     z.p.x,
+     z.p.y,
+     z.r,
+     topPipe.x,
+     topPipe.y,
+     topPipe.w,
+     topPipe.h
+    )
+   ){
+    return true;
+   }
+
+   if(
+    circleRectCollision(
+     z.p.x,
+     z.p.y,
+     z.r,
+     bottomPipe.x,
+     bottomPipe.y,
+     bottomPipe.w,
+     bottomPipe.h
+    )
+   ){
+    return true;
+   }
+  }
+ }
+
+ return false;
+}
+
+function die(){
+
+ if(gameOver)return;
+
+ gameOver=true;
+
+ hitSound();
+
+ stopMusic();
+
+ shake=10;
+
+ addParticles(
+  bird.x+bird.w/2,
+  bird.y+bird.h/2,
+  '#fff',
+  30
+ );
+
+ msg.style.display='flex';
+
+ msgTitle.textContent='GAME OVER';
+
+ msgText.innerHTML=
+  'SCORE <b>'+
+  score+
+  '</b><br>BEST <b>'+
+  best+
+  '</b><br><br>TOCA PARA REINICIAR';
+}
+
+function update(dt){
+
+ if(!started||gameOver)
+  return;
+
+ flapBird(dt);
+
+ updatePipes(dt);
+
+ updateParticles(dt);
+
+ groundX=
+  (groundX-getStage().speed*dt)%24;
+
+ if(shake>0)
+  shake-=dt;
+
+ if(collision())
+  die();
+}
+
+function drawSky(){
+
+ let top='#5fcaf3',
+ bottom='#b9e9f7';
+
+ if(score>=10){
+  top='#e5c951';
+  bottom='#f4df8b';
+ }
+
+ if(score>=20){
+  top='#e9944f';
+  bottom='#f6c17b';
+ }
+
+ if(score>=30){
+  top='#db6464';
+  bottom='#efaaa0';
+ }
+
+ if(score>=40){
+  top='#8f72c5';
+  bottom='#c0a9e2';
+ }
+
+ if(score>=50){
+  top='#b83f70';
+  bottom='#e983a5';
+ }
+
+ const g=
+  ctx.createLinearGradient(
+   0,0,0,H
+  );
+
+ g.addColorStop(0,top);
+ g.addColorStop(1,bottom);
+
+ ctx.fillStyle=g;
+
+ ctx.fillRect(
+  0,
+  0,
+  W,
+  H
+ );
+}
+
+function drawCloud(x,y,s){
+
+ ctx.fillStyle=
+  'rgba(255,255,255,.65)';
+
+ ctx.beginPath();
+
+ ctx.arc(
+  x,
+  y,
+  16*s,
+  0,
+  Math.PI*2
+ );
+
+ ctx.arc(
+  x+18*s,
+  y-8*s,
+  20*s,
+  0,
+  Math.PI*2
+ );
+
+ ctx.arc(
+  x+40*s,
+  y,
+  15*s,
+  0,
+  Math.PI*2
+ );
+
+ ctx.fill();
+}
+
+function drawBackground(){
+
+ drawSky();
+
+ drawCloud(40,95,.8);
+ drawCloud(245,145,.65);
+ drawCloud(145,55,.45);
+
+ if(score>=30){
+
+  ctx.fillStyle=
+   'rgba(255,255,255,.14)';
+
+  for(let i=0;i<12;i++){
+
+   const x=
+    (i*73+30)%W;
+
+   const y=
+    (i*47+25)%300;
+
+   ctx.fillRect(
+    x,
+    y,
+    2,
+    2
+   );
+  }
+ }
+}
+
+function drawPipe(p){
+
+ const s=getStage();
+
+ const x=p.x;
+ const w=p.w;
+ const g=p.gapY;
+ const gap=p.gap;
+
+ const bottomY=
+  g+gap;
+
+ const ground=
+  H-68;
+
+ ctx.save();
+
+ ctx.shadowBlur=8;
+ ctx.shadowColor=s.color;
+
+ const grad=
+  ctx.createLinearGradient(
+   x,
+   0,
+   x+w,
+   0
+  );
+
+ grad.addColorStop(0,s.dark);
+ grad.addColorStop(.18,s.color);
+ grad.addColorStop(.48,'#fff');
+ grad.addColorStop(.55,s.color);
+ grad.addColorStop(1,s.dark);
+
+ ctx.fillStyle=grad;
+ ctx.strokeStyle=s.dark;
+ ctx.lineWidth=2;
+
+ ctx.fillRect(
+  x,
+  0,
+  w,
+  g-8
+ );
+
+ ctx.strokeRect(
+  x,
+  0,
+  w,
+  g-8
+ );
+
+ ctx.fillRect(
+  x-4,
+  g-10,
+  w+8,
+  25
+ );
+
+ ctx.strokeRect(
+  x-4,
+  g-10,
+  w+8,
+  25
+ );
+
+ ctx.fillRect(
+  x,
+  bottomY+8,
+  w,
+  ground-bottomY-8
+ );
+
+ ctx.strokeRect(
+  x,
+  bottomY+8,
+  w,
+  ground-bottomY-8
+ );
+
+ ctx.fillRect(
+  x-4,
+  bottomY-15,
+  w+8,
+  25
+ );
+
+ ctx.strokeRect(
+  x-4,
+  bottomY-15,
+  w+8,
+  25
+ );
+
+ ctx.restore();
+}
+
+function drawGround(){
+
+ const y=H-68;
+
+ ctx.fillStyle='#d5b13b';
+
+ ctx.fillRect(
+  0,
+  y,
+  W,
+  68
+ );
+
+ ctx.fillStyle='#91c83e';
+
+ ctx.fillRect(
+  0,
+  y,
+  W,
+  10
+ );
+
+ ctx.fillStyle='#77aa32';
+
+ ctx.fillRect(
+  0,
+  y+10,
+  W,
+  5
+ );
+
+ ctx.fillStyle='#b38e2d';
+
+ for(
+  let x=groundX;
+  x<W+30;
+  x+=24
+ ){
+  ctx.fillRect(
+   x,
+   y+20,
+   13,
+   5
+  );
+ }
+
+ ctx.fillStyle='#8d7026';
+
+ for(
+  let x=groundX+12;
+  x<W+30;
+  x+=24
+ ){
+  ctx.fillRect(
+   x,
+   y+35,
+   9,
+   4
+  );
+ }
+}
+
+function drawBird(){
+
+ ctx.save();
+
+ ctx.translate(
+  bird.x+bird.w/2,
+  bird.y+bird.h/2
+ );
+
+ ctx.rotate(
+  bird.rotation
+ );
+
+ const wing=
+  Math.sin(bird.wing)*5;
+
+ ctx.fillStyle='#f4d23c';
+
+ ctx.strokeStyle='#a57913';
+
+ ctx.lineWidth=2;
+
+ ctx.beginPath();
+
+ ctx.ellipse(
+  0,
+  0,
+  17,
+  12,
+  0,
+  0,
+  Math.PI*2
+ );
+
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle='#ffe96a';
+
+ ctx.beginPath();
+
+ ctx.ellipse(
+  -5,
+  5,
+  9,
+  5+wing*.15,
+  0,
+  0,
+  Math.PI*2
+ );
+
+ ctx.fill();
+
+ ctx.fillStyle='#fff';
+
+ ctx.beginPath();
+
+ ctx.arc(
+  8,
+  -6,
+  6,
+  0,
+  Math.PI*2
+ );
+
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle='#111';
+
+ ctx.beginPath();
+
+ ctx.arc(
+  10,
+  -6,
+  2.5,
+  0,
+  Math.PI*2
+ );
+
+ ctx.fill();
+
+ ctx.fillStyle='#f17d24';
+
+ ctx.beginPath();
+
+ ctx.moveTo(15,-1);
+ ctx.lineTo(27,3);
+ ctx.lineTo(15,7);
+
+ ctx.closePath();
+
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.restore();
+}
+
+function drawParticles(){
+
+ for(let i=0;i<particles.length;i++){
+
+  const p=particles[i];
+
+  ctx.globalAlpha=
+   Math.max(
+    0,
+    p.life/500
+   );
+
+  ctx.fillStyle=p.color;
+
+  ctx.fillRect(
+   p.x,
+   p.y,
+   p.size,
+   p.size
+  );
+ }
+
+ ctx.globalAlpha=1;
+}
+
+function drawScore(){
+
+ if(started&&!gameOver){
+
+  ctx.font='bold 42px Arial';
+
+  ctx.textAlign='center';
+
+  ctx.fillStyle=
+   'rgba(0,0,0,.25)';
+
+  ctx.fillText(
+   score,
+   W/2+3,
+   55
+  );
+
+  ctx.fillStyle='#fff';
+
+  ctx.fillText(
+   score,
+   W/2,
+   52
+  );
+ }
+}
+
+function draw(){
+
+ ctx.save();
+
+ if(shake>0){
+
+  ctx.translate(
+   (Math.random()-.5)*shake,
+   (Math.random()-.5)*shake
+  );
+ }
+
+ drawBackground();
+
+ for(let i=0;i<pipes.length;i++)
+  drawPipe(pipes[i]);
+
+ drawGround();
+
+ drawBird();
+
+ drawParticles();
+
+ drawScore();
+
+ ctx.restore();
+}
+
+function loop(t){
+
+ let dt=
+  (t-last)/16.666;
+
+ last=t;
+
+ if(dt>2)
+  dt=2;
+
+ update(dt);
+
+ draw();
+
+ animationFrame=requestAnimationFrame(loop);
+}
+
+let animationFrame=null;
+
+document.addEventListener('visibilitychange',function(){
+ if(document.hidden){
+  if(animationFrame!==null)cancelAnimationFrame(animationFrame);
+  animationFrame=null;
+  stopMusic();
+  return;
+ }
+
+ last=performance.now();
+ if(animationFrame===null)animationFrame=requestAnimationFrame(loop);
+ if(started&&!gameOver&&!muted)startMusic();
+});
+
+function input(){
+
+ initAudio();
+
+ if(gameOver){
+
+  resetGame();
+
+  started=true;
+  gameOver=false;
+
+  msg.style.display='none';
+
+  bird.vy=-7.2;
+
+  flapSound();
+
+  startMusic();
+
+  return;
+ }
+
+ flap();
+}
+
+cv.addEventListener(
+ 'pointerdown',
+ function(e){
+  e.preventDefault();
+  input();
+ }
+);
+
+flapBtn.addEventListener(
+ 'pointerdown',
+ function(e){
+  e.preventDefault();
+  input();
+ }
+);
+
+restartBtn.addEventListener(
+ 'pointerdown',
+ function(e){
+  e.preventDefault();
+  input();
+ }
+);
+
+muteBtn.addEventListener(
+ 'pointerdown',
+ function(e){
+  e.preventDefault();
+  initAudio();
+  toggleMute();
+ }
+);
+
+document.addEventListener(
+ 'keydown',
+ function(e){
+
+  if(
+   e.code==='Space'||
+   e.code==='ArrowUp'
+  ){
+
+   e.preventDefault();
+
+   input();
+  }
+
+  if(
+   e.key.toLowerCase()==='m'
+  ){
+
+   e.preventDefault();
+
+   toggleMute();
+  }
+ }
+);
+
+resetGame();
+
+if(!document.hidden)animationFrame=requestAnimationFrame(loop);
+</script>
+</body>
+</html>

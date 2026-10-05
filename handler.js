@@ -68,8 +68,9 @@ global.__antideleteMessages = global.__antideleteMessages || loadAntideleteCache
 export async function handler(chatUpdate) {
 this.msgqueque = this.msgqueque || []
 this.uptime = this.uptime || Date.now()
-if (!chatUpdate) return
+if (!chatUpdate || chatUpdate.type !== 'notify') return
 const messages = Array.isArray(chatUpdate.messages) ? chatUpdate.messages : []
+if (!messages.length) return
 if (process.env.DEBUG_WA_MESSAGES === 'true') {
 const summaries = messages.map(message => {
 const remoteJid = message?.key?.remoteJid || ''

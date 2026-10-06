@@ -94,8 +94,8 @@ let txt = `
 > 𓃦 Ver la foto de perfil de un usuario.
  ✿  *#say* + [texto]
 > 𓃦 Repetir un mensaje
- ✿  *%vozloquendo • %vozloquendo2 • %vozanime* + [texto]
-> 𓃦 Generar audio con voz alternativa o anime; Loquendo original requiere acceso autorizado.
+ ✿  *%vozarg • %vozloquendo • %vozloquendo2 • %vozanime* + [texto]
+> 𓃦 Generar audio con voz argentina, alternativa o anime; también puedes responder a un mensaje.
  ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML
 > 𓃦 Enviar una mini-app interactiva para WhatsApp Android.
  ✿  *#setmeta* + [autor] | [pack]

@@ -10,22 +10,32 @@ const formatAuthor = (value) => Array.from(String(value).normalize('NFD').toLowe
 
 const formatPiropo = (piropo) => `♡ ───────────── ♡\n   _*${piropo.text}*_\n♡ ───────────── ♡\n\n> _${formatAuthor(piropo.author)}_`
 
-const getPrimarySettings = (conn) => {
-  const primaryJid = global.conn?.user?.jid || global.conn?.user?.id
-  const currentJid = conn?.user?.jid || conn?.user?.id
-  const normalizeJid = (jid) => String(jid || '').replace(/:\d+(?=@)/g, '').toLowerCase()
-
-  if (!primaryJid || !currentJid || normalizeJid(primaryJid) !== normalizeJid(currentJid)) return null
-
+const getPiropoSettings = (conn) => {
   const settings = global.db?.data?.settings
   if (!settings) return null
-  settings[primaryJid] ||= {}
-  return settings[primaryJid]
+  const normalizeJid = (jid) => String(jid || '').replace(/:\d+(?=@)/g, '').toLowerCase()
+  const botJids = [
+    global.conn?.user?.jid,
+    global.conn?.user?.id,
+    global.conn?.user?.lid,
+    conn?.user?.jid,
+    conn?.user?.id,
+    conn?.user?.lid
+  ].filter(Boolean).map(normalizeJid)
+
+  const matchingSettings = Object.entries(settings)
+    .find(([jid]) => botJids.includes(normalizeJid(jid)))?.[1]
+  if (matchingSettings) return matchingSettings
+
+  return Object.values(settings).find(value => Array.isArray(value?.piropos) && value.piropos.length > 0) || null
 }
 
 const handler = async (m, { conn, command, text, usedPrefix, participants, isOwner }) => {
-  const settings = getPrimarySettings(conn)
-  if (!settings) return
+  const settings = getPiropoSettings(conn)
+  if (!settings) {
+    console.error('[PIROPO] No se encontraron ajustes ni para el bot principal ni para el sub-bot.')
+    return conn.reply(m.chat, 'No se pudo cargar la lista de piropos. Inténtalo de nuevo más tarde.', m)
+  }
 
   if (['list', 'edit', 'eliminar'].includes(command) && !isOwner) {
     return conn.reply(m.chat, 'Solo el owner puede listar, editar o eliminar piropos.', m)
@@ -116,11 +126,7 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
   const recipient = mentionedJid[0]
   const noRecipient = usedPrefix === '&' && /^nadie$/i.test(String(text || '').trim())
   let target = noRecipient ? null : recipient
-  if (!noRecipient && !target && usedPrefix === '%') {
-    if (!m.isGroup) {
-      return conn.reply(m.chat, 'Este modo elige a alguien al azar y solo funciona en grupos. Usa %piropo @usuario para dedicarlo en privado.', m)
-    }
-
+  if (!noRecipient && !target && usedPrefix === '%' && m.isGroup) {
     const normalizeJid = (jid) => String(jid || '').replace(/:\d+(?=@)/g, '').toLowerCase()
     const botJids = new Set([
       conn.user?.jid,
@@ -132,7 +138,9 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
     ].filter(Boolean).map(normalizeJid))
     const candidates = [...new Set((Array.isArray(participants) ? participants : [])
       .map((participant) => participant.jid || participant.id || participant.lid)
-      .filter((jid) => typeof jid === 'string' && jid && !botJids.has(normalizeJid(jid))))]
+      .filter((jid) => typeof jid === 'string' && jid &&
+        !botJids.has(normalizeJid(jid)) &&
+        normalizeJid(jid) !== normalizeJid(m.sender)))]
     if (!candidates.length) return conn.reply(m.chat, 'No encontré participantes para dedicarle el piropo.', m)
     target = candidates[Math.floor(Math.random() * candidates.length)]
   }
@@ -149,7 +157,6 @@ const handler = async (m, { conn, command, text, usedPrefix, participants, isOwn
 handler.help = ['addpiropo creador + piropo', 'edit piropo número autor + piropo', 'eliminar piropo número', 'piropo @usuario', 'list piropo']
 handler.tags = ['fun']
 handler.command = ['addpiropo', 'edit', 'eliminar', 'piropo', 'list']
-handler.customPrefix = /^(?:%|&)/
 handler.before = (m, { match }) => {
   const prefix = match?.[0]?.[0]
   if (!prefix || typeof m.text !== 'string') return false

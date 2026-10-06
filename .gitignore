@@ -15,3 +15,5 @@ instagramarchivos/igdata/session.json
 __pycache__/
 *.py[cod]
 npm-debug.log*
+pruebas/voices/*.onnx
+pruebas/voz-piper.wav

@@ -50,8 +50,62 @@ const loadAntideleteHistory = () => {
   }
 }
 
+const safeCall = (fn) => {
+  try {
+    return Promise.resolve(fn()).catch(() => null)
+  } catch (_) {
+    return Promise.resolve(null)
+  }
+}
+
 const isAuthorized = (m, isOwner, isAdmin) => !m.isGroup || isAdmin || isOwner
 const normalizeJid = (jid) => String(jid || '').replace(/:\d+/g, '').replace(/\s+/g, '').toLowerCase().replace(/@.*$/, '').replace(/\D+/g, '')
+const isGroupJid = (jid) => String(jid || '').endsWith('@g.us')
+const isPrivateJid = (jid) => {
+  const value = String(jid || '')
+  return value && !value.endsWith('@g.us') && !value.endsWith('@newsletter') && value !== 'status@broadcast'
+}
+
+const decodeJid = (conn, jid) => {
+  const value = String(jid || '').trim()
+  if (!value) return ''
+  const decoded = conn?.decodeJid?.(value)
+  return typeof decoded === 'string' && decoded ? decoded : value
+}
+
+const resolveOwnerJids = async (conn) => {
+  const targets = new Set()
+  for (const owner of global.owner || []) {
+    const number = String(owner || '').replace(/\D/g, '')
+    if (!number) continue
+    const resolved = typeof conn?.onWhatsApp === 'function' ? await conn.onWhatsApp(number).catch(() => []) : []
+    for (const item of resolved || []) if (isPrivateJid(item?.jid)) targets.add(item.jid)
+    if (!targets.size || !(resolved || []).length) targets.add(`${number}@s.whatsapp.net`)
+  }
+  return [...targets]
+}
+
+const findParticipantByJid = async (conn, groupJid, candidates = []) => {
+  if (!isGroupJid(groupJid) || typeof conn?.groupMetadata !== 'function') return null
+  const metadata = await safeCall(() => conn.groupMetadata(groupJid))
+  const participants = Array.isArray(metadata?.participants) ? metadata.participants : []
+  if (!participants.length) return null
+  const needles = candidates
+    .map((jid) => decodeJid(conn, jid))
+    .filter(Boolean)
+  const needleNumbers = needles.map(normalizeJid).filter(Boolean)
+  return participants.find((participant) => {
+    const ids = [participant?.id, participant?.jid, participant?.lid, participant?.phoneNumber].map((jid) => decodeJid(conn, jid)).filter(Boolean)
+    return ids.some((id) => needles.includes(id) || needleNumbers.includes(normalizeJid(id)))
+  }) || null
+}
+
+const resolveLidToPhone = async (conn, jid) => {
+  const value = decodeJid(conn, jid)
+  if (!value.endsWith('@lid')) return value
+  const mapped = await safeCall(() => conn?.signalRepository?.lidMapping?.getPNForLID?.(value))
+  return typeof mapped === 'string' && mapped ? mapped : value
+}
 
 const getProfileState = (chat, profileName) => {
   const savedMode = String(chat?.[`${profileName}Mode`] || 'public').toLowerCase()
@@ -151,17 +205,10 @@ const findSafePrivateTarget = (conn, candidates = []) => {
   for (const candidate of candidates) {
     if (!candidate) continue
     const value = String(candidate).trim()
-    if (!value || value.endsWith('@g.us') || value.endsWith('@newsletter')) continue
+    if (!isPrivateJid(value)) continue
     const decoded = conn?.decodeJid?.(value) || value
     const normalized = decoded.replace(/:.*$/, '')
     if (!botJids.has(value) && !botJids.has(decoded) && !botJids.has(normalized)) return value
-  }
-
-  for (const candidate of candidates) {
-    if (!candidate) continue
-    const value = String(candidate).trim()
-    if (!value) continue
-    return value
   }
 
   return ''
@@ -242,8 +289,60 @@ const resolveSenderIdentity = async (conn, sourceMessage, protocolKey) => {
   return { phone: phone || 'LID no disponible', name: name || 'Desconocido' }
 }
 
+const resolveDeleteSenderIdentity = async (conn, sourceMessage, protocolKey) => {
+  const chatJid = protocolKey?.remoteJid || sourceMessage?.key?.remoteJid || sourceMessage?.chat || ''
+  const participant = await findParticipantByJid(conn, chatJid, [
+    sourceMessage?.key?.participant,
+    sourceMessage?.sender,
+    sourceMessage?.participant,
+    protocolKey?.participant,
+    sourceMessage?.key?.senderPn,
+    sourceMessage?.key?.remoteJidAlt,
+  ])
+  const candidateJids = [...new Set([
+    participant?.phoneNumber,
+    participant?.jid,
+    participant?.id,
+    participant?.lid,
+    sourceMessage?.key?.participant,
+    sourceMessage?.sender,
+    sourceMessage?.participant,
+    protocolKey?.participant,
+    isPrivateJid(protocolKey?.remoteJid) ? protocolKey?.remoteJid : null,
+    isPrivateJid(sourceMessage?.key?.remoteJid) ? sourceMessage?.key?.remoteJid : null,
+    sourceMessage?.key?.senderPn,
+    sourceMessage?.key?.remoteJidAlt,
+    sourceMessage?.key?.fromMe ? conn?.user?.jid : null,
+  ].filter(Boolean))]
+
+  let phone = null
+  let name = null
+  for (const jid of candidateJids) {
+    const resolvedJid = await resolveLidToPhone(conn, jid)
+    const normalized = normalizeForDisplay(resolvedJid)
+    if (normalized && /^\+\d+$/.test(normalized)) phone = normalized
+    const resolvedName = typeof conn?.getName === 'function' ? await safeCall(() => conn.getName(resolvedJid)) : null
+    if (resolvedName) name = resolvedName
+    if (phone && name) break
+  }
+
+  if (!phone) {
+    for (const jid of candidateJids) {
+      const raw = String(jid || '')
+      if (raw.endsWith('@g.us')) continue
+      const fallback = normalizeForDisplay(raw.includes('@lid') ? raw.replace(/@.*$/, '') : raw)
+      if (fallback) {
+        phone = fallback
+        break
+      }
+    }
+  }
+
+  return { phone: phone || 'LID no disponible', name: name || 'Desconocido' }
+}
+
 const formatGroupDeleteNotice = async (conn, sourceMessage, protocolKey) => {
-  const { phone, name } = await resolveSenderIdentity(conn, sourceMessage, protocolKey)
+  const { phone, name } = await resolveDeleteSenderIdentity(conn, sourceMessage, protocolKey)
   const cleanName = String(name || 'Desconocido').trim()
   const firstHandle = cleanName && cleanName !== 'Desconocido' ? cleanName : (phone || 'LID no disponible')
   return `@${firstHandle.replace(/^\+/, '').replace(/\s+/g, '')} eliminó este mensaje`
@@ -300,7 +399,7 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   const targets = new Set()
   const remoteTarget = protocolKey.remoteJid || payload?.key?.remoteJid || payload?.chat || ''
   const sameChatTarget = options.sameChatTarget || remoteTarget
-  const isPrivateChat = !!(remoteTarget && !String(remoteTarget).endsWith('@g.us') && !String(remoteTarget).endsWith('@newsletter'))
+  const isPrivateChat = isPrivateJid(remoteTarget)
   const botJids = new Set([
     conn?.user?.jid,
     conn?.user?.id,
@@ -309,14 +408,14 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
     conn?.decodeJid?.(conn?.user?.id),
     conn?.decodeJid?.(conn?.user?.lid),
   ].filter(Boolean))
-  const botPrivateTargets = [...new Set([
+  const botPrivateTarget = [
     conn?.user?.jid,
+    conn?.decodeJid?.(conn?.user?.id),
     conn?.user?.id,
     conn?.user?.lid,
-    conn?.user?.verifiedName ? `${String(conn.user.verifiedName).replace(/\D/g, '')}@s.whatsapp.net` : null
-  ].filter(Boolean))]
+  ].find(isPrivateJid)
 
-  if (options.sendToSameChat && sameChatTarget) {
+  if (options.sendToSameChat && isPrivateJid(sameChatTarget)) {
     const chosenTarget = String(sameChatTarget).trim()
     if (chosenTarget && !botJids.has(chosenTarget) && !botJids.has(conn?.decodeJid?.(chosenTarget) || '')) {
       targets.add(chosenTarget)
@@ -324,14 +423,14 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   }
 
   if (!isPrivateChat && options.privateTarget) {
-    for (const jid of botPrivateTargets) targets.add(jid)
+    if (botPrivateTarget) targets.add(botPrivateTarget)
   }
 
   if (options.privateTarget && isPrivateChat && !options.sendToSameChat) {
-    for (const jid of botPrivateTargets) targets.add(jid)
+    if (botPrivateTarget) targets.add(botPrivateTarget)
   }
 
-  if (options.groupTarget && remoteTarget && !isPrivateChat) targets.add(remoteTarget)
+  if (options.groupTarget && isGroupJid(remoteTarget)) targets.add(remoteTarget)
   if (!targets.size) return false
 
   const text = getText(message.content)
@@ -339,8 +438,10 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   const groupHeader = options.groupTarget ? await formatGroupDeleteNotice(conn, payload, protocolKey) : null
   const sendToTargets = async (payloadMessage) => {
     for (const target of targets) {
-      const isPrivateDestination = String(target) === (conn.user?.jid || conn.user?.id || conn.user?.lid || '')
-      const isGroupDestination = String(target).endsWith('@g.us') || String(target).endsWith('@s.whatsapp.net')
+      const decodedTarget = conn?.decodeJid?.(target) || target
+      const isPrivateDestination = [conn?.user?.jid, conn?.user?.id, conn?.user?.lid]
+        .some((jid) => jid && (String(jid) === String(target) || (conn?.decodeJid?.(jid) || jid) === decodedTarget))
+      const isGroupDestination = isGroupJid(target)
       const finalText = isPrivateDestination && privateHeader
         ? `${privateHeader}\n\n${payloadMessage.text || ''}`
         : isGroupDestination && groupHeader
@@ -361,8 +462,10 @@ const resendDeleted = async (conn, protocolKey, options = {}) => {
   const buffer = await downloadMedia(message.content, message.type)
   if (!buffer.length) return false
   for (const target of targets) {
-    const isPrivateDestination = String(target) === (conn.user?.jid || conn.user?.id || conn.user?.lid || '')
-    const isGroupDestination = String(target).endsWith('@g.us') || String(target).endsWith('@s.whatsapp.net')
+    const decodedTarget = conn?.decodeJid?.(target) || target
+    const isPrivateDestination = [conn?.user?.jid, conn?.user?.id, conn?.user?.lid]
+      .some((jid) => jid && (String(jid) === String(target) || (conn?.decodeJid?.(jid) || jid) === decodedTarget))
+    const isGroupDestination = isGroupJid(target)
     const captionPrefix = isPrivateDestination && privateHeader
       ? `${privateHeader}${text ? `\n\n${text}` : ''}`
       : isGroupDestination && groupHeader
@@ -490,7 +593,7 @@ handler.all = async function (m, { chat }) {
   const protocolKey = protocolMessage?.key
   const isOwnDelete = Boolean(protocolKey?.fromMe || m.fromMe || m.key?.fromMe)
   const isGroupDelete = !!(protocolKey?.remoteJid && String(protocolKey.remoteJid).endsWith('@g.us'))
-  const isPrivateDelete = !!(protocolKey?.remoteJid && !String(protocolKey.remoteJid).endsWith('@g.us') && !String(protocolKey.remoteJid).endsWith('@newsletter'))
+  const isPrivateDelete = isPrivateJid(protocolKey?.remoteJid)
 
   const antideleteState = getProfileState(botScopedChat, 'antidelete')
   const antideletepState = getProfileState(botScopedChat, 'antideletep')
@@ -516,10 +619,10 @@ handler.all = async function (m, { chat }) {
       groupTarget: false,
       sendToSameChat: false,
       sameChatTarget: findSafePrivateTarget(conn, [
-        m.sender,
-        protocolKey?.participant,
         protocolKey?.remoteJid,
         m.chat,
+        m.sender,
+        protocolKey?.participant,
         m.key?.remoteJid,
         m.key?.participant,
       ])

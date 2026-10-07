@@ -58,7 +58,7 @@ console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.messa
 const isUnsupportedAntideleteContent = (content) => {
 if (!content || typeof content !== "object") return false
 for (const [type, value] of Object.entries(content)) {
-if (/^viewOnceMessage/.test(type) || type === "audioMessage" || value?.viewOnce) return true
+if (type === "audioMessage") return true
 if (["ephemeralMessage", "documentWithCaptionMessage"].includes(type) && isUnsupportedAntideleteContent(value?.message)) return true
 }
 return false

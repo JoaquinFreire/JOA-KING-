@@ -8,14 +8,15 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
   const sends = []
   const replies = []
   const reactions = []
+  let generated = 0
   const conn = {
-    user: { jid: '5491100000000:12@s.whatsapp.net' },
-    getName: async () => 'Nombre Test',
-    profilePictureUrl: async () => null,
-    relayMessage: async (jid, message, opts) => relays.push({ jid, message, opts }),
+    relayMessage: async (jid, message, opts = {}) => {
+      const id = opts.messageId || `TEMP${++generated}`
+      relays.push({ jid, message, opts, id })
+      return id
+    },
     sendMessage: async (jid, content, opts) => sends.push({ jid, content, opts }),
     reply: async (jid, message) => replies.push({ jid, message }),
-    cMod: (_jid, message) => message,
     ...connOverrides,
   }
   const fakeM = { react: async (emoji) => reactions.push(emoji), ...m }
@@ -24,11 +25,11 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
 }
 
 {
-  const { sends, replies, reactions } = await runCase({
+  const { relays, sends, replies, reactions } = await runCase({
     m: {
       chat: '120363000000000000@g.us',
       isGroup: true,
-      msg: { contextInfo: { participant: '5491122223333@s.whatsapp.net', stanzaId: 'MSG1' } },
+      msg: { contextInfo: { stanzaId: 'MSG1' } },
       quoted: {
         id: 'MSG1',
         sender: '5491122223333@s.whatsapp.net',
@@ -38,38 +39,29 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
   })
 
   assert.strictEqual(replies.length, 0, 'no debe responder error')
-  assert.strictEqual(sends.length, 1, 'debe mandar un solo mensaje visible')
-  assert.strictEqual(sends[0].jid, '120363000000000000@g.us', 'send al grupo')
-  assert.strictEqual(sends[0].opts.quoted, null, 'no debe citar el comando real')
+  assert.strictEqual(relays.length, 2, 'debe enviar temporal y protocolMessage edit')
+  assert.strictEqual(sends.length, 2, 'debe intentar borrar ambos mensajes temporales')
 
-  const content = sends[0].content
-  assert.ok(content.text.includes('*FAKEMSG2 - SIMULACION*'), 'debe tener encabezado explicito')
-  assert.ok(content.text.includes('*Nombre:* Nombre Test'), 'debe poner nombre resuelto')
-  assert.ok(content.text.includes('*Usuario:* @5491122223333'), 'debe mencionar usuario objetivo')
-  assert.ok(content.text.includes('mensaje inventado'), 'debe incluir el texto simulado')
-  assert.ok(content.text.includes('Este mensaje fue generado por el bot'), 'debe incluir disclaimer visible')
-  assert.deepStrictEqual(content.mentions, ['5491122223333@s.whatsapp.net'], 'debe mencionar participante objetivo')
-  assert.ok(reactions.includes('\u2705'), 'debe reaccionar ok')
-}
-
-{
-  const { sends, replies } = await runCase({
-    m: {
-      chat: '5491122223333@s.whatsapp.net',
-      isGroup: false,
-      msg: { contextInfo: { stanzaId: 'DM1' } },
-      quoted: {
-        id: 'DM1',
-        sender: '5491122223333@s.whatsapp.net',
-        message: { conversation: 'texto real' },
+  assert.deepStrictEqual(relays[0].message, {
+    extendedTextMessage: {
+      text: '',
+      contextInfo: {
+        isGroupStatus: true,
       },
     },
-  })
+  }, 'el primer relay debe ser el temporal oculto')
 
-  assert.strictEqual(replies.length, 0, 'DM no debe responder error')
-  assert.strictEqual(sends.length, 1, 'DM debe enviar un mensaje')
-  assert.ok(sends[0].content.text.includes('mensaje inventado'), 'texto visible correcto')
-  assert.ok(sends[0].content.text.includes('Este mensaje fue generado por el bot'), 'disclaimer visible correcto')
+  const protocol = relays[1].message.protocolMessage
+  assert.ok(protocol, 'el segundo relay debe ser protocolMessage')
+  assert.strictEqual(protocol.key.id, 'TEMP1', 'la edicion debe apuntar al temporal')
+  assert.strictEqual(protocol.key.fromMe, true, 'la key editada debe ser fromMe')
+  assert.strictEqual(protocol.type, 14, 'debe usar MESSAGE_EDIT')
+  assert.strictEqual(protocol.editedMessage.extendedTextMessage.text, 'mensaje inventado', 'debe llevar el texto nuevo')
+  assert.strictEqual(protocol.editedMessage.extendedTextMessage.contextInfo.isGroupStatus, false, 'debe quitar group status en la edicion')
+  assert.strictEqual(relays[1].opts.messageId, 'MSG1', 'el stanza del protocolMessage debe reutilizar el id citado')
+
+  assert.deepStrictEqual(sends.map((send) => send.content.delete.id), ['TEMP1', 'MSG1'], 'debe limpiar temporal y relay de edicion')
+  assert.ok(reactions.includes('\u2705'), 'debe reaccionar ok')
 }
 
 {
@@ -79,6 +71,35 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
   assert.strictEqual(relays.length, 0, 'sin cita no debe relayer')
   assert.strictEqual(sends.length, 0, 'sin cita no debe enviar')
   assert.strictEqual(replies.length, 1, 'sin cita debe responder uso')
+}
+
+{
+  const { relays, sends, replies } = await runCase({
+    text: '   ',
+    m: {
+      chat: '120363@g.us',
+      isGroup: true,
+      msg: { contextInfo: { stanzaId: 'MSG2' } },
+      quoted: { id: 'MSG2' },
+    },
+  })
+  assert.strictEqual(relays.length, 0, 'sin texto no debe relayer')
+  assert.strictEqual(sends.length, 0, 'sin texto no debe enviar')
+  assert.strictEqual(replies.length, 1, 'sin texto debe responder uso')
+}
+
+{
+  const { relays, sends, replies } = await runCase({
+    m: {
+      chat: '5491122223333@s.whatsapp.net',
+      isGroup: false,
+      msg: { contextInfo: { stanzaId: 'DM1' } },
+      quoted: { id: 'DM1' },
+    },
+  })
+  assert.strictEqual(relays.length, 0, 'en privado no debe relayer')
+  assert.strictEqual(sends.length, 0, 'en privado no debe enviar')
+  assert.strictEqual(replies.length, 1, 'en privado debe avisar que es solo grupos')
 }
 
 console.log('Todos los tests de fakemsg2 pasaron')

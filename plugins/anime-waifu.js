@@ -3,11 +3,12 @@ import fetch from 'node-fetch'
 let handler = async (m, { conn, usedPrefix, command }) => {
 try {
 await m.react('🕒')
-let res = await fetch('https://api.waifu.pics/sfw/waifu')
-if (!res.ok) return
+let res = await fetch('https://nekos.best/api/v2/waifu')
+if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
 let json = await res.json()
-if (!json.url) return
-await conn.sendFile(m.chat, json.url, 'thumbnail.jpg', '❀ Aquí tienes tu *Waifu* ฅ^•ﻌ•^ฅ.', fkontak)
+let image = json.results?.[0]?.url
+if (!image) throw new Error('La API no devolvió ninguna imagen.')
+await conn.sendMessage(m.chat, { image: { url: image }, caption: '❀ Aquí tienes tu *Waifu* ฅ^•ﻌ•^ฅ.' }, { quoted: m })
 await m.react('✔️')
 } catch (error) {
 await m.react('✖️')

@@ -6,9 +6,8 @@ let toM = a => '@' + a.split('@')[0]
 let pickRandom = list => list[Math.floor(Math.random() * list.length)]
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args }) => {
-if (!global.db.data.chats[m.chat].gacha && m.isGroup) return m.reply(`《✦》Los comandos de *Gacha* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}gacha on*`)
 try {
-let ps = groupMetadata.participants.map(v => v.id)
+let ps = (groupMetadata?.participants || []).map(v => v.id).filter(Boolean)
 if (command == 'top') {
 let cantidad = 10
 let texto = text
@@ -45,13 +44,13 @@ while (seleccionados.length < cantidad) {
 let candidato = ps[Math.floor(Math.random() * ps.length)]
 if (!seleccionados.includes(candidato)) seleccionados.push(candidato)
 }
-let mensaje = cantidad === 1 ? `✦ ＦＥＬＩＣＩＤＡＤＥＳ ✦\n\n❀ ${user(seleccionados[0])}\n○ Haz ganado un *${premio}*` : `✦ ＦＥＬＩＣＩＤＡＤＥＳ ✦\n\n` + seleccionados.map((u, i) => `${i + 1}. ${user(u)}`).join('\n') + `\n\n○ Han ganado un *${premio}*`
+let mensaje = cantidad === 1 ? `✦ ＦＥＬＩＣＩＤＡＤＥＳ ✦\n\n❀ ${user(seleccionados[0])}\n○ Haz ganado  *${premio}*` : `✦ ＦＥＬＩＣＩＤＡＤＥＳ ✦\n\n` + seleccionados.map((u, i) => `${i + 1}. ${user(u)}`).join('\n') + `\n\n○ Han ganado un *${premio}*`
 return await conn.sendMessage(m.chat, { text: mensaje.trim(), mentions: seleccionados }, { quoted: m, ephemeralExpiration: 24 * 60 * 100, disappearingMessagesInChat: 24 * 60 * 100 })
 }
 if (command == 'ship' || command == 'shippear') {
-if (!text) return conn.reply(m.chat, `❀ Escribe tu nombre y el nombre de la otra personas para calcular su amor.`, m)
-let [text1, ...text2] = text.split(' ')
-text2 = (text2 || []).join(' ')
+if (!text?.trim()) return conn.reply(m.chat, `❀ Escribe tu nombre y el nombre de la otra persona para calcular su amor.`, m)
+let [text1, ...text2] = text.trim().split(/\s+/)
+text2 = text2.join(' ')
 if (!text2) return conn.reply(m.chat, `ꕥ Escribe el nombre de la segunda persona.`, m)
 let love = `❤️ *${text1}* tu oportunidad de enamorarte de *${text2}* es de ${Math.floor(Math.random() * 100)}% 👩🏻‍❤️‍👨🏻`
 return m.reply(love, null, { mentions: conn.parseMention(love) })
@@ -63,11 +62,22 @@ user.afkReason = text
 return await conn.reply(m.chat, `❀ *El Usuario ${await conn.getName(m.sender)} Estará AFK*\n○ *Motivo${text ? ': ' + text : ': Sin Especificar!'}*`, m)
 }
 if (command == 'personalidad') {
-let mentionedJid = await m.mentionedJid
-let userId = mentionedJid?.[0] || (m.quoted && await m.quoted.sender) || conn.parseMention(text)?.[0] || text || null
-let nombre = !userId?.includes('@s.whatsapp.net') ? userId : global.db.data.users[userId].name || (await conn.getName(userId).catch(() => userId.split('@')[0])) || userId.split('@')[0]
-let userName = userId?.includes('@s.whatsapp.net') ? `*${nombre}*` : `*${userId}*`
+let mentionedJid = m.mentionedJid || []
+let quotedSender = m.quoted ? await m.quoted.sender : null
+let userId = mentionedJid[0] || quotedSender || conn.parseMention(text || '')?.[0] || text?.trim()
 if (!userId) return conn.reply(m.chat, `❀ Por favor, ingrese el nombre de alguna persona.`, m)
+let nombre = userId
+if (userId.includes('@')) {
+nombre = global.db?.data?.users?.[userId]?.name
+if (!nombre) {
+try {
+nombre = await conn.getName(userId)
+} catch {
+nombre = userId.split('@')[0]
+}
+}
+}
+let userName = `*${nombre || userId}*`
 let personalidad = `> • Nombre » ${userName}\n> • Buena Moral » ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Mala Moral : ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Tipo de persona » ${pickRandom(['De buen corazón','Arrogante','Tacaño','Generoso','Humilde','Tímido','Cobarde','Entrometido','Cristal','No binarie XD', 'Pendejo'])}\n> • Siempre » ${pickRandom(['Pesado','De malas','Distraido','De molestoso','Chismoso','Pasa jalandosela','De compras','Viendo anime','Chatea en WhatsApp porque esta soltero','Acostado bueno para nada','De mujeriego','En el celular'])}\n> • Inteligencia » ${pickRandom(['9%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Pendejo(a) » ${pickRandom(['9%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Morosidad » ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Coraje » ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Miedo » ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Fama » ${pickRandom(['6%','12%','20%','27%','35%','41%','49%','54%','60%','66%','73%','78%','84%','92%','93%','94%','96%','98,3%','99,7%','99,9%','1%','2,9%','0%','0,4%'])}\n> • Género » ${pickRandom(['Hombre', 'Mujer', 'Homosexual', 'Bisexual', 'Pansexual', 'Feminista', 'Heterosexual', 'Macho alfa', 'Mujerzona', 'Marimacha', 'Palosexual', 'PlayStationSexual', 'Sr. Manuela', 'Pollosexual'])}`
 return await conn.reply(m.chat, personalidad, m)
 }

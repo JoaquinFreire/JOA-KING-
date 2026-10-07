@@ -4,36 +4,39 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 if (!text) return conn.reply(m.chat, `❀ Por favor, ingrese el nombre de algún anime.`, m)
 try {
 await m.react('🕒')
-let res = await fetch('https://api.jikan.moe/v4/manga?q=' + text)
-if (!res.ok) {
-await m.react('✖️')
-return conn.reply(m.chat, `⚠︎ Ocurrió un fallo.`, m)
-}
+let res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(text)}&page[limit]=1`)
+if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
 let json = await res.json()
-let { chapters, title_japanese, url, type, score, members, background, status, volumes, synopsis, favorites } = json.data[0]
-let author = json.data[0].authors[0].name
-let animeingfo = `❀ Título: ${title_japanese}
-» Capítulo: ${chapters}
-» Transmisión: ${type}
-» Estado: ${status}
-» Volumes: ${volumes}
-» Favorito: ${favorites}
-» Puntaje: ${score}
-» Miembros: ${members}
-» Autor: ${author}
-» Fondo: ${background}
+let anime = json.data?.[0]
+if (!anime) {
+await m.react('✖️')
+return conn.reply(m.chat, `ꕥ No se encontró ese anime.`, m)
+}
+let info = anime.attributes || {}
+let synopsis = info.synopsis || 'Sin sinopsis disponible.'
+if (synopsis.length > 600) synopsis = synopsis.slice(0, 597) + '...'
+let animeInfo = `❀ Título: ${info.canonicalTitle || info.titles?.en || info.titles?.en_jp || text}
+» Episodios: ${info.episodeCount ?? 'Desconocido'}
+» Tipo: ${info.subtype || 'Desconocido'}
+» Estado: ${info.status || 'Desconocido'}
+» Puntaje: ${info.averageRating || 'Desconocido'}
 » Sinopsis: ${synopsis}
-» Url: ${url}` 
-await conn.sendFile(m.chat, json.data[0].images.jpg.image_url, 'anjime.jpg', '✧ *I N F O - A N I M E* ✧\n\n' + animeingfo, fkontak)
+» Url: https://kitsu.io/anime/${anime.id}`
+let image = info.posterImage?.original || info.posterImage?.large || info.posterImage?.medium
+if (image) {
+await conn.sendMessage(m.chat, { image: { url: image }, caption: `✧ *I N F O - A N I M E* ✧\n\n${animeInfo}` }, { quoted: m })
+} else {
+await conn.reply(m.chat, `✧ *I N F O - A N I M E* ✧\n\n${animeInfo}`, m)
+}
 await m.react('✔️')
 } catch (error) {
 await m.react('✖️')
 await conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['infoanime'] 
+handler.help = ['infoanime', 'serieinfo', 'ainfo', 'animeinfo']
 handler.tags = ['anime']
-handler.command = ['infoanime']
+handler.command = ['infoanime', 'serieinfo', 'ainfo', 'animeinfo']
 handler.group = true
 
 export default handler

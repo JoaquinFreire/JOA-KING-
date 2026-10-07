@@ -1,10 +1,21 @@
 import fetch from 'node-fetch'
+import { toVideo } from '../lib/converter.js'
 
 let handler = async (m, { conn, command, usedPrefix }) => {
-let mentionedJid = await m.mentionedJid
-let userId = mentionedJid.length > 0 ? mentionedJid[0] : (m.quoted ? await m.quoted.sender : m.sender)
-let from = await (async () => global.db.data.users[m.sender].name || (async () => { try { const n = await conn.getName(m.sender); return typeof n === 'string' && n.trim() ? n : m.sender.split('@')[0] } catch { return m.sender.split('@')[0] } })())()
-let who = await (async () => global.db.data.users[userId].name || (async () => { try { const n = await conn.getName(userId); return typeof n === 'string' && n.trim() ? n : userId.split('@')[0] } catch { return userId.split('@')[0] } })())()
+let mentionedJid = m.mentionedJid || []
+let userId = mentionedJid[0] || (m.quoted ? await m.quoted.sender : m.sender)
+let displayName = async jid => {
+let savedName = global.db?.data?.users?.[jid]?.name
+if (savedName) return savedName
+try {
+const name = await conn.getName(jid)
+return typeof name === 'string' && name.trim() ? name : jid.split('@')[0]
+} catch {
+return jid.split('@')[0]
+}
+}
+let from = await displayName(m.sender)
+let who = await displayName(userId)
 let str, query
 switch (command) {
 case 'angry': case 'enojado':
@@ -111,7 +122,7 @@ case 'think': case 'pensar':
 str = from === who ? `\`${from}\` está pensando! (⸝⸝╸-╺⸝⸝)` : `\`${from}\` está pensando en \`${who}\`! (⸝⸝╸-╺⸝⸝)`
 query = 'anime think'
 break
-case 'love': case 'enamorado': case 'enamorada':
+case 'love': case 'amor': case 'enamorado': case 'enamorada':
 str = from === who ? `\`${from}\` está enamorado/a de sí mismo/a! (≧◡≦) ♡` : `\`${from}\` está enamorado/a de \`${who}\`! (≧◡≦) ♡`
 query = 'anime love'
 break
@@ -131,7 +142,7 @@ case 'punch': case 'pegar': case 'golpear':
 str = from === who ? `\`${from}\` se golpeó a sí mismo/a! (ദി˙ᗜ˙)` : `\`${from}\` golpea a \`${who}\`! con todas sus fuerzas (ദ്ദി˙ᗜ˙)`
 query = 'anime punch'
 break
-case 'preg': case 'preñar': case 'embarazar':
+case 'preg': case 'preñar': case 'embarazar': case 'impregnate':
 str = from === who ? `\`${from}\` se embarazó solito/a... misterioso! (¬ω¬)` : `\`${from}\` le regaló 9 meses de espera a \`${who}\`! (¬ω¬)`
 query = 'anime preg'
 break
@@ -206,19 +217,56 @@ break
 }
 if (m.isGroup) {
 try {
-const res = await fetch(`${global.APIs.delirius.url}/search/tenor?q=${query}`)
+const requestedAction = query.split(' ').pop()
+const actionFallbacks = {
+  bath: 'sip',
+  coffee: 'sip',
+  drunk: 'sip',
+  eat: 'nom',
+  lick: 'bite',
+  love: 'hug',
+  kill: 'shoot',
+  smoke: 'sip',
+  spit: 'nope',
+  sad: 'cry',
+  step: 'kick',
+  dramatic: 'tableflip',
+  kisscheek: 'peck',
+  cringe: 'facepalm',
+  bullying: 'baka',
+  scared: 'shocked',
+  seduce: 'wink',
+  shy: 'blush',
+  walk: 'run',
+  preg: 'cuddle',
+}
+const action = actionFallbacks[requestedAction] || requestedAction
+const res = await fetch(`https://nekos.best/api/v2/${encodeURIComponent(action)}`)
+if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
 const json = await res.json()
-const gifs = json.data
-if (!gifs || gifs.length === 0) return m.reply('ꕥ No se encontraron resultados.')
-const randomGif = gifs[Math.floor(Math.random() * gifs.length)].mp4
-conn.sendMessage(m.chat, { video: { url: randomGif }, gifPlayback: true, caption: str, mentions: [who] }, { quoted: m })
+const animation = json.results?.[0]
+if (!animation?.url) throw new Error('La API no devolvió un GIF.')
+const gifResponse = await fetch(animation.url)
+if (!gifResponse.ok) throw new Error(`No se pudo descargar el GIF (HTTP ${gifResponse.status}).`)
+const converted = await toVideo(await gifResponse.buffer(), 'gif')
+try {
+await conn.sendMessage(m.chat, {
+video: converted.data,
+mimetype: 'video/mp4',
+gifPlayback: true,
+caption: str,
+mentions: [userId],
+}, { quoted: m })
+} finally {
+await converted.delete().catch(() => {})
+}
 } catch (e) {
 return m.reply(`⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${e.message}`)
 }}}
 
-handler.help = ['angry', 'enojado', 'bath', 'bañarse', 'bite', 'morder', 'bleh', 'lengua', 'blush', 'sonrojarse', 'bored', 'aburrido', 'clap', 'aplaudir', 'coffee', 'cafe', 'café', 'cry', 'llorar', 'cuddle', 'acurrucarse', 'dance', 'bailar', 'drunk', 'borracho', 'eat', 'comer', 'facepalm', 'palmada', 'happy', 'feliz', 'hug', 'abrazar', 'kill', 'matar', 'kiss', 'muak', 'laugh', 'reirse', 'lick', 'lamer', 'slap', 'bofetada', 'sleep', 'dormir', 'smoke', 'fumar', 'spit', 'escupir', 'step', 'pisar', 'think', 'pensar', 'love', 'enamorado', 'enamorada', 'pat', 'palmadita', 'palmada', 'poke', 'picar', 'pout', 'pucheros', 'punch', 'pegar', 'golpear', 'preg', 'preñar', 'embarazar', 'run', 'correr', 'sad', 'triste', 'scared', 'asustada', 'asustado', 'seduce', 'seducir', 'shy', 'timido', 'timida', 'walk', 'caminar', 'dramatic', 'drama', 'kisscheek', 'beso', 'wink', 'guiñar', 'cringe', 'avergonzarse', 'smug', 'presumir', 'smile', 'sonreir', 'clap', 'aplaudir', 'highfive', '5', 'bully', 'bullying', 'mano', 'handhold', 'ola', 'wave', 'hola']
+handler.help = ['angry', 'enojado', 'bath', 'bañarse', 'bite', 'morder', 'bleh', 'lengua', 'blush', 'sonrojarse', 'bored', 'aburrido', 'clap', 'aplaudir', 'coffee', 'cafe', 'café', 'cry', 'llorar', 'cuddle', 'acurrucarse', 'dance', 'bailar', 'drunk', 'borracho', 'eat', 'comer', 'facepalm', 'palmada', 'happy', 'feliz', 'hug', 'abrazar', 'kill', 'matar', 'kiss', 'muak', 'laugh', 'reirse', 'lick', 'lamer', 'slap', 'bofetada', 'sleep', 'dormir', 'smoke', 'fumar', 'spit', 'escupir', 'step', 'pisar', 'think', 'pensar', 'love', 'amor', 'enamorado', 'enamorada', 'pat', 'palmadita', 'palmada', 'poke', 'picar', 'pout', 'pucheros', 'punch', 'pegar', 'golpear', 'preg', 'impregnate', 'preñar', 'embarazar', 'run', 'correr', 'sad', 'triste', 'scared', 'asustada', 'asustado', 'seduce', 'seducir', 'shy', 'timido', 'timida', 'walk', 'caminar', 'dramatic', 'drama', 'kisscheek', 'beso', 'wink', 'guiñar', 'cringe', 'avergonzarse', 'smug', 'presumir', 'smile', 'sonreir', 'clap', 'aplaudir', 'highfive', '5', 'bully', 'bullying', 'mano', 'handhold', 'ola', 'wave', 'hola']
 handler.tags = ['anime']
-handler.command = ['angry', 'enojado', 'bath', 'bañarse', 'bite', 'morder', 'bleh', 'lengua', 'blush', 'sonrojarse', 'bored', 'aburrido', 'clap', 'aplaudir', 'coffee', 'cafe', 'café', 'cry', 'llorar', 'cuddle', 'acurrucarse', 'dance', 'bailar', 'drunk', 'borracho', 'eat', 'comer', 'facepalm', 'palmada', 'happy', 'feliz', 'hug', 'abrazar', 'kill', 'matar', 'kiss', 'muak', 'laugh', 'reirse', 'lick', 'lamer', 'slap', 'bofetada', 'sleep', 'dormir', 'smoke', 'fumar', 'spit', 'escupir', 'step', 'pisar', 'think', 'pensar', 'love', 'enamorado', 'enamorada', 'pat', 'palmadita', 'palmada', 'poke', 'picar', 'pout', 'pucheros', 'punch', 'pegar', 'golpear', 'preg', 'preñar', 'embarazar', 'run', 'correr', 'sad', 'triste', 'scared', 'asustada', 'asustado', 'seduce', 'seducir', 'shy', 'timido', 'timida', 'walk', 'caminar', 'dramatic', 'drama', 'kisscheek', 'beso', 'wink', 'guiñar', 'cringe', 'avergonzarse', 'smug', 'presumir', 'smile', 'sonreir', 'clap', 'aplaudir', 'highfive', '5', 'bully', 'bullying', 'mano', 'handhold', 'ola', 'wave', 'hola']
+handler.command = ['angry', 'enojado', 'bath', 'bañarse', 'bite', 'morder', 'bleh', 'lengua', 'blush', 'sonrojarse', 'bored', 'aburrido', 'clap', 'aplaudir', 'coffee', 'cafe', 'café', 'cry', 'llorar', 'cuddle', 'acurrucarse', 'dance', 'bailar', 'drunk', 'borracho', 'eat', 'comer', 'facepalm', 'palmada', 'happy', 'feliz', 'hug', 'abrazar', 'kill', 'matar', 'kiss', 'muak', 'laugh', 'reirse', 'lick', 'lamer', 'slap', 'bofetada', 'sleep', 'dormir', 'smoke', 'fumar', 'spit', 'escupir', 'step', 'pisar', 'think', 'pensar', 'love', 'amor', 'enamorado', 'enamorada', 'pat', 'palmadita', 'palmada', 'poke', 'picar', 'pout', 'pucheros', 'punch', 'pegar', 'golpear', 'preg', 'impregnate', 'preñar', 'embarazar', 'run', 'correr', 'sad', 'triste', 'scared', 'asustada', 'asustado', 'seduce', 'seducir', 'shy', 'timido', 'timida', 'walk', 'caminar', 'dramatic', 'drama', 'kisscheek', 'beso', 'wink', 'guiñar', 'cringe', 'avergonzarse', 'smug', 'presumir', 'smile', 'sonreir', 'clap', 'aplaudir', 'highfive', '5', 'bully', 'bullying', 'mano', 'handhold', 'ola', 'wave', 'hola']
 handler.group = true
 
 export default handler

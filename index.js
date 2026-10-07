@@ -361,7 +361,7 @@ JoaKingSubBot({pathJoaKingSubBot: botPath, m: null, conn, args: '', usedPrefix: 
 
 const pluginFolder = join(__dirname, './plugins')
 const pluginFilter = (filename) => /\.js$/.test(filename)
-const temporarilyDisabledPlugin = (filename) => /^(?:anime-|nsfw-)/i.test(filename)
+const temporarilyDisabledPlugin = (filename) => /^nsfw-/i.test(filename)
 global.plugins = {}
 global.pluginLoadErrors = {}
 async function filesInit() {

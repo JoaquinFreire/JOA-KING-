@@ -94,6 +94,8 @@ let txt = `
 > 𓃦 Ver la foto de perfil de un usuario.
  ✿  *#say* + [texto]
 > 𓃦 Repetir un mensaje
+ ✿  *%fakemsg* [texto ficticio + respuesta del bot] {respondiendo a un mensaje}
+> 𓃦 Probar el texto citado y la respuesta visible del bot.
  ✿  *%vozarg • %vozloquendo • %vozloquendo2 • %vozanime* + [texto]
 > 𓃦 Generar audio con voz argentina, alternativa o anime; también puedes responder a un mensaje.
  ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML

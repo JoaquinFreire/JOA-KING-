@@ -96,7 +96,7 @@ const menuSections = {
             ' 🎄  *#removesale • #removerventa* + [precio] [nombre]\n> ☃️ Eliminar un personaje en venta.',
             ' 🎄  *#rollwaifu • #rw • #roll*\n> ☃️ Waifu o husbando aleatorio',
             ' 🎄  *#sell • #vender* + [precio] [nombre]\n> ☃️ Poner un personaje a la venta.',
-            ' 🎄  *#serieinfo • #ainfo • #animeinfo* + [nombre]\n> ☃️ Información de un anime.',
+            ' 🎄  *#infoanime • #serieinfo • #ainfo • #animeinfo* + [nombre]\n> ☃️ Información de un anime.',
             ' 🎄  *#serielist • #slist • #animelist*\n> ☃️ Listar series del bot',
             ' 🎄  *#setclaimmsg • #setclaim* + [mensaje]\n> ☃️ Modificar el mensaje al reclamar un personaje',
             ' 🎄  *#trade • #intercambiar* + [Tu personaje] / [Personaje 2]\n> ☃️ Intercambiar un personaje con otro usuario',
@@ -154,6 +154,8 @@ const menuSections = {
             ' 🎄  *#setbye* + [texto]\n> ☃️ Establecer un mensaje de despedida personalizado.',
             ' 🎄  *#setprimary* + [@bot]\n> ☃️ Establece un bot como primario del grupo.',
             ' 🎄  *#setwelcome* + [texto]\n> ☃️ Establecer un mensaje de bienvenida personalizado.',
+            ' 🎄  *#testwelcome*\n> ☃️ Probar el mensaje de bienvenida configurado.',
+            ' 🎄  *#testbye*\n> ☃️ Probar el mensaje de despedida configurado.',
             ' 🎄  *#kick • #ban* + <@usuario> | {mencion}\n> ☃️ Expulsar a un usuario del grupo.',
             ' 🎄  *#nsfw* + [enable/disable]\n> ☃️ Activar/desactivar los comandos NSFW',
             ' 🎄  *#onlyadmin* + [enable/disable]\n> ☃️ Permitir que solo los administradores puedan utilizar los comandos.',
@@ -228,6 +230,8 @@ const menuSections = {
             ' 🎄  *#bully • #bullying* + <mencion>\n> ☃️ Molestar a alguien',
             ' 🎄  *#handhold • #mano* + <mencion>\n> ☃️ Tomarse de la mano',
             ' 🎄  *#wave • #ola • #hola* + <mencion>\n> ☃️ Saludar con la mano',
+            ' 🎄  *#infoanime • #serieinfo • #ainfo • #animeinfo* + [nombre]\n> ☃️ Consultar información de un anime.',
+            ' 🎄  *#pokedex* + [Pokémon]\n> ☃️ Consultar información de un Pokémon.',
             ' 🎄  *#waifu*\n> ☃️ Buscar una waifu aleatoria.',
             ' 🎄  *#ppcouple • #ppcp*\n> ☃️ Genera imágenes para amistades o parejas.'
         ],
@@ -260,7 +264,14 @@ const menuSections = {
             ' 🎄  *#wiki • #wikipedia*\n> ☃️ Investigar temas a través de Wikipedia.',
             ' 🎄  *#dalle • #flux*\n> ☃️ Crear imágenes con texto mediante IA.',
             ' 🎄  *#npmdl • #nmpjs*\n> ☃️ Descargar paquetes de NPMJS.',
-            ' 🎄  *#google*\n> ☃️ Realizar búsquedas por Google.'
+            ' 🎄  *#lyrics* + [canción]\n> ☃️ Buscar la letra de una canción.',
+            ' 🎄  *#top* + [cantidad] [tema]\n> ☃️ Crear un ranking aleatorio del grupo.',
+            ' 🎄  *#sorteo* + [cantidad] [premio]\n> ☃️ Sortear premios entre los miembros del grupo.',
+            ' 🎄  *#ship • #shippear* + [nombre] [nombre]\n> ☃️ Calcular compatibilidad entre dos personas.',
+            ' 🎄  *#personalidad* + [@usuario]\n> ☃️ Descubrir una personalidad aleatoria.',
+            ' 🎄  *#google* + [búsqueda]\n> ☃️ Realizar búsquedas por Google.',
+            ' 🎄  *#webvideo • #videoweb* + [url]\n> ☃️ Grabar la página web en video.',
+            ' 🎄  *#webimage • #imagenweb* + [url]\n> ☃️ Enviar una captura de pantalla de la página.'
         ],
         description: 'Comandos de *Útilidades*.'
     },

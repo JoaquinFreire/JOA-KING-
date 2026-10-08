@@ -1,0 +1,41 @@
+{
+  "groupId": "120363412011956970@g.us",
+  "enabled": true,
+  "albums": [
+    "Postres",
+    "Bot"
+  ],
+  "characters": [
+    {
+      "id": "b6ee1cf1-8621-4186-af03-da6a719d1008",
+      "name": "Nutella",
+      "album": "Postres",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791438404/mudae/95136749849b57ffd859/1c868444-4894-40ac-93ba-b2d3af124b6f.jpg",
+      "cloudinaryPublicId": "mudae/95136749849b57ffd859/1c868444-4894-40ac-93ba-b2d3af124b6f",
+      "owner": "114864672526580@lid",
+      "createdAt": 1791438544036,
+      "claimedAt": 1791438574245
+    },
+    {
+      "id": "e30ff48b-3bf6-4d00-92fc-e2050ab47629",
+      "name": "Tipaza",
+      "album": "Bot",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791440094/mudae/95136749849b57ffd859/954715d7-62ff-4991-a3b5-4e8a82c12a8c.jpg",
+      "cloudinaryPublicId": "mudae/95136749849b57ffd859/954715d7-62ff-4991-a3b5-4e8a82c12a8c",
+      "owner": null,
+      "createdAt": 1791440233503
+    }
+  ],
+  "users": {},
+  "rollCooldowns": {
+    "114864672526580@lid": 1791440250094
+  },
+  "claimCooldowns": {
+    "114864672526580@lid": 1791439774245
+  },
+  "activeRoll": null,
+  "createdAt": 1791437539197,
+  "updatedAt": 1791440485591
+}

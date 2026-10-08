@@ -257,6 +257,7 @@ sock.credsUpdate = saveCreds.bind(sock, true)
 sock.ev.on("messages.upsert", sock.handler)
 sock.ev.on("connection.update", sock.connectionUpdate)
 sock.ev.on("creds.update", sock.credsUpdate)
+global.plugins?.['mudae.js']?.init?.(sock)
 isInit = false
 return true
 }

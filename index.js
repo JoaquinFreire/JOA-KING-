@@ -1,6 +1,7 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
-import './settings.js'
-import './plugins/_allfake.js'
+if (typeof process.loadEnvFile === 'function' && existsSync('.env')) process.loadEnvFile('.env')
+await import('./settings.js')
+await import('./plugins/_allfake.js')
 import cfonts from 'cfonts'
 import { createRequire } from 'module'
 import { fileURLToPath, pathToFileURL } from 'url'
@@ -332,6 +333,7 @@ conn.credsUpdate = saveCreds.bind(global.conn, true)
 conn.ev.on('messages.upsert', conn.handler)
 conn.ev.on('connection.update', conn.connectionUpdate)
 conn.ev.on('creds.update', conn.credsUpdate)
+global.plugins?.['mudae.js']?.init?.(global.conn)
 isInit = false
 return true
 };
@@ -377,7 +379,9 @@ conn.logger.error(`[PLUGIN LOAD] No se pudo cargar '${filename}': ${e?.stack || 
 global.pluginLoadErrors[filename] = String(e?.stack || e).slice(0, 1200)
 global.reportOwnerError(e, `plugin-load:${filename}`).catch(() => {})
 delete global.plugins[filename]
-}}}
+}}
+global.plugins['mudae.js']?.init?.(global.conn)
+}
 filesInit()
 	.then(() => conn.logger.info(`[ ✿ ] Plugins cargados: ${Object.keys(global.plugins).length}`))
 	.catch(console.error)

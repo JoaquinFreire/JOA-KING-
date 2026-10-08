@@ -294,6 +294,24 @@ let txt = `
 > 𓃦 Ver enlace de invitación del grupo.
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───ׅ
 
+╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('MUDAE')}✰*.:｡✧*.｡:｡*.｡✱ ───
+> ✿ Coleccioná personajes en este grupo.
+ ✿  *%menumudae*
+> 𓃦 Ver comandos e instrucciones de Mudae.
+ ✿  *%rw • %quitarpj • %regalarpj*
+> 𓃦 Reclamar, liberar o regalar tus personajes.
+ ✿  *%personajes • %toppj • %verpj*
+> 𓃦 Ver colecciones, ranking e información.
+ ✿  *%wish • %wishremove • %wishlist*
+> 𓃦 Guardar hasta 3 deseados y recibir aviso cuando salgan.
+ ✿  *%votarpj <personaje>*
+> 𓃦 Votar una vez cada 24 horas para sumar 125 al valor.
+ ✿  *%addalbum • %addpj • %editpj • %delpj • %delalbum*
+> 𓃦 Administrar álbumes y personajes (admins; %addpj responde a una imagen).
+ ✿  *%onmudae • %offmudae*
+> 𓃦 Activar o desactivar Mudae en este grupo (owner).
+╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───
+
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('ANIME')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Comandos de reacciones de anime.
  ✿  *#angry • #enojado* + <mencion>

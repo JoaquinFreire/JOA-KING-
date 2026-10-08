@@ -3,7 +3,7 @@
 import assert from 'node:assert'
 import handler from '../plugins/tools-fakemsg2.js'
 
-async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
+async function runCase({ m, text = 'mensaje inventado', connOverrides = {}, permissions = {} }) {
   const relays = []
   const sends = []
   const replies = []
@@ -20,7 +20,7 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
     ...connOverrides,
   }
   const fakeM = { react: async (emoji) => reactions.push(emoji), ...m }
-  await handler(fakeM, { conn, text, usedPrefix: '%', command: 'fakemsg2' })
+  await handler(fakeM, { conn, text, usedPrefix: '%', command: 'fakemsg2', ...permissions })
   return { relays, sends, replies, reactions }
 }
 
@@ -36,6 +36,7 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
         message: { extendedTextMessage: { text: 'texto original' } },
       },
     },
+    permissions: { isAdmin: true },
   })
 
   assert.strictEqual(replies.length, 0, 'no debe responder error')
@@ -62,6 +63,34 @@ async function runCase({ m, text = 'mensaje inventado', connOverrides = {} }) {
 
   assert.deepStrictEqual(sends.map((send) => send.content.delete.id), ['TEMP1', 'MSG1'], 'debe limpiar temporal y relay de edicion')
   assert.ok(reactions.includes('\u2705'), 'debe reaccionar ok')
+}
+
+{
+  const { relays, sends, replies } = await runCase({
+    m: {
+      chat: '120363000000000000@g.us',
+      isGroup: true,
+      msg: { contextInfo: { stanzaId: 'MSG-UNAUTHORIZED' } },
+      quoted: { id: 'MSG-UNAUTHORIZED' },
+    },
+  })
+  assert.strictEqual(relays.length, 0, 'miembros comunes no deben ejecutar fakemsg2')
+  assert.strictEqual(sends.length, 0, 'miembros comunes no deben enviar mensajes')
+  assert.match(replies[0].message, /administradores del grupo o el owner/)
+}
+
+{
+  const { relays, replies } = await runCase({
+    m: {
+      chat: '120363000000000000@g.us',
+      isGroup: true,
+      msg: { contextInfo: { stanzaId: 'MSG-OWNER' } },
+      quoted: { id: 'MSG-OWNER' },
+    },
+    permissions: { isOwner: true },
+  })
+  assert.strictEqual(relays.length, 2, 'el owner mantiene acceso')
+  assert.strictEqual(replies.length, 0)
 }
 
 {

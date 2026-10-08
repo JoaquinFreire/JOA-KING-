@@ -18,17 +18,21 @@ const getQuotedId = (m) => {
     ''
 }
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
+const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner, isROwner }) => {
+  if (!m.isGroup) {
+    return conn.reply(m.chat, 'Este comando solo funciona en grupos.', m)
+  }
+
+  if (!isAdmin && !isOwner && !isROwner) {
+    return conn.reply(m.chat, 'Solo los administradores del grupo o el owner del bot pueden usar este comando.', m)
+  }
+
   if (!m.quoted) {
     return conn.reply(m.chat, `Responde al mensaje que queres procesar.\n> Ejemplo: *${usedPrefix}${command} texto nuevo*`, m)
   }
 
   if (!text || !text.trim()) {
     return conn.reply(m.chat, 'Escribe el texto reemplazo.', m)
-  }
-
-  if (!m.isGroup) {
-    return conn.reply(m.chat, 'Este comando solo funciona en grupos.', m)
   }
 
   const stanzaId = getQuotedId(m)
@@ -113,9 +117,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 }
 
 handler.help = ['fakemsg2 <texto>']
-handler.tags = ['owner']
+handler.tags = ['group']
 handler.command = ['fakemsg2']
-handler.owner = true
 handler.group = true
 
 export default handler

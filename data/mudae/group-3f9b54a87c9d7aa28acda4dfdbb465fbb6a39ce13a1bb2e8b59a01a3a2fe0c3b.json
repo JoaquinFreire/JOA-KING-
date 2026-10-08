@@ -1,0 +1,26 @@
+{
+  "groupId": "120363430543153360@g.us",
+  "enabled": true,
+  "albums": [
+    "Mascotas"
+  ],
+  "characters": [
+    {
+      "id": "5d1e0f96-63d7-4d9a-bad2-60cd960066cc",
+      "name": "Un Perro Bello",
+      "album": "Mascotas",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791479787/mudae/3f9b54a87c9d7aa28acd/1c4ac19f-daae-4065-a539-57e0aa3fd599.jpg",
+      "cloudinaryPublicId": "mudae/3f9b54a87c9d7aa28acd/1c4ac19f-daae-4065-a539-57e0aa3fd599",
+      "owner": null,
+      "createdAt": 1791479928393
+    }
+  ],
+  "users": {},
+  "rollCooldowns": {},
+  "claimCooldowns": {},
+  "voteCooldowns": {},
+  "activeRoll": null,
+  "createdAt": 1791479898615,
+  "updatedAt": 1791479928393
+}

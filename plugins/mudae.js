@@ -57,6 +57,7 @@ const stateCache = new Map()
 const stateLoads = new Map()
 let catalogLock = Promise.resolve()
 let catalogCache = null
+let catalogFileSignature = null
 let catalogLoad = null
 const reactionListenerSymbol = Symbol.for('joa-king.mudae.reaction-listener')
 
@@ -135,8 +136,17 @@ const findCatalogCharacterIndex = (catalog, character) => {
 }
 
 const loadCatalog = async () => {
-  if (catalogCache) return catalogCache
+  let fileSignature
+  try {
+    const stat = await fs.stat(catalogFile)
+    fileSignature = `${stat.mtimeMs}:${stat.size}`
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw new Error(`No se pudo revisar el catálogo global de Mudae: ${error.message}`)
+    fileSignature = null
+  }
+  if (catalogCache && fileSignature === catalogFileSignature) return catalogCache
   if (catalogLoad) return catalogLoad
+  catalogCache = null
   catalogLoad = (async () => {
     let catalog
     try {
@@ -195,7 +205,14 @@ const loadCatalog = async () => {
     catalog.albums = albums
     catalog.characters = characters
     if (migrated) await saveCatalog(catalog)
-    else catalogCache = catalog
+    else {
+      catalogCache = catalog
+      const stat = await fs.stat(catalogFile).catch((error) => {
+        if (error?.code === 'ENOENT') return null
+        throw error
+      })
+      catalogFileSignature = stat ? `${stat.mtimeMs}:${stat.size}` : null
+    }
     return catalog
   })()
   try {
@@ -213,9 +230,12 @@ const saveCatalog = async (catalog) => {
     await fs.writeFile(temporaryFile, `${JSON.stringify(catalog, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
     await fs.rename(temporaryFile, catalogFile)
     catalogCache = catalog
+    const stat = await fs.stat(catalogFile)
+    catalogFileSignature = `${stat.mtimeMs}:${stat.size}`
   } catch (error) {
     await fs.unlink(temporaryFile).catch(() => {})
     catalogCache = null
+    catalogFileSignature = null
     throw new Error(`No se pudo guardar el catálogo global de Mudae: ${error.message}`)
   }
 }
@@ -305,7 +325,11 @@ const withGroupLock = async (groupId, operation) => {
 
 const loadState = async (groupId) => {
   const cached = stateCache.get(groupId)
-  if (cached) return cached
+  if (cached) {
+    const catalog = await loadCatalog()
+    if (syncStateWithCatalog(cached, catalog)) await saveState(cached)
+    return cached
+  }
   const pending = stateLoads.get(groupId)
   if (pending) return pending
   const loading = (async () => {

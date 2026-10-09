@@ -134,6 +134,27 @@ const runCommandAfterRollCooldown = async (conn, m, command, text = '', extra = 
     Date.now = originalNow
   }
 }
+const randomForCharacter = (state, characterId) => {
+  const rankedCharacters = [...state.characters].sort((first, second) =>
+    Number(second.value || 0) - Number(first.value || 0)
+  )
+  const rankById = new Map(rankedCharacters.map((character, rank) => [character.id, rank]))
+  const activeCharacterIds = new Set(state.activeRolls.filter((roll) => roll.expiresAt > Date.now()).map((roll) => roll.characterId))
+  const weightedCharacters = state.characters
+    .filter((character) => !character.owner && !activeCharacterIds.has(character.id))
+    .map((character) => ({
+      character,
+      rank: rankById.get(character.id),
+      weight: rankById.get(character.id) === 0 ? 0.5 : rankById.get(character.id) < 10 ? 0.6 : rankById.get(character.id) < 30 ? 0.8 : 1,
+    }))
+    .sort((first, second) => first.rank - second.rank)
+  const targetIndex = weightedCharacters.findIndex((item) => item.character.id === characterId)
+  assert.notEqual(targetIndex, -1, `el personaje ${characterId} debe estar disponible para el roll`)
+  const totalWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
+  const targetPosition = weightedCharacters.slice(0, targetIndex).reduce((total, item) => total + item.weight, 0) +
+    weightedCharacters[targetIndex].weight / 2
+  return targetPosition / totalWeight
+}
 
 try {
   assert.equal(MUDAE_CONFIG.ROLL_COOLDOWN, 5000)
@@ -259,18 +280,6 @@ try {
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
     pendingVotes: { [userOne]: true },
   })), 'utf8')
-  const rankedCharacters = Array.from({ length: 35 }, (_, index) => ({
-    ...available,
-    id: `voted-character-${index + 1}`,
-    name: `Ranked ${String(index + 1).padStart(2, '0')}`,
-    value: 3500 - index * 10,
-  }))
-  for (const groupId of rankingTestGroups) {
-    await fs.writeFile(filenameFor(groupId), JSON.stringify(createState(groupId, {
-      characters: rankedCharacters,
-      voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
-    })), 'utf8')
-  }
   await fs.writeFile(filenameFor(groupSeven), JSON.stringify(createState(groupSeven, {
     enabled: false,
     characters: [{ ...available, id: 'retired-character', name: 'Retired Character' }],
@@ -423,11 +432,10 @@ try {
   assert.doesNotMatch(replies.at(-1).text, /Wish 1/)
 
   await runCommand(conn, groupMessage(groupTen), 'wishlist')
-  const groupTenAvailable = (await readState(groupTen)).characters.filter((character) => !character.owner)
-  const wantedRollIndex = groupTenAvailable.findIndex((character) => character.id === 'wanted-roll')
-  assert.notEqual(wantedRollIndex, -1, 'el personaje deseado debe estar disponible para el roll')
+  const groupTenStateForRoll = await readState(groupTen)
+  const groupTenAvailable = groupTenStateForRoll.characters.filter((character) => !character.owner)
   const originalRandom = Math.random
-  Math.random = () => (wantedRollIndex + 0.5) / groupTenAvailable.length
+  Math.random = () => randomForCharacter(groupTenStateForRoll, 'wanted-roll')
   await runCommand(conn, groupMessage(groupTen), 'rw')
   Math.random = originalRandom
   const wantedRoll = sent.at(-1)
@@ -443,35 +451,11 @@ try {
   assert.match(replies.at(-1).text, /Ya votaste en las últimas 24 horas/, 'el cooldown del voto se mantiene aunque permita varias tiradas')
   assert.equal((await readState(groupTen)).characters.find((character) => character.id === 'wanted-roll').value, valueBeforeRepeatVote)
 
-  const originalRankRandom = Math.random
-  try {
-    Math.random = () => 0
-    await runCommand(conn, groupMessage(rankingTestGroups[0]), 'rw')
-    assert.match(sent.at(-1).content.caption, /Ranked 01/, 'el puesto 1 debe usar su peso reducido')
-    const rankedState = await readState(rankingTestGroups[0])
-    const rankedForTest = [...rankedState.characters].sort((first, second) =>
-      Number(second.value || 0) - Number(first.value || 0)
-    )
-    const weightByRank = rankedForTest.map((_, rank) => rank === 0 ? 0.5 : rank < 10 ? 0.6 : rank < 30 ? 0.8 : 1)
-    const totalRankedWeight = weightByRank.reduce((total, weight) => total + weight, 0)
-    const rankSelectionCases = [2, 11, 31]
-    for (const [index, rank] of rankSelectionCases.entries()) {
-      const position = weightByRank.slice(0, rank - 1).reduce((total, weight) => total + weight, 0) +
-        weightByRank[rank - 1] / 2
-      Math.random = () => position / totalRankedWeight
-      await runCommand(conn, groupMessage(rankingTestGroups[index + 1]), 'rw')
-      assert.match(
-        sent.at(-1).content.caption,
-        new RegExp(`Ranked ${String(rank).padStart(2, '0')}`),
-        `el puesto ${rank} debe usar su peso de sorteo correspondiente`
-      )
-    }
-  } finally {
-    Math.random = originalRankRandom
-  }
-
   const beforeRollMessages = sent.length
+  const groupOneBeforeRoll = await readState(groupOne)
+  Math.random = () => randomForCharacter(groupOneBeforeRoll, 'character-1')
   await runCommand(conn, groupMessage(groupOne), 'rw')
+  Math.random = originalRandom
   assert.equal(sent.length, beforeRollMessages + 1, 'debe publicar roll con imagen')
   const rollMessage = sent.at(-1)
   assert.ok(rollMessage.content.image.url.includes('cloudinary.com'))
@@ -480,9 +464,16 @@ try {
   assert.doesNotMatch(rollMessage.content.caption, /variante/i)
   assert.match((await readState(groupOne)).activeRolls[0].messageId, /^ROLL-/)
 
+  const secondGroupOneCharacter = (await readState(groupOne)).characters.find((character) =>
+    !character.owner && character.id !== 'character-1'
+  )
+  const groupOneBeforeSecondRoll = await readState(groupOne)
+  Math.random = () => randomForCharacter(groupOneBeforeSecondRoll, secondGroupOneCharacter.id)
   await runCommandAfterRollCooldown(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /NO HAY PERSONAJES DISPONIBLES/, 'el voto habilita tiradas aunque el único personaje disponible esté activo')
-  assert.equal((await readState(groupOne)).activeRolls.length, 1, 'no debe crear un roll sin personajes disponibles')
+  Math.random = originalRandom
+  const groupOneAfterSecondRoll = await readState(groupOne)
+  assert.equal(groupOneAfterSecondRoll.activeRolls.length, 2, 'el grupo puede mostrar más de un personaje activo')
+  assert.notEqual(groupOneAfterSecondRoll.activeRolls[1].characterId, groupOneAfterSecondRoll.activeRolls[0].characterId, 'un personaje activo no debe volver a salir inmediatamente')
 
   await handler.all.call(conn, groupMessage(groupOne))
   const reactionListener = conn.ev.listeners.get('messages.reaction')?.[0]
@@ -522,7 +513,8 @@ try {
   ])
   const claimed = await readState(groupOne)
   assert.ok([userOne, userTwo].includes(claimed.characters[0].owner), 'debe asignar el personaje a un ganador')
-  assert.equal(claimed.activeRolls.length, 0, 'debe eliminar el roll activo inmediatamente al reclamar')
+  assert.equal(claimed.activeRolls.length, 1, 'reclamar un personaje debe conservar otros rolls activos del grupo')
+  assert.equal(claimed.activeRolls[0].characterId, groupOneAfterSecondRoll.activeRolls[1].characterId)
   assert.equal(claimed.activeRoll, null, 'debe cerrar el roll inmediatamente al reclamar')
   assert.equal(Object.keys(claimed.claimCounts).length, 1, 'solamente un usuario debe quedar registrado como ganador')
   assert.equal(Object.values(claimed.claimCounts)[0], 1, 'el ganador debe consumir un reclamo')
@@ -537,11 +529,6 @@ try {
 
   await runCommand(conn, groupMessage(groupOne), 'personajes')
   assert.match(replies.at(-1).text, /Trunks/)
-  const sentAfterClaim = sent.length
-  await runCommandAfterRollCooldown(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /NO HAY PERSONAJES DISPONIBLES/, 'el voto todavía está vigente, pero ya no quedan personajes para tirar')
-  assert.equal(sent.length, sentAfterClaim, 'no debe crear otro roll cuando no quedan personajes disponibles')
-  assert.equal((await readState(groupOne)).activeRolls.length, 0, 'el cooldown no debe crear otro roll')
 
   await handler.all.call(conn, groupMessage(groupTwo))
   await handler.all.call(conn, groupMessage(groupThree))
@@ -608,6 +595,65 @@ try {
   assert.equal((await readState(groupOne)).enabled, false, 'offmudae debe persistir')
   await runCommand(conn, groupMessage(groupOne), 'toppj')
   assert.match(replies.at(-1).text, /desactivado/, 'los comandos se bloquean al apagar Mudae')
+
+  const rankedCharacters = Array.from({ length: 35 }, (_, index) => ({
+    ...available,
+    id: `voted-character-${index + 1}`,
+    name: `Ranked ${String(index + 1).padStart(2, '0')}`,
+    value: 3500 - index * 10,
+  }))
+  for (const groupId of rankingTestGroups) {
+    await fs.writeFile(filenameFor(groupId), JSON.stringify(createState(groupId, {
+      characters: rankedCharacters,
+      voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+    })), 'utf8')
+  }
+  const originalRankRandom = Math.random
+  try {
+    Math.random = () => 0
+    await runCommand(conn, groupMessage(rankingTestGroups[0]), 'rw')
+    assert.match(sent.at(-1).content.caption, /Ranked 01/, 'el puesto 1 debe usar su peso reducido')
+    const rankedState = await readState(rankingTestGroups[0])
+    const rankedForTest = [...rankedState.characters].sort((first, second) =>
+      Number(second.value || 0) - Number(first.value || 0)
+    )
+    const weightByRank = rankedForTest.map((_, rank) => rank === 0 ? 0.5 : rank < 10 ? 0.6 : rank < 30 ? 0.8 : 1)
+    const totalRankedWeight = weightByRank.reduce((total, weight) => total + weight, 0)
+    const rankSelectionCases = [2, 11, 31]
+    for (const [index, rank] of rankSelectionCases.entries()) {
+      const position = weightByRank.slice(0, rank - 1).reduce((total, weight) => total + weight, 0) +
+        weightByRank[rank - 1] / 2
+      Math.random = () => position / totalRankedWeight
+      await runCommand(conn, groupMessage(rankingTestGroups[index + 1]), 'rw')
+      assert.match(
+        sent.at(-1).content.caption,
+        new RegExp(`Ranked ${String(rank).padStart(2, '0')}`),
+        `el puesto ${rank} debe usar su peso de sorteo correspondiente`
+      )
+    }
+  } finally {
+    Math.random = originalRankRandom
+  }
+
+  const sharedCatalog = JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
+  sharedCatalog.albums.push('Shared Sync Test')
+  sharedCatalog.characters.push({
+    id: 'shared-sync-character',
+    name: 'Shared Sync Character',
+    album: 'Shared Sync Test',
+    value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
+    imageUrl: 'https://res.cloudinary.com/example/image/upload/shared-sync.jpg',
+    cloudinaryPublicId: 'mudae/test/shared-sync',
+    createdAt: Date.now(),
+  })
+  await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(sharedCatalog), 'utf8')
+  await runCommand(conn, groupMessage(groupTwo), 'ainfo', 'Shared Sync Test')
+  assert.match(replies.at(-1).text, /Shared Sync Character/, 'un cambio nuevo del catálogo debe aparecer en otro grupo ya cargado')
+  assert.equal(
+    (await readState(groupTwo)).characters.find((character) => character.id === 'shared-sync-character').owner,
+    null,
+    'sincronizar el catálogo no debe mezclar los reclamos entre grupos'
+  )
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

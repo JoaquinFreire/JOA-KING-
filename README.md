@@ -54,7 +54,7 @@ Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por eje
 
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 
-El catálogo (`data/mudae/catalog.json`) se comparte mediante Git. Los reclamos y demás estado de cada grupo son locales y no se suben a Git. De forma predeterminada se guardan en `data/mudae/instances/<nombre-del-equipo>`; también puedes configurar rutas explícitas diferentes en cada PC:
+El catálogo (`data/mudae/catalog.json`) se comparte mediante Git y se sincroniza entre los grupos; el bot vuelve a revisar el archivo cuando se usa un comando de personajes, así que los cambios recibidos con `git pull` aparecen sin reiniciar. Los reclamos y demás estado de cada grupo son locales y no se suben a Git. De forma predeterminada se guardan en `data/mudae/instances/<nombre-del-equipo>`; también puedes configurar rutas explícitas diferentes en cada PC:
 
 ```dotenv
 # PC principal

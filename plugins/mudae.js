@@ -410,12 +410,21 @@ const findCharacter = (state, query) => {
   const parts = String(query || '').split('+').map((part) => part.trim())
   const normalized = normalizeMudaeIdentity(query)
   if (!normalized) return { character: null, matches: [] }
-  const matches = parts.length === 2 && parts.every(Boolean)
+  const exactMatches = parts.length === 2 && parts.every(Boolean)
     ? state.characters.filter((character) =>
       makeCharacterIdentity(character.album, character.name) === makeCharacterIdentity(...parts)
     )
     : state.characters.filter((character) => normalizeMudaeIdentity(character.name) === normalized)
-  return { character: matches.length === 1 ? matches[0] : null, matches }
+  if (exactMatches.length) {
+    return { character: exactMatches.length === 1 ? exactMatches[0] : null, matches: exactMatches }
+  }
+  if (parts.length !== 1) return { character: null, matches: [] }
+  const partialMatches = state.characters.filter((character) =>
+    normalizeMudaeIdentity(character.name).includes(normalized)
+  )
+  return partialMatches.length === 1
+    ? { character: partialMatches[0], matches: partialMatches }
+    : { character: null, matches: [] }
 }
 
 export const getCloudinaryCredentials = () => {
@@ -747,16 +756,20 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       return minutes ? `${minutes} min ${seconds} s` : `${seconds} s`
     }
     const rollCooldown = Number(current.rollCooldowns[actor] || 0) - now
-    const claimCooldown = Number(current.claimCooldowns[actor] || 0) - now
+    const claimCooldownAt = Number(current.claimCooldowns[actor] || 0)
+    const claimCooldown = claimCooldownAt - now
     const voteCooldown = Number(current.voteCooldowns[actor] || 0) - now
-    const groupCooldown = Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN - now
     const rollCount = rollCooldown > 0 ? Number(current.rollCounts[actor] || 0) : 0
-    const claimCount = claimCooldown > 0 ? Number(current.claimCounts[actor] || 0) : 0
+    const recordedClaimCount = Number(current.claimCounts[actor] || 0)
+    const claimCount = claimCooldown > 0
+      ? recordedClaimCount
+      : claimCooldownAt > 0 || recordedClaimCount >= MUDAE_CONFIG.CLAIM_LIMIT
+        ? 0
+        : recordedClaimCount
     const waits = [
       `🎲 Tiradas RW: ${Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)}/${MUDAE_CONFIG.ROLL_LIMIT}${rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
       `❤️ Reclamos: ${Math.max(0, MUDAE_CONFIG.CLAIM_LIMIT - claimCount)}/${MUDAE_CONFIG.CLAIM_LIMIT}${claimCooldown > 0 ? ` · disponibles en ${formatWait(claimCooldown)}` : ''}`,
       `🗳️ Voto: ${voteCooldown > 0 ? `nuevo voto disponible en ${formatWait(voteCooldown)} · tiradas habilitadas` : 'disponible'}`,
-      `⏱️ Próxima tirada del grupo: ${groupCooldown > 0 ? `en ${formatWait(groupCooldown)}` : 'disponible'}`,
     ]
     const activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
     if (activeRolls.length) {
@@ -953,11 +966,8 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
-      const matches = current.characters.filter((item) =>
-        normalizeMudaeIdentity(item.name) === normalizeMudaeIdentity(characterName)
-      )
+      const { character, matches } = findCharacter(current, characterName)
       if (matches.length > 1) return conn.reply(m.chat, 'Hay personajes con ese nombre repetido en los datos anteriores; no cambié ningún propietario.', m)
-      const character = matches[0]
       if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
       if (!actor || !character.owner || normalizeJid(character.owner) !== actor) {
         return conn.reply(m.chat, 'Solo quien tiene el personaje puede liberarlo o regalarlo.', m)

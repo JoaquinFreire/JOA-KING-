@@ -198,6 +198,7 @@ try {
   await fs.writeFile(filenameFor(groupTwo), JSON.stringify(createState(groupTwo, {
     characters: [available],
     activeRoll: { messageId: 'COOLDOWN-ROLL', characterId: available.id, expiresAt: Date.now() + 60000 },
+    claimCounts: { [userOne]: MUDAE_CONFIG.CLAIM_LIMIT },
     claimCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.CLAIM_COOLDOWN },
   })), 'utf8')
   await fs.writeFile(filenameFor(groupThree), JSON.stringify(createState(groupThree, {
@@ -314,6 +315,8 @@ try {
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'Goku')
   assert.match(replies.at(-1).text, /VOTO REGISTRADO/)
+  await runCommand(conn, groupMessage(groupOne), 'votarpj', 'oku')
+  assert.match(replies.at(-1).text, /voto pendiente/, 'votarpj debe resolver una palabra única que no esté al comienzo del nombre')
 
   await runCommand(conn, groupMessage(groupOne), 'delpj', 'Dragon Ball Z + Goku', { isAdmin: true })
   assert.match(replies.at(-1).text, /Solo el owner del bot/)
@@ -363,10 +366,20 @@ try {
   assert.equal(characterInfo.content.image.url, available.imageUrl)
   assert.match(characterInfo.content.caption, /👑 \*Dueño:\* @5491222222222/)
   assert.deepEqual(characterInfo.content.mentions, [userTwo], 'la ficha debe etiquetar al dueño')
+  await runCommand(conn, groupMessage(groupOne), 'verpj', 'run')
+  assert.equal(sent.at(-1).content.image.url, available.imageUrl, 'verpj debe completar un nombre parcial si solo hay un resultado')
   await runCommand(conn, groupMessage(groupFour), 'verpj', 'Trunks')
   assert.match(replies.at(-1).text, /más de un álbum/, 'debe informar nombres ambiguos')
+  await runCommand(conn, groupMessage(groupFour), 'verpj', 'Tru')
+  assert.match(replies.at(-1).text, /No encontré ese personaje/, 'un fragmento ambiguo debe responder que no encontró el personaje')
   await runCommand(conn, groupMessage(groupFour), 'verpj', 'Dragon Ball Z Kai + Trunks')
   assert.match(sent.at(-1).content.caption, /\*Trunks\*/, 'debe permitir resolver la ambigüedad')
+  await runCommand(conn, groupMessage(groupFive), 'wish', 'tella')
+  assert.match(replies.at(-1).text, /AGREGADO A TU WISHLIST/, 'wish debe aceptar una palabra parcial que no esté al comienzo del nombre')
+  await runCommand(conn, groupMessage(groupTen), 'wish', 'Roll')
+  assert.match(replies.at(-1).text, /No encontré ese personaje/, 'wish debe rechazar un fragmento que coincide con varios personajes')
+  await runCommand(conn, groupMessage(groupTen), 'verpj', 'Roll')
+  assert.match(replies.at(-1).text, /No encontré ese personaje/, 'verpj debe rechazar un fragmento que coincide con varios personajes')
   await runCommand(conn, groupMessage(groupOne), 'wish', 'Goku')
   assert.match(replies.at(-1).text, /WISHLIST/)
   await runCommand(conn, groupMessage(groupOne), 'wishlist')
@@ -473,6 +486,9 @@ try {
   assert.match(claimMessage.content.text, /\*Trunks\*/)
   assert.match(claimMessage.content.text, /Dragon Ball Z/)
   assert.doesNotMatch(claimMessage.content.text, /variante/i)
+  await runCommand(conn, groupMessage(groupOne, claimed.characters[0].owner), 'cd')
+  assert.match(replies.at(-1).text, /Reclamos: 1\/2/, 'cd debe contar el primer reclamo antes de activar el cooldown')
+  assert.doesNotMatch(replies.at(-1).text, /Próxima tirada del grupo/, 'cd no debe mostrar el cooldown grupal de la próxima tirada')
 
   await runCommand(conn, groupMessage(groupOne), 'personajes')
   assert.match(replies.at(-1).text, /Trunks/)
@@ -496,6 +512,16 @@ try {
     reaction: { text: '❤️', key: { participant: userTwo } },
   }])
   assert.equal((await readState(groupTwo)).characters[0].owner, userTwo, 'otro usuario sin cooldown puede reclamar')
+  await runCommand(conn, groupMessage(groupTwo), 'cd')
+  assert.match(replies.at(-1).text, /Reclamos: 0\/2/, 'cd debe mostrar 0/2 durante el cooldown de reclamos')
+  const originalNow = Date.now
+  Date.now = () => originalNow() + MUDAE_CONFIG.CLAIM_COOLDOWN + 1
+  try {
+    await runCommand(conn, groupMessage(groupTwo), 'cd')
+  } finally {
+    Date.now = originalNow
+  }
+  assert.match(replies.at(-1).text, /Reclamos: 2\/2/, 'cd debe volver a 2/2 cuando termina el cooldown')
 
   await reactionListener([{
     key: { remoteJid: groupThree, id: 'EXPIRED' },
@@ -522,7 +548,8 @@ try {
   assert.match(replies.at(-1).text, /Solo quien tiene el personaje/, 'solo el dueño puede liberar el personaje')
   const giftMessage = groupMessage(groupEight, userTwo)
   giftMessage.mentionedJid = [userOne]
-  await runCommand(conn, giftMessage, 'regalarpj', 'Owned Character + @5491111111111')
+  await runCommand(conn, giftMessage, 'regalarpj', 'wned + @5491111111111')
+  assert.match(sent.at(-1).content.text, /PERSONAJE REGALADO/, 'regalarpj debe aceptar una palabra parcial dentro del nombre')
   assert.equal((await readState(groupEight)).characters.find((character) => character.id === 'owned-character').owner, userOne, 'regalarpj transfiere la propiedad al mencionado')
   assert.deepEqual(sent.at(-1).content.mentions, [userOne], 'el regalo etiqueta al destinatario')
   await runCommand(conn, groupMessage(groupEight, userOne), 'quitarpj', 'Owned Character')

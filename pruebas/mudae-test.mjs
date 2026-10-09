@@ -32,6 +32,9 @@ const groupSeven = '120363000000000007@g.us'
 const groupEight = '120363000000000008@g.us'
 const groupNine = '120363000000000009@g.us'
 const groupTen = '120363000000000010@g.us'
+const rankingTestGroups = Array.from({ length: 4 }, (_, index) =>
+  `1203630000000000${11 + index}@g.us`
+)
 const userOne = '5491111111111@s.whatsapp.net'
 const userTwo = '5491222222222@s.whatsapp.net'
 const botJid = '5493513117202@s.whatsapp.net'
@@ -134,6 +137,9 @@ const runCommandAfterRollCooldown = async (conn, m, command, text = '', extra = 
 
 try {
   assert.equal(MUDAE_CONFIG.ROLL_COOLDOWN, 5000)
+  assert.equal(MUDAE_CONFIG.ROLL_WEIGHT_TOP_1, 0.5)
+  assert.equal(MUDAE_CONFIG.ROLL_WEIGHT_TOP_10, 0.6)
+  assert.equal(MUDAE_CONFIG.ROLL_WEIGHT_TOP_30, 0.8)
   assert.equal(MUDAE_CONFIG.CLAIM_COOLDOWN, 60 * 60 * 1000)
   assert.equal(MUDAE_CONFIG.CLAIM_DURATION, 60 * 1000)
   assert.equal(MUDAE_CONFIG.VOTE_COOLDOWN, 24 * 60 * 60 * 1000)
@@ -253,6 +259,18 @@ try {
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
     pendingVotes: { [userOne]: true },
   })), 'utf8')
+  const rankedCharacters = Array.from({ length: 35 }, (_, index) => ({
+    ...available,
+    id: `voted-character-${index + 1}`,
+    name: `Ranked ${String(index + 1).padStart(2, '0')}`,
+    value: 3500 - index * 10,
+  }))
+  for (const groupId of rankingTestGroups) {
+    await fs.writeFile(filenameFor(groupId), JSON.stringify(createState(groupId, {
+      characters: rankedCharacters,
+      voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+    })), 'utf8')
+  }
   await fs.writeFile(filenameFor(groupSeven), JSON.stringify(createState(groupSeven, {
     enabled: false,
     characters: [{ ...available, id: 'retired-character', name: 'Retired Character' }],
@@ -424,6 +442,33 @@ try {
   await runCommand(conn, groupMessage(groupTen), 'votarpj', 'Wanted Roll')
   assert.match(replies.at(-1).text, /Ya votaste en las últimas 24 horas/, 'el cooldown del voto se mantiene aunque permita varias tiradas')
   assert.equal((await readState(groupTen)).characters.find((character) => character.id === 'wanted-roll').value, valueBeforeRepeatVote)
+
+  const originalRankRandom = Math.random
+  try {
+    Math.random = () => 0
+    await runCommand(conn, groupMessage(rankingTestGroups[0]), 'rw')
+    assert.match(sent.at(-1).content.caption, /Ranked 01/, 'el puesto 1 debe usar su peso reducido')
+    const rankedState = await readState(rankingTestGroups[0])
+    const rankedForTest = [...rankedState.characters].sort((first, second) =>
+      Number(second.value || 0) - Number(first.value || 0)
+    )
+    const weightByRank = rankedForTest.map((_, rank) => rank === 0 ? 0.5 : rank < 10 ? 0.6 : rank < 30 ? 0.8 : 1)
+    const totalRankedWeight = weightByRank.reduce((total, weight) => total + weight, 0)
+    const rankSelectionCases = [2, 11, 31]
+    for (const [index, rank] of rankSelectionCases.entries()) {
+      const position = weightByRank.slice(0, rank - 1).reduce((total, weight) => total + weight, 0) +
+        weightByRank[rank - 1] / 2
+      Math.random = () => position / totalRankedWeight
+      await runCommand(conn, groupMessage(rankingTestGroups[index + 1]), 'rw')
+      assert.match(
+        sent.at(-1).content.caption,
+        new RegExp(`Ranked ${String(rank).padStart(2, '0')}`),
+        `el puesto ${rank} debe usar su peso de sorteo correspondiente`
+      )
+    }
+  } finally {
+    Math.random = originalRankRandom
+  }
 
   const beforeRollMessages = sent.length
   await runCommand(conn, groupMessage(groupOne), 'rw')

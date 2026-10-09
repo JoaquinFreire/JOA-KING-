@@ -10,6 +10,9 @@ export const MUDAE_CONFIG = Object.freeze({
   ROLL_COOLDOWN: 5000,
   ROLL_LIMIT: 10,
   ROLL_EXHAUSTED_COOLDOWN: 30 * 60 * 1000,
+  ROLL_WEIGHT_TOP_1: 0.5,
+  ROLL_WEIGHT_TOP_10: 0.6,
+  ROLL_WEIGHT_TOP_30: 0.8,
   CLAIM_LIMIT: 2,
   CLAIM_COOLDOWN: 60 * 60 * 1000,
   CLAIM_DURATION: 60 * 1000,
@@ -406,6 +409,13 @@ const saveState = async (state) => {
 
 const formatMoney = (value) => `$${Number(value || 0).toLocaleString('es-AR')}`
 export const makeCharacterIdentity = (album, name) => [album, name].map(normalizeMudaeIdentity).join('\u0000')
+const getRollWeight = (rank) => rank === 0
+  ? MUDAE_CONFIG.ROLL_WEIGHT_TOP_1
+  : rank < 10
+    ? MUDAE_CONFIG.ROLL_WEIGHT_TOP_10
+    : rank < 30
+      ? MUDAE_CONFIG.ROLL_WEIGHT_TOP_30
+      : 1
 const findCharacter = (state, query) => {
   const parts = String(query || '').split('+').map((part) => part.trim())
   const normalized = normalizeMudaeIdentity(query)
@@ -1019,7 +1029,26 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         await saveState(current)
         return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES DISPONIBLES*\nProbá de nuevo cuando agreguen más personajes.', m)
       }
-      const character = availableCharacters[Math.floor(Math.random() * availableCharacters.length)]
+      const rankedCharacters = [...current.characters].sort((first, second) =>
+        Number(second.value || 0) - Number(first.value || 0)
+      )
+      const rankById = new Map(rankedCharacters.map((character, rank) => [character.id, rank]))
+      const weightedCharacters = availableCharacters.map((character) => ({
+        character,
+        weight: getRollWeight(rankById.get(character.id)),
+      })).sort((first, second) =>
+        rankById.get(first.character.id) - rankById.get(second.character.id)
+      )
+      const totalWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
+      let randomWeight = Math.random() * totalWeight
+      let character = weightedCharacters.at(-1).character
+      for (const item of weightedCharacters) {
+        randomWeight -= item.weight
+        if (randomWeight < 0) {
+          character = item.character
+          break
+        }
+      }
       const expiresAt = now + MUDAE_CONFIG.CLAIM_DURATION
       const wishers = Object.entries(current.users)
         .filter(([, user]) => Array.isArray(user?.wishlist) && user.wishlist.includes(character.id))

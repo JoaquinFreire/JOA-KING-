@@ -16,6 +16,7 @@ export const MUDAE_CONFIG = Object.freeze({
   CLAIM_LIMIT: 2,
   CLAIM_COOLDOWN: 60 * 60 * 1000,
   CLAIM_DURATION: 60 * 1000,
+  TRADE_COOLDOWN: 12 * 60 * 60 * 1000,
   VOTE_COOLDOWN: 24 * 60 * 60 * 1000,
   VOTE_VALUE_INCREMENT: 125,
   WISHLIST_LIMIT: 3,
@@ -86,10 +87,12 @@ const defaultState = (groupId) => ({
   rollCooldowns: {},
   claimCounts: {},
   claimCooldowns: {},
+  tradeCooldowns: {},
   voteCooldowns: {},
   pendingVotes: {},
   lastRollAt: 0,
   activeRolls: [],
+  pendingTrade: null,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 })
@@ -366,7 +369,7 @@ const loadState = async (groupId) => {
     state.activeRolls = state.activeRolls
       .filter((roll) => roll && typeof roll.messageId === 'string' && typeof roll.characterId === 'string' && Number.isFinite(Number(roll.expiresAt)))
       .map((roll) => ({ ...roll, expiresAt: Number(roll.expiresAt) }))
-    for (const key of ['rollCounts', 'rollCooldowns', 'claimCounts', 'claimCooldowns', 'voteCooldowns', 'pendingVotes']) {
+    for (const key of ['rollCounts', 'rollCooldowns', 'claimCounts', 'claimCooldowns', 'tradeCooldowns', 'voteCooldowns', 'pendingVotes']) {
       if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) {
         state[key] = {}
         migrated = true
@@ -618,6 +621,19 @@ export const hasQuotedMudaeImage = (m) => Boolean(getQuotedImage(m))
 const requireGroup = (m) => isGroupJid(m.chat)
 const getActorJid = (m) => normalizeJid(m.sender || m.key?.participant || '')
 const isAdminOrOwner = (isOwner, isAdmin) => Boolean(isOwner || isAdmin)
+const getMentionedJids = async (m, conn, text) => {
+  const directMentions = await m.mentionedJid
+  const contextMentions = m.msg?.contextInfo?.mentionedJid ||
+    m.message?.extendedTextMessage?.contextInfo?.mentionedJid ||
+    m.msg?.extendedTextMessage?.contextInfo?.mentionedJid ||
+    []
+  const parsedMentions = typeof conn.parseMention === 'function' ? conn.parseMention(text) : []
+  return [...new Set([
+    ...(Array.isArray(directMentions) ? directMentions : directMentions ? [directMentions] : []),
+    ...(Array.isArray(contextMentions) ? contextMentions : []),
+    ...(Array.isArray(parsedMentions) ? parsedMentions : []),
+  ].map(normalizeJid).filter(Boolean))]
+}
 const getMentionTarget = (m, text) => {
   const mention = m.mentionedJid?.[0]
   if (mention) return normalizeJid(mention)
@@ -777,7 +793,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 
   if (action === 'menumudae') {
     return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n            ✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar (vence al minuto)
-    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -800,12 +816,18 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       : claimCooldownAt > 0 || recordedClaimCount >= MUDAE_CONFIG.CLAIM_LIMIT
         ? 0
         : recordedClaimCount
+    const activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
+    const activeCharacterIds = new Set(activeRolls.map((roll) => roll.characterId))
+    const hasAvailableCharacter = current.characters.some((character) => !activeCharacterIds.has(character.id))
+    const hasActiveVote = voteCooldown > 0
+    const availableRolls = hasAvailableCharacter && hasActiveVote
+      ? Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)
+      : 0
     const waits = [
-      `🎲 Tiradas RW: ${Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)}/${MUDAE_CONFIG.ROLL_LIMIT}${rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
+      `🎲 Tiradas RW: ${availableRolls}/${MUDAE_CONFIG.ROLL_LIMIT}${!hasAvailableCharacter ? ' · no hay personajes para tirar' : !hasActiveVote ? ' · necesitás votar' : rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
       `❤️ Reclamos: ${Math.max(0, MUDAE_CONFIG.CLAIM_LIMIT - claimCount)}/${MUDAE_CONFIG.CLAIM_LIMIT}${claimCooldown > 0 ? ` · disponibles en ${formatWait(claimCooldown)}` : ''}`,
       `🗳️ Voto: ${voteCooldown > 0 ? `nuevo voto disponible en ${formatWait(voteCooldown)} · tiradas habilitadas` : 'disponible'}`,
     ]
-    const activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
     if (activeRolls.length) {
       waits.push(`🎴 Personajes activos: ${activeRolls.map((roll) =>
         `${current.characters.find((character) => character.id === roll.characterId)?.name || 'Personaje'}: vence en ${formatWait(roll.expiresAt - now)}`
@@ -984,17 +1006,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   if (action === 'quitarpj' || action === 'regalarpj') {
     const gifting = action === 'regalarpj'
     const parts = parseMudaeParts(text, gifting ? 2 : 1)
-    if (!parts) {
-      const usage = gifting
-        ? `Uso: ${usedPrefix}regalarpj <nombre> + @usuario`
-        : `Uso: ${usedPrefix}quitarpj <nombre>`
-      return conn.reply(m.chat, usage, m)
+    const mentions = gifting ? await getMentionedJids(m, conn, text) : []
+    if (!parts && !gifting) {
+      return conn.reply(m.chat, `Uso: ${usedPrefix}quitarpj <nombre>`, m)
     }
 
-    const recipient = m.mentionedJid?.[0] ? normalizeJid(m.mentionedJid[0]) : ''
+    const textualMention = /@(\d{7,16})/.exec(String(text || ''))?.[1]
+    const recipient = mentions[0] || (textualMention ? `${textualMention}@s.whatsapp.net` : '')
     const characterName = gifting
-      ? (parts[0].includes('@') ? parts[1] : parts[0])
+      ? parts
+        ? (parts[0].includes('@') ? parts[1] : parts[0])
+        : String(text || '').replace(/@\d{7,16}/g, '').replace(/\+/g, ' ').trim()
       : parts[0]
+    if (!characterName) return conn.reply(m.chat, `Uso: ${usedPrefix}regalarpj <nombre> @usuario`, m)
     if (gifting && !recipient) return conn.reply(m.chat, 'Mencioná a la persona que va a recibir el personaje.', m)
     if (gifting && recipient === actor) return conn.reply(m.chat, 'No podés regalarte un personaje a vos mismo.', m)
 
@@ -1029,6 +1053,143 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     })
   }
 
+  if (action === 'cambiarpj') {
+    const parts = parseMudaeParts(text, 2)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}cambiarpj <tu personaje> + <personaje del otro>`, m)
+    if (!actor) return conn.reply(m.chat, 'No pude identificar tu usuario para proponer el cambio.', m)
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      const now = Date.now()
+      const pending = current.pendingTrade
+      if (pending?.expiresAt > now) {
+        return conn.reply(m.chat, '⏳ Ya hay un intercambio pendiente en este grupo. Esperen a que lo acepten o venza.', m)
+      }
+      if (pending) current.pendingTrade = null
+
+      const first = findCharacter(current, parts[0])
+      const second = findCharacter(current, parts[1])
+      if (first.matches.length > 1) return replyAmbiguous(conn, m, first.matches)
+      if (second.matches.length > 1) return replyAmbiguous(conn, m, second.matches)
+      if (!first.character || !second.character) return conn.reply(m.chat, 'No encontré uno de los personajes en este grupo.', m)
+      if (first.character.id === second.character.id) return conn.reply(m.chat, 'Elegí dos personajes distintos para el intercambio.', m)
+      if (normalizeJid(first.character.owner) !== actor) {
+        return conn.reply(m.chat, 'El primer personaje tiene que pertenecerte.', m)
+      }
+      const recipient = normalizeJid(second.character.owner)
+      if (!recipient) return conn.reply(m.chat, 'El segundo personaje no tiene dueño; ambos personajes deben pertenecer a alguien para intercambiarlos.', m)
+      if (recipient === actor) return conn.reply(m.chat, 'El segundo personaje debe pertenecer a otra persona.', m)
+
+      current.pendingTrade = {
+        proposer: actor,
+        recipient,
+        offeredCharacterId: first.character.id,
+        requestedCharacterId: second.character.id,
+        expiresAt: now + 30 * 1000,
+      }
+      await saveState(current)
+      return conn.sendMessage(m.chat, {
+        text: `🔄 *PROPUESTA DE INTERCAMBIO*\n👤 @${actor.split('@')[0]} te propone cambiar *${first.character.name}* por *${second.character.name}*.\n\n@${recipient.split('@')[0]}, respondé *${usedPrefix}aceptarcambio* dentro de 30 segundos para aceptar.`,
+        mentions: [actor, recipient],
+      }, { quoted: m })
+    }).catch((error) => {
+      console.error('[MUDAE] No se pudo proponer un intercambio:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo proponer el intercambio.\n> ${error.message}`, m)
+    })
+  }
+
+  if (action === 'aceptarcambio') {
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      const pending = current.pendingTrade
+      if (!pending || pending.expiresAt <= Date.now()) {
+        if (pending) {
+          current.pendingTrade = null
+          await saveState(current)
+        }
+        return conn.reply(m.chat, 'No hay una propuesta de intercambio vigente en este grupo.', m)
+      }
+      if (normalizeJid(pending.recipient) !== actor) return
+
+      const offered = current.characters.find((character) => character.id === pending.offeredCharacterId)
+      const requested = current.characters.find((character) => character.id === pending.requestedCharacterId)
+      if (
+        !offered ||
+        !requested ||
+        normalizeJid(offered.owner) !== normalizeJid(pending.proposer) ||
+        normalizeJid(requested.owner) !== normalizeJid(pending.recipient)
+      ) {
+        current.pendingTrade = null
+        await saveState(current)
+        return conn.reply(m.chat, 'La propuesta ya no es válida porque cambió la propiedad de uno de los personajes.', m)
+      }
+
+      const now = Date.now()
+      offered.owner = pending.recipient
+      offered.claimedAt = now
+      requested.owner = pending.proposer
+      requested.claimedAt = now
+      current.pendingTrade = null
+      current.activeRolls = current.activeRolls.filter((roll) =>
+        roll.characterId !== offered.id && roll.characterId !== requested.id
+      )
+      await saveState(current)
+      return conn.sendMessage(m.chat, {
+        text: `✅ *INTERCAMBIO ACEPTADO*\n🎴 *${offered.name}* ahora pertenece a @${pending.recipient.split('@')[0]}.\n🎴 *${requested.name}* ahora pertenece a @${pending.proposer.split('@')[0]}.`,
+        mentions: [normalizeJid(pending.proposer), normalizeJid(pending.recipient)],
+      }, { quoted: m })
+    }).catch((error) => {
+      console.error('[MUDAE] No se pudo aceptar un intercambio:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo aceptar el intercambio.\n> ${error.message}`, m)
+    })
+  }
+
+  if (action === 'suertepj') {
+    const query = String(text || '').trim()
+    if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}suertepj <nombre>`, m)
+    if (!actor) return conn.reply(m.chat, 'No pude identificar tu usuario para cambiar el personaje.', m)
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      const now = Date.now()
+      const availableAt = Number(current.tradeCooldowns[actor] || 0)
+      if (availableAt > now) {
+        const hours = Math.ceil((availableAt - now) / (60 * 60 * 1000))
+        return conn.reply(m.chat, `⏳ Ya usaste la suerte hace poco. Podés volver a usar %suertepj en aproximadamente ${hours} h.`, m)
+      }
+
+      const { character: unwanted, matches } = findCharacter(current, query)
+      if (matches.length > 1) return replyAmbiguous(conn, m, matches)
+      if (!unwanted) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
+      if (normalizeJid(unwanted.owner) !== actor) {
+        return conn.reply(m.chat, 'Solo podés cambiar un personaje que te pertenezca.', m)
+      }
+
+      current.activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
+      const activeCharacterIds = new Set(current.activeRolls.map((roll) => roll.characterId))
+      const availableCharacters = current.characters.filter((character) =>
+        !character.owner && !activeCharacterIds.has(character.id)
+      )
+      if (!availableCharacters.length) {
+        return conn.reply(m.chat, '🎴 No hay personajes libres para hacer el cambio. Tu personaje no se modificó.', m)
+      }
+
+      const replacement = availableCharacters[Math.floor(Math.random() * availableCharacters.length)]
+      unwanted.owner = null
+      delete unwanted.claimedAt
+      replacement.owner = actor
+      replacement.claimedAt = now
+      current.tradeCooldowns[actor] = now + MUDAE_CONFIG.TRADE_COOLDOWN
+      await saveState(current)
+      return conn.reply(
+        m.chat,
+        `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
+        m
+      )
+    }).catch((error) => {
+      console.error('[MUDAE] No se pudo cambiar un personaje:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo cambiar el personaje.\n> ${error.message}`, m)
+    })
+  }
+
   if (action === 'rw') {
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
@@ -1048,10 +1209,10 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const rollCount = Number(current.rollCounts[actor] || 0)
       if (rollCount >= MUDAE_CONFIG.ROLL_LIMIT) return
       const activeCharacterIds = new Set(current.activeRolls.map((roll) => roll.characterId))
-      const availableCharacters = current.characters.filter((character) => !character.owner && !activeCharacterIds.has(character.id))
+      const availableCharacters = current.characters.filter((character) => !activeCharacterIds.has(character.id))
       if (!availableCharacters.length) {
         await saveState(current)
-        return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES DISPONIBLES*\nProbá de nuevo cuando agreguen más personajes.', m)
+        return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES PARA TIRAR*\nProbá de nuevo cuando termine otro roll.', m)
       }
       const rankedCharacters = [...current.characters].sort((first, second) =>
         Number(second.value || 0) - Number(first.value || 0)
@@ -1080,12 +1241,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const wishLine = wishers.length
         ? `\n💖 *Deseado por:* ${wishers.map((jid) => `@${jid.split('@')[0]}`).join(', ')}`
         : ''
+      const owner = normalizeJid(character.owner)
+      const ownershipLine = owner
+        ? `\n👑 *Reclamado por:* @${owner.split('@')[0]}\n🚫 Este personaje ya no se puede reclamar.`
+        : '\nReaccioná con ❤️ para reclamarlo.'
+      const mentions = [...new Set([...wishers, ...(owner ? [owner] : [])])]
       let sent
       try {
         sent = await conn.sendMessage(m.chat, {
           image: { url: character.imageUrl },
-          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}\n\nReaccioná con ❤️ para reclamarlo.\n⏱️ Vence en 1 minuto.${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
-          mentions: wishers,
+          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}\n⏱️ Vence en 1 minuto.${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
+          mentions,
         })
         if (!sent?.key?.id) throw new Error('WhatsApp no devolvió el ID del mensaje del roll.')
         current.activeRolls.push({ messageId: sent.key.id, characterId: character.id, expiresAt })
@@ -1268,7 +1434,8 @@ handler.help = [
   'menumudae', 'addalbum <nombre>', 'addpj <álbum> + <nombre>',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
-  'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> + @usuario',
+  'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
+  'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
   'personajes [@usuario]', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
@@ -1276,7 +1443,8 @@ handler.tags = ['mudae']
 handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
-  'rw', 'cd', 'quitarpj', 'regalarpj', 'personajes', 'ainfo', 'toppj', 'verpj', 'votarpj',
+  'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
+  'personajes', 'ainfo', 'toppj', 'verpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

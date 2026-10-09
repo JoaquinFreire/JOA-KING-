@@ -161,7 +161,7 @@ let txt = `
  ✿  *%topt [tema] • %top3 • %top5 • %top10 • %top20 [tema]*
 > 𓃦 Armar un top aleatorio mencionando a integrantes del grupo.
  ✿  *%misexo hombre|mujer*
-> 𓃦 Registrar tu sexo para los tops por categoría.
+> 𓃦 Elegirlo una vez; solo el owner puede cambiarlo mencionando al usuario.
  ✿  *%topmujeres [tema] • %tophombres [tema]*
 > 𓃦 Tops aleatorios con quienes registraron su sexo.
  ✿  *%topgays*
@@ -298,8 +298,10 @@ let txt = `
 > ✿ Coleccioná personajes en este grupo.
  ✿  *%menumudae*
 > 𓃦 Ver comandos e instrucciones de Mudae.
- ✿  *%rw • %quitarpj • %regalarpj*
-> 𓃦 Votá con %votarpj <personaje> para habilitar una tirada; luego reclamá, liberá o regalá personajes.
+ ✿  *%rw • %quitarpj • %regalarpj • %suertepj*
+> 𓃦 Votá y tirá; reclamá, liberá, regalá o cambiá uno propio por suerte cada 12 horas.
+ ✿  *%cambiarpj <tuyo> + <del otro> • %aceptarcambio*
+> 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
  ✿  *%personajes • %toppj • %verpj*
 > 𓃦 Ver colecciones, ranking e información.
  ✿  *%ainfo <álbum>*

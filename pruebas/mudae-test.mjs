@@ -32,9 +32,11 @@ const groupSeven = '120363000000000007@g.us'
 const groupEight = '120363000000000008@g.us'
 const groupNine = '120363000000000009@g.us'
 const groupTen = '120363000000000010@g.us'
+const tradeGroup = '120363000000000016@g.us'
 const rankingTestGroups = Array.from({ length: 4 }, (_, index) =>
   `1203630000000000${11 + index}@g.us`
 )
+const noAvailableGroup = '120363000000000015@g.us'
 const userOne = '5491111111111@s.whatsapp.net'
 const userTwo = '5491222222222@s.whatsapp.net'
 const botJid = '5493513117202@s.whatsapp.net'
@@ -141,7 +143,7 @@ const randomForCharacter = (state, characterId) => {
   const rankById = new Map(rankedCharacters.map((character, rank) => [character.id, rank]))
   const activeCharacterIds = new Set(state.activeRolls.filter((roll) => roll.expiresAt > Date.now()).map((roll) => roll.characterId))
   const weightedCharacters = state.characters
-    .filter((character) => !character.owner && !activeCharacterIds.has(character.id))
+    .filter((character) => !activeCharacterIds.has(character.id))
     .map((character) => ({
       character,
       rank: rankById.get(character.id),
@@ -297,6 +299,9 @@ try {
   assert.ok(!(await readState(groupSeven)).characters.some((character) => character.id === 'retired-character'), 'un personaje borrado no debe volver desde un estado antiguo')
   await runCommand(conn, groupMessage(groupSeven), 'menumudae')
   assert.match(replies.at(-1).text, /%addpj/)
+  assert.match(replies.at(-1).text, /%suertepj/)
+  assert.match(replies.at(-1).text, /%cambiarpj <tuyo> \+ <del otro>/)
+  assert.match(replies.at(-1).text, /%aceptarcambio/)
   assert.doesNotMatch(replies.at(-1).text, /variante/i)
   assert.match(replies.at(-1).text, /%votarpj/)
   assert.match(replies.at(-1).text, /%wishremove/)
@@ -409,6 +414,8 @@ try {
   assert.match(replies.at(-1).text, /No encontré ese personaje/, 'verpj debe rechazar un fragmento que coincide con varios personajes')
   await runCommand(conn, groupMessage(groupOne), 'wish', 'Goku')
   assert.match(replies.at(-1).text, /WISHLIST/)
+  await runCommand(conn, groupMessage(groupNine), 'cd')
+  assert.match(replies.at(-1).text, /Tiradas RW: 0\/10 · necesitás votar/, 'cd debe indicar 0 tiradas usables cuando falta votar')
   await runCommand(conn, groupMessage(groupOne), 'wishlist')
   assert.match(replies.at(-1).text, /Goku/)
   await runCommand(conn, groupMessage(groupSix), 'toppj')
@@ -452,15 +459,17 @@ try {
   assert.equal((await readState(groupTen)).characters.find((character) => character.id === 'wanted-roll').value, valueBeforeRepeatVote)
 
   const beforeRollMessages = sent.length
-  const groupOneBeforeRoll = await readState(groupOne)
-  Math.random = () => randomForCharacter(groupOneBeforeRoll, 'character-1')
+  const groupOneBeforeFirstRoll = await readState(groupOne)
+  Math.random = () => randomForCharacter(groupOneBeforeFirstRoll, 'character-1')
   await runCommand(conn, groupMessage(groupOne), 'rw')
   Math.random = originalRandom
   assert.equal(sent.length, beforeRollMessages + 1, 'debe publicar roll con imagen')
   const rollMessage = sent.at(-1)
   assert.ok(rollMessage.content.image.url.includes('cloudinary.com'))
-  assert.match(rollMessage.content.caption, /Trunks/)
-  assert.match(rollMessage.content.caption, /\*Trunks\*/)
+  const firstRollCharacterId = (await readState(groupOne)).activeRolls[0].characterId
+  const firstRollCharacter = (await readState(groupOne)).characters.find((character) => character.id === firstRollCharacterId)
+  assert.match(rollMessage.content.caption, new RegExp(firstRollCharacter.name))
+  assert.match(rollMessage.content.caption, new RegExp(`\\*${firstRollCharacter.name}\\*`))
   assert.doesNotMatch(rollMessage.content.caption, /variante/i)
   assert.match((await readState(groupOne)).activeRolls[0].messageId, /^ROLL-/)
 
@@ -490,17 +499,17 @@ try {
     key: { remoteJid: groupOne, id: activeRollId, participant: botJid },
     reaction: { text: '❤️', key: { participant: botJid, fromMe: true } },
   }])
-  assert.equal((await readState(groupOne)).characters[0].owner, null, 'una reacción fromMe del bot no puede reclamar el roll')
+  assert.equal((await readState(groupOne)).characters.find((character) => character.id === firstRollCharacterId).owner, null, 'una reacción fromMe del bot no puede reclamar el roll')
   await reactionListener([{
     key: { remoteJid: groupOne, id: activeRollId, participant: botJid },
     reaction: { text: '❤️', key: { participant: botJid } },
   }])
-  assert.equal((await readState(groupOne)).characters[0].owner, null, 'el bot no puede reclamar aunque fromMe no esté marcado')
+  assert.equal((await readState(groupOne)).characters.find((character) => character.id === firstRollCharacterId).owner, null, 'el bot no puede reclamar aunque fromMe no esté marcado')
   await reactionListener([{
     key: { remoteJid: groupOne, id: activeRollId, participant: botJid },
     reaction: { text: '❤️', key: {} },
   }])
-  assert.equal((await readState(groupOne)).characters[0].owner, null, 'el autor del mensaje objetivo no debe confundirse con quien reaccionó')
+  assert.equal((await readState(groupOne)).characters.find((character) => character.id === firstRollCharacterId).owner, null, 'el autor del mensaje objetivo no debe confundirse con quien reaccionó')
   await Promise.all([
     reactionListener([{
       key: { remoteJid: groupOne, id: activeRollId },
@@ -512,7 +521,8 @@ try {
     }]),
   ])
   const claimed = await readState(groupOne)
-  assert.ok([userOne, userTwo].includes(claimed.characters[0].owner), 'debe asignar el personaje a un ganador')
+  const claimedRollCharacter = claimed.characters.find((character) => character.id === firstRollCharacterId)
+  assert.ok([userOne, userTwo].includes(claimedRollCharacter.owner), 'debe asignar el personaje a un ganador')
   assert.equal(claimed.activeRolls.length, 1, 'reclamar un personaje debe conservar otros rolls activos del grupo')
   assert.equal(claimed.activeRolls[0].characterId, groupOneAfterSecondRoll.activeRolls[1].characterId)
   assert.equal(claimed.activeRoll, null, 'debe cerrar el roll inmediatamente al reclamar')
@@ -520,15 +530,15 @@ try {
   assert.equal(Object.values(claimed.claimCounts)[0], 1, 'el ganador debe consumir un reclamo')
   const claimMessage = sent.find((message) => /¡Reclamado!/.test(message.content.text || ''))
   assert.ok(claimMessage, 'debe confirmar el reclamo')
-  assert.match(claimMessage.content.text, /\*Trunks\*/)
+  assert.ok(claimMessage.content.text.includes(`*${firstRollCharacter.name}*`))
   assert.match(claimMessage.content.text, /Dragon Ball Z/)
   assert.doesNotMatch(claimMessage.content.text, /variante/i)
-  await runCommand(conn, groupMessage(groupOne, claimed.characters[0].owner), 'cd')
+  await runCommand(conn, groupMessage(groupOne, claimedRollCharacter.owner), 'cd')
   assert.match(replies.at(-1).text, /Reclamos: 1\/2/, 'cd debe contar el primer reclamo antes de activar el cooldown')
   assert.doesNotMatch(replies.at(-1).text, /Próxima tirada del grupo/, 'cd no debe mostrar el cooldown grupal de la próxima tirada')
 
   await runCommand(conn, groupMessage(groupOne), 'personajes')
-  assert.match(replies.at(-1).text, /Trunks/)
+  assert.ok(replies.at(-1).text.includes(firstRollCharacter.name))
 
   await handler.all.call(conn, groupMessage(groupTwo))
   await handler.all.call(conn, groupMessage(groupThree))
@@ -579,18 +589,73 @@ try {
   await runCommand(conn, groupMessage(groupEight), 'quitarpj', 'Owned Character')
   assert.match(replies.at(-1).text, /Solo quien tiene el personaje/, 'solo el dueño puede liberar el personaje')
   const giftMessage = groupMessage(groupEight, userTwo)
-  giftMessage.mentionedJid = [userOne]
-  await runCommand(conn, giftMessage, 'regalarpj', 'wned + @5491111111111')
+  giftMessage.msg = { contextInfo: { mentionedJid: [userOne] } }
+  await runCommand(conn, giftMessage, 'regalarpj', 'Owned Character')
   assert.match(sent.at(-1).content.text, /PERSONAJE REGALADO/, 'regalarpj debe aceptar una palabra parcial dentro del nombre')
   assert.equal((await readState(groupEight)).characters.find((character) => character.id === 'owned-character').owner, userOne, 'regalarpj transfiere la propiedad al mencionado')
   assert.deepEqual(sent.at(-1).content.mentions, [userOne], 'el regalo etiqueta al destinatario')
+
+  const stateBeforeTrade = await readState(groupEight)
+  const freeCharacterBeforeTrade = stateBeforeTrade.characters.find((character) => !character.owner)
+  assert.ok(freeCharacterBeforeTrade, 'debe haber un personaje libre para probar el cambio')
+  const originalTradeRandom = Math.random
+  Math.random = () => 0
+  await runCommand(conn, groupMessage(groupEight, userOne), 'suertepj', 'wned')
+  Math.random = originalTradeRandom
+  const tradedState = await readState(groupEight)
+  assert.equal(tradedState.characters.find((character) => character.id === 'owned-character').owner, null, 'el personaje descartado debe quedar libre')
+  assert.equal(tradedState.characters.find((character) => character.id === freeCharacterBeforeTrade.id).owner, userOne, 'el usuario debe recibir el personaje libre al azar')
+  assert.ok(tradedState.tradeCooldowns[userOne] > Date.now(), 'el cambio debe iniciar un cooldown de 12 horas')
+  await runCommand(conn, groupMessage(groupEight, userOne), 'suertepj', freeCharacterBeforeTrade.name)
+  assert.match(replies.at(-1).text, /volver a usar %suertepj/, 'el segundo cambio por suerte debe respetar el cooldown')
+
   await runCommand(conn, groupMessage(groupEight, userOne), 'quitarpj', 'Owned Character')
   const releasedCharacter = (await readState(groupEight)).characters.find((character) => character.id === 'owned-character')
   assert.equal(releasedCharacter.owner, null, 'quitarpj deja el personaje disponible')
   assert.equal(Object.hasOwn(releasedCharacter, 'claimedAt'), false, 'quitarpj limpia la fecha de reclamo')
   const missingRecipient = groupMessage(groupEight, userTwo)
-  await runCommand(conn, missingRecipient, 'regalarpj', 'Owned Character + @5491111111111')
+  await runCommand(conn, missingRecipient, 'regalarpj', 'Owned Character')
   assert.match(replies.at(-1).text, /Mencioná/, 'regalarpj exige mencionar al destinatario')
+
+  const tradeCharacters = [
+    { ...available, id: 'trade-goku', name: 'Trade Goku', owner: userOne },
+    { ...available, id: 'trade-vegeta', name: 'Trade Vegeta', owner: userTwo },
+    { ...available, id: 'trade-open', name: 'Trade Open', owner: null },
+  ]
+  await fs.writeFile(filenameFor(tradeGroup), JSON.stringify(createState(tradeGroup, {
+    characters: tradeCharacters,
+  })), 'utf8')
+  await runCommand(conn, groupMessage(tradeGroup), 'cambiarpj', 'Trade Goku + Trade Vegeta')
+  assert.match(sent.at(-1).content.text, /PROPUESTA DE INTERCAMBIO/)
+  assert.deepEqual(sent.at(-1).content.mentions, [userOne, userTwo], 'la propuesta debe mencionar a ambos dueños')
+  const pendingTradeBeforeAttempt = (await readState(tradeGroup)).pendingTrade
+  const responseCountBeforeUnauthorizedAccept = replies.length
+  await runCommand(conn, groupMessage(tradeGroup, botJid), 'aceptarcambio')
+  assert.equal(replies.length, responseCountBeforeUnauthorizedAccept, 'un usuario distinto al destinatario debe ignorarse silenciosamente')
+  await runCommand(conn, groupMessage(tradeGroup, userTwo), 'cambiarpj', 'Trade Vegeta + Trade Goku')
+  assert.match(replies.at(-1).text, /Ya hay un intercambio pendiente/, 'no se permite más de una propuesta simultánea')
+  await runCommand(conn, groupMessage(tradeGroup, userTwo), 'aceptarcambio')
+  const acceptedTrade = await readState(tradeGroup)
+  assert.equal(acceptedTrade.characters.find((character) => character.id === 'trade-goku').owner, userTwo)
+  assert.equal(acceptedTrade.characters.find((character) => character.id === 'trade-vegeta').owner, userOne)
+  assert.equal(acceptedTrade.pendingTrade, null, 'aceptar debe cerrar la propuesta')
+  assert.match(sent.at(-1).content.text, /INTERCAMBIO ACEPTADO/)
+
+  await runCommand(conn, groupMessage(tradeGroup), 'cambiarpj', 'Trade Vegeta + Trade Goku')
+  const nowBeforeTradeExpiry = Date.now
+  Date.now = () => nowBeforeTradeExpiry() + 31 * 1000
+  try {
+    await runCommand(conn, groupMessage(tradeGroup, userTwo), 'aceptarcambio')
+  } finally {
+    Date.now = nowBeforeTradeExpiry
+  }
+  assert.equal((await readState(tradeGroup)).pendingTrade, null, 'una propuesta expirada debe eliminarse al intentar aceptarla')
+  assert.match(replies.at(-1).text, /No hay una propuesta de intercambio vigente/)
+
+  await runCommand(conn, groupMessage(tradeGroup), 'cambiarpj', 'Trade Vegeta + Trade Open')
+  assert.match(replies.at(-1).text, /no tiene dueño/, 'no se puede intercambiar por un personaje sin dueño')
+  assert.equal((await readState(tradeGroup)).pendingTrade, null, 'un personaje sin dueño no debe crear una propuesta')
+
   await runCommand(conn, groupMessage(groupOne), 'offmudae', '', { isOwner: true })
   assert.equal((await readState(groupOne)).enabled, false, 'offmudae debe persistir')
   await runCommand(conn, groupMessage(groupOne), 'toppj')
@@ -634,6 +699,32 @@ try {
   } finally {
     Math.random = originalRankRandom
   }
+
+  const noAvailableCatalog = JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
+  await fs.writeFile(filenameFor(noAvailableGroup), JSON.stringify(createState(noAvailableGroup, {
+    characters: noAvailableCatalog.characters.map((character) => ({ ...character, owner: userTwo })),
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+  })), 'utf8')
+  await runCommand(conn, groupMessage(noAvailableGroup), 'cd')
+  assert.match(replies.at(-1).text, /Tiradas RW: 10\/10/, 'CD debe permitir tiradas cuando solo quedan personajes reclamados')
+  const randomBeforeClaimedRoll = Math.random
+  Math.random = () => 0
+  await runCommand(conn, groupMessage(noAvailableGroup), 'rw')
+  Math.random = randomBeforeClaimedRoll
+  const claimedRollMessage = sent.at(-1)
+  assert.match(claimedRollMessage.content.caption, /Reclamado por:/, 'el roll debe indicar quién tiene el personaje')
+  assert.match(claimedRollMessage.content.caption, /no se puede reclamar/, 'un personaje reclamado debe salir sin poder reclamarse')
+  const claimedRollState = await readState(noAvailableGroup)
+  const claimedRollCharacterId = claimedRollState.activeRolls.at(-1).characterId
+  const previousClaimCount = claimedRollState.claimCounts[userOne] || 0
+  await handler.processReaction(conn, {
+    key: { remoteJid: noAvailableGroup, id: claimedRollState.activeRolls.at(-1).messageId },
+    reaction: { text: '❤️', key: { participant: userOne } },
+  })
+  const afterClaimedRollReaction = await readState(noAvailableGroup)
+  assert.equal(afterClaimedRollReaction.characters.find((character) => character.id === claimedRollCharacterId).owner, userTwo, 'una reacción no debe transferir un personaje ya reclamado')
+  assert.equal(afterClaimedRollReaction.claimCounts[userOne] || 0, previousClaimCount, 'un roll ya reclamado no debe consumir un reclamo')
+  assert.equal(afterClaimedRollReaction.activeRolls.length, 0, 'la reacción a un personaje ya reclamado debe cerrar el roll')
 
   const sharedCatalog = JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
   sharedCatalog.albums.push('Shared Sync Test')

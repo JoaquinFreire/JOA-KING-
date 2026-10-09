@@ -52,6 +52,8 @@ npm run qr
 
 Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por ejemplo, `%votarpj Goku`). Cada voto habilita tiradas durante 24 horas y se puede votar una vez cada 24 horas. Solo el owner del bot puede borrar personajes con `%delpj <álbum> + <nombre>`; el borrado también elimina la imagen de Cloudinary e invalida su caché.
 
+En un grupo, `%regalarpj <nombre> @usuario` transfiere uno de tus personajes a la persona mencionada. `%suertepj <nombre>` cambia un personaje tuyo por otro libre al azar del grupo; solo puede usarse una vez cada 12 horas y no altera el valor del nuevo personaje. Para intercambiar directamente con otra persona, usa `%cambiarpj <tu personaje> + <personaje de la otra persona>`; la propuesta se anuncia en el grupo, solo el dueño destinatario puede aceptarla con `%aceptarcambio` y vence en 30 segundos. Solo puede haber una propuesta pendiente por grupo y ambos personajes deben tener dueño.
+
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 
 El catálogo (`data/mudae/catalog.json`) se comparte mediante Git y se sincroniza entre los grupos; el bot vuelve a revisar el archivo cuando se usa un comando de personajes, así que los cambios recibidos con `git pull` aparecen sin reiniciar. Los reclamos y demás estado de cada grupo son locales y no se suben a Git. De forma predeterminada se guardan en `data/mudae/instances/<nombre-del-equipo>`; también puedes configurar rutas explícitas diferentes en cada PC:

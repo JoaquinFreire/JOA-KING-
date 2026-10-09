@@ -50,7 +50,7 @@ npm run qr
 
 `%ainfo <álbum>` lista todos los personajes de ese álbum con sus valores y no distingue tildes (por ejemplo, `%ainfo dragon ball` encuentra `Dragón Ball`). Para la ficha de un anime usa `%animedata <nombre>`; ya no comparte el alias `%ainfo`. Las búsquedas de personajes por nombre, como `%verpj` y `%votarpj`, también ignoran tildes.
 
-Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por ejemplo, `%votarpj Goku`). Cada voto habilita una tirada y se puede votar una vez cada 24 horas. Solo el owner del bot puede borrar personajes con `%delpj <álbum> + <nombre>`; el borrado también elimina la imagen de Cloudinary e invalida su caché.
+Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por ejemplo, `%votarpj Goku`). Cada voto habilita tiradas durante 24 horas y se puede votar una vez cada 24 horas. Solo el owner del bot puede borrar personajes con `%delpj <álbum> + <nombre>`; el borrado también elimina la imagen de Cloudinary e invalida su caché.
 
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 

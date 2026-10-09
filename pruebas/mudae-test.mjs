@@ -6,6 +6,7 @@ import path from 'node:path'
 
 const testDataDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'joa-king-mudae-test-'))
 process.env.MUDAE_DATA_DIR = testDataDirectory
+process.env.MUDAE_CATALOG_FILE = path.join(testDataDirectory, 'catalog.json')
 global.owner = ['5493513117202']
 
 const {
@@ -121,6 +122,15 @@ const runCommand = (conn, m, command, text = '', extra = {}) => handler(m, {
   isAdmin: false,
   ...extra,
 })
+const runCommandAfterRollCooldown = async (conn, m, command, text = '', extra = {}) => {
+  const originalNow = Date.now
+  Date.now = () => originalNow() + MUDAE_CONFIG.ROLL_COOLDOWN + 1
+  try {
+    return await runCommand(conn, m, command, text, extra)
+  } finally {
+    Date.now = originalNow
+  }
+}
 
 try {
   assert.equal(MUDAE_CONFIG.ROLL_COOLDOWN, 5000)
@@ -196,6 +206,7 @@ try {
   })), 'utf8')
   await fs.writeFile(filenameFor(groupFour), JSON.stringify(createState(groupFour, {
     albums: ['Dragon Ball Z', 'Dragon Ball Z Kai'],
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
     pendingVotes: { [userOne]: true },
     characters: [
       { ...available, id: 'claimed-character', owner: userTwo },
@@ -233,8 +244,12 @@ try {
     })),
   })), 'utf8')
   await fs.writeFile(filenameFor(groupTen), JSON.stringify(createState(groupTen, {
-    characters: [{ ...available, id: 'wanted-roll', name: 'Wanted Roll' }],
+    characters: [
+      { ...available, id: 'wanted-roll', name: 'Wanted Roll' },
+      { ...available, id: 'second-wanted-roll', name: 'Second Wanted Roll' },
+    ],
     users: { [userTwo]: { wishlist: ['wanted-roll'] } },
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
     pendingVotes: { [userOne]: true },
   })), 'utf8')
   await fs.writeFile(filenameFor(groupSeven), JSON.stringify(createState(groupSeven, {
@@ -387,6 +402,15 @@ try {
   const wantedRoll = sent.at(-1)
   assert.match(wantedRoll.content.caption, /\*Deseado por:\* @5491222222222/)
   assert.deepEqual(wantedRoll.content.mentions, [userTwo], 'el roll debe etiquetar a quienes lo tienen en wishlist')
+  const sentAfterFirstWantedRoll = sent.length
+  await runCommandAfterRollCooldown(conn, groupMessage(groupTen), 'rw')
+  assert.equal(sent.length, sentAfterFirstWantedRoll + 1, 'el mismo voto debe habilitar otra tirada dentro de las 24 horas')
+  const groupTenStateAfterSecondRoll = await readState(groupTen)
+  assert.equal(groupTenStateAfterSecondRoll.rollCounts[userOne], 2, 'las tiradas múltiples deben contar dentro del límite diario')
+  const valueBeforeRepeatVote = groupTenStateAfterSecondRoll.characters.find((character) => character.id === 'wanted-roll').value
+  await runCommand(conn, groupMessage(groupTen), 'votarpj', 'Wanted Roll')
+  assert.match(replies.at(-1).text, /Ya votaste en las últimas 24 horas/, 'el cooldown del voto se mantiene aunque permita varias tiradas')
+  assert.equal((await readState(groupTen)).characters.find((character) => character.id === 'wanted-roll').value, valueBeforeRepeatVote)
 
   const beforeRollMessages = sent.length
   await runCommand(conn, groupMessage(groupOne), 'rw')
@@ -398,9 +422,9 @@ try {
   assert.doesNotMatch(rollMessage.content.caption, /variante/i)
   assert.match((await readState(groupOne)).activeRolls[0].messageId, /^ROLL-/)
 
-  await runCommand(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /votarpj <nombre>/, 'una tirada consume el voto pendiente')
-  assert.equal((await readState(groupOne)).activeRolls.length, 1, 'no debe crear otra tirada sin otro voto')
+  await runCommandAfterRollCooldown(conn, groupMessage(groupOne), 'rw')
+  assert.match(replies.at(-1).text, /NO HAY PERSONAJES DISPONIBLES/, 'el voto habilita tiradas aunque el único personaje disponible esté activo')
+  assert.equal((await readState(groupOne)).activeRolls.length, 1, 'no debe crear un roll sin personajes disponibles')
 
   await handler.all.call(conn, groupMessage(groupOne))
   const reactionListener = conn.ev.listeners.get('messages.reaction')?.[0]
@@ -453,9 +477,9 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'personajes')
   assert.match(replies.at(-1).text, /Trunks/)
   const sentAfterClaim = sent.length
-  await runCommand(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /votarpj <nombre>/, 'el usuario debe votar antes de tirar otra vez')
-  assert.equal(sent.length, sentAfterClaim, 'no debe tirar sin un voto nuevo')
+  await runCommandAfterRollCooldown(conn, groupMessage(groupOne), 'rw')
+  assert.match(replies.at(-1).text, /NO HAY PERSONAJES DISPONIBLES/, 'el voto todavía está vigente, pero ya no quedan personajes para tirar')
+  assert.equal(sent.length, sentAfterClaim, 'no debe crear otro roll cuando no quedan personajes disponibles')
   assert.equal((await readState(groupOne)).activeRolls.length, 0, 'el cooldown no debe crear otro roll')
 
   await handler.all.call(conn, groupMessage(groupTwo))

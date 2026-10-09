@@ -733,8 +733,8 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n        ✦ *%rw* — después de votar, tirá un personaje aleatorio; reaccioná con ❤️ para reclamarlo (vence al minuto)
-    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar una tirada (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n            ✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar (vence al minuto)
+    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -755,7 +755,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const waits = [
       `🎲 Tiradas RW: ${Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)}/${MUDAE_CONFIG.ROLL_LIMIT}${rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
       `❤️ Reclamos: ${Math.max(0, MUDAE_CONFIG.CLAIM_LIMIT - claimCount)}/${MUDAE_CONFIG.CLAIM_LIMIT}${claimCooldown > 0 ? ` · disponibles en ${formatWait(claimCooldown)}` : ''}`,
-      `🗳️ Voto: ${voteCooldown > 0 ? `disponible en ${formatWait(voteCooldown)}` : 'disponible'}`,
+      `🗳️ Voto: ${voteCooldown > 0 ? `nuevo voto disponible en ${formatWait(voteCooldown)} · tiradas habilitadas` : 'disponible'}`,
       `⏱️ Próxima tirada del grupo: ${groupCooldown > 0 ? `en ${formatWait(groupCooldown)}` : 'disponible'}`,
     ]
     const activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
@@ -989,10 +989,10 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
       if (!current.enabled) return conn.reply(m.chat, 'Mudae está desactivado en este grupo.', m)
-      if (!current.pendingVotes[actor]) {
+      const now = Date.now()
+      if (Number(current.voteCooldowns[actor] || 0) <= now) {
         return conn.reply(m.chat, `🗳️ Para tirar *%rw*, primero tenés que votar por un personaje.\nUsá *${usedPrefix}votarpj <nombre>*; por ejemplo: *${usedPrefix}votarpj Goku*.`, m)
       }
-      const now = Date.now()
       current.activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
       if (now < Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN) return
       const availableAt = Number(current.rollCooldowns[actor] || 0)
@@ -1125,18 +1125,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
       const now = Date.now()
       const availableAt = Number(current.voteCooldowns?.[actor] || 0)
-      if (current.pendingVotes[actor]) {
+      if (availableAt > now && current.pendingVotes[actor]) {
         return conn.reply(m.chat, `Ya tenés un voto pendiente. Usá *${usedPrefix}rw* para tirar antes de volver a votar.`, m)
       }
       if (availableAt > now) {
         const remainingHours = Math.ceil((availableAt - now) / (60 * 60 * 1000))
         return conn.reply(m.chat, `⏳ Ya votaste en las últimas 24 horas. Podés volver a votar en aproximadamente ${remainingHours} h.`, m)
       }
+      delete current.pendingVotes[actor]
       character.value = Number(character.value || 0) + MUDAE_CONFIG.VOTE_VALUE_INCREMENT
       current.voteCooldowns[actor] = now + MUDAE_CONFIG.VOTE_COOLDOWN
       current.pendingVotes[actor] = true
       await saveState(current)
-      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(MUDAE_CONFIG.VOTE_VALUE_INCREMENT)}).\nPodés votar de nuevo en 24 horas.`, m)
+      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(MUDAE_CONFIG.VOTE_VALUE_INCREMENT)}).\nPodés tirar con *%rw* durante las próximas 24 horas y votar de nuevo después.`, m)
     })
   }
 

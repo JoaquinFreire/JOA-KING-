@@ -48,7 +48,6 @@
     "Game Of Thrones",
     "Floricienta",
     "Hunger Games",
-    "Farándula",
     "Death Note",
     "Tomb Raider",
     "Code Geass",
@@ -327,7 +326,9 @@
     "Vis A Vis",
     "Mascotas",
     "Postres",
-    "Bot"
+    "Bot",
+    "Freefayeros",
+    "Serie"
   ],
   "characters": [
     {
@@ -17681,8 +17682,29 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791440094/mudae/95136749849b57ffd859/954715d7-62ff-4991-a3b5-4e8a82c12a8c.jpg",
       "cloudinaryPublicId": "mudae/95136749849b57ffd859/954715d7-62ff-4991-a3b5-4e8a82c12a8c",
       "createdAt": 1791440233503
+    },
+    {
+      "id": "546307ea-6d6e-40ed-8fbb-cc6d38f31e35",
+      "name": "Tía Luchi",
+      "album": "Freefayeros",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791524949/mudae/catalog/3f5698dc7bc870a5c753c0d5472fab29.webp",
+      "cloudinaryPublicId": "mudae/catalog/3f5698dc7bc870a5c753c0d5472fab29",
+      "createdAt": 1791525090846
+    },
+    {
+      "id": "dc7dc24b-5e79-4f8f-be40-4a2f5e887a0b",
+      "name": "Lexie Grey",
+      "album": "Serie",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791526114/mudae/catalog/fbefdf83612cb624cb63add5d3433dad.webp",
+      "cloudinaryPublicId": "mudae/catalog/fbefdf83612cb624cb63add5d3433dad",
+      "createdAt": 1791526256065
     }
   ],
+  "deletedCharacterIds": [
+    "catalog-16339d69a0b625d9ff0218c7f57c604b"
+  ],
   "createdAt": 1791505691512,
-  "updatedAt": 1791511422103
+  "updatedAt": 1791526256068
 }

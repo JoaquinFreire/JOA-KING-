@@ -17,6 +17,7 @@ const defaultCatalog = () => ({
   version: 1,
   albums: [],
   characters: [],
+  deletedCharacterIds: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
 })
@@ -66,6 +67,7 @@ const catalog = {
 }
 catalog.albums = Array.isArray(catalog.albums) ? catalog.albums.map(normalizeMudaeLabel).filter(Boolean) : []
 catalog.characters = Array.isArray(catalog.characters) ? catalog.characters : []
+catalog.deletedCharacterIds = Array.isArray(catalog.deletedCharacterIds) ? catalog.deletedCharacterIds : []
 
 let imported = 0
 let skipped = 0
@@ -79,6 +81,11 @@ for (const [index, item] of source.entries()) {
     console.warn(`[${index + 1}/${source.length}] omitido por datos incompletos`)
     continue
   }
+  const id = makeCharacterId(album, name)
+  if (catalog.deletedCharacterIds.includes(id)) {
+    skipped += 1
+    continue
+  }
   if (catalog.characters.some((character) => normalizeMudaeIdentity(character.name) === normalizeMudaeIdentity(name))) {
     skipped += 1
     continue
@@ -88,7 +95,7 @@ for (const [index, item] of source.entries()) {
   const uploadKey = `${makeCharacterIdentity(normalizedAlbum, name)}\n${sourceImage}`
   const uploaded = await uploadRemoteMudaeImage(sourceImage, uploadKey)
   catalog.characters.push({
-    id: makeCharacterId(normalizedAlbum, name),
+    id,
     name,
     album: normalizedAlbum,
     value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,

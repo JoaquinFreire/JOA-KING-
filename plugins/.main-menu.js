@@ -96,7 +96,7 @@ const menuSections = {
             ' 🎄  *#removesale • #removerventa* + [precio] [nombre]\n> ☃️ Eliminar un personaje en venta.',
             ' 🎄  *#rollwaifu • #rw • #roll*\n> ☃️ Waifu o husbando aleatorio',
             ' 🎄  *#sell • #vender* + [precio] [nombre]\n> ☃️ Poner un personaje a la venta.',
-            ' 🎄  *#infoanime • #serieinfo • #ainfo • #animeinfo* + [nombre]\n> ☃️ Información de un anime.',
+            ' 🎄  *#animedata • #infoanime • #serieinfo • #animeinfo* + [nombre]\n> ☃️ Información de un anime.',
             ' 🎄  *#serielist • #slist • #animelist*\n> ☃️ Listar series del bot',
             ' 🎄  *#setclaimmsg • #setclaim* + [mensaje]\n> ☃️ Modificar el mensaje al reclamar un personaje',
             ' 🎄  *#trade • #intercambiar* + [Tu personaje] / [Personaje 2]\n> ☃️ Intercambiar un personaje con otro usuario',
@@ -230,7 +230,7 @@ const menuSections = {
             ' 🎄  *#bully • #bullying* + <mencion>\n> ☃️ Molestar a alguien',
             ' 🎄  *#handhold • #mano* + <mencion>\n> ☃️ Tomarse de la mano',
             ' 🎄  *#wave • #ola • #hola* + <mencion>\n> ☃️ Saludar con la mano',
-            ' 🎄  *#infoanime • #serieinfo • #ainfo • #animeinfo* + [nombre]\n> ☃️ Consultar información de un anime.',
+            ' 🎄  *#animedata • #infoanime • #serieinfo • #animeinfo* + [nombre]\n> ☃️ Consultar información de un anime.',
             ' 🎄  *#pokedex* + [Pokémon]\n> ☃️ Consultar información de un Pokémon.',
             ' 🎄  *#waifu*\n> ☃️ Buscar una waifu aleatoria.',
             ' 🎄  *#ppcouple • #ppcp*\n> ☃️ Genera imágenes para amistades o parejas.'

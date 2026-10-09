@@ -447,13 +447,13 @@ Object.freeze(global.support);
 setInterval(async () => {
 const tmpDir = join(__dirname, 'tmp')
 try {
-const filenames = readdirSync(tmpDir)
-filenames.forEach(file => {
-const filePath = join(tmpDir, file)
+const filenames = readdirSync(tmpDir, { withFileTypes: true })
+filenames.filter(file => file.isFile()).forEach(file => {
+const filePath = join(tmpDir, file.name)
 unlinkSync(filePath)})
 console.log(chalk.gray(`→ Archivos de la carpeta TMP eliminados`))
-} catch {
-console.log(chalk.gray(`→ Los archivos de la carpeta TMP no se pudieron eliminar`));
+} catch (error) {
+console.warn(chalk.gray(`→ Los archivos de la carpeta TMP no se pudieron eliminar: ${error.message}`))
 }}, 30 * 1000) 
 _quickTest().catch(console.error)
 async function isValidPhoneNumber(number) {

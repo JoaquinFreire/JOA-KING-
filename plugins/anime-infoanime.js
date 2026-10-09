@@ -34,9 +34,9 @@ await m.react('✖️')
 await conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['infoanime', 'serieinfo', 'ainfo', 'animeinfo']
+handler.help = ['animedata', 'infoanime', 'serieinfo', 'animeinfo']
 handler.tags = ['anime']
-handler.command = ['infoanime', 'serieinfo', 'ainfo', 'animeinfo']
+handler.command = ['animedata', 'infoanime', 'serieinfo', 'animeinfo']
 handler.group = true
 
 export default handler

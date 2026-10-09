@@ -18,6 +18,8 @@ const {
   normalizeMudaeLabel,
   parseMudaeParts,
 } = await import('../plugins/mudae.js')
+const { default: animeInfoHandler } = await import('../plugins/anime-infoanime.js')
+const { default: legacySeriesHandler } = await import('../plugins/gacha-serielist.js')
 
 const groupOne = '120363000000000001@g.us'
 const groupTwo = '120363000000000002@g.us'
@@ -44,6 +46,8 @@ const createState = (groupId, overrides = {}) => ({
   users: {},
   rollCooldowns: {},
   claimCooldowns: {},
+  voteCooldowns: {},
+  pendingVotes: {},
   activeRoll: null,
   createdAt: Date.now(),
   updatedAt: Date.now(),
@@ -120,7 +124,7 @@ const runCommand = (conn, m, command, text = '', extra = {}) => handler(m, {
 
 try {
   assert.equal(MUDAE_CONFIG.ROLL_COOLDOWN, 5000)
-  assert.equal(MUDAE_CONFIG.CLAIM_COOLDOWN, 20 * 60 * 1000)
+  assert.equal(MUDAE_CONFIG.CLAIM_COOLDOWN, 60 * 60 * 1000)
   assert.equal(MUDAE_CONFIG.CLAIM_DURATION, 60 * 1000)
   assert.equal(MUDAE_CONFIG.VOTE_COOLDOWN, 24 * 60 * 60 * 1000)
   assert.equal(MUDAE_CONFIG.VOTE_VALUE_INCREMENT, 125)
@@ -153,6 +157,7 @@ try {
     'la identidad debe ignorar mayúsculas y espacios extra'
   )
   assert.equal(normalizeMudaeIdentity('  Trunks   Base '), 'trunks base')
+  assert.equal(normalizeMudaeIdentity('  Dragón   Báll '), 'dragon ball')
   assert.equal(normalizeMudaeLabel('  nUtELLa   con   cHOCOLATE '), 'Nutella Con Chocolate')
   assert.deepEqual(parseMudaeParts('  dRAGON   bALL z + tRUNKS  ', 2), ['Dragon Ball Z', 'Trunks'])
   assert.deepEqual(parseMudaeParts('Dragon Ball Z + Trunks', 2), ['Dragon Ball Z', 'Trunks'])
@@ -181,16 +186,17 @@ try {
     characters: [available, secondCharacter],
   })), 'utf8')
   await fs.writeFile(filenameFor(groupTwo), JSON.stringify(createState(groupTwo, {
-    characters: [{ ...available, id: 'cooldown-character' }],
-    activeRoll: { messageId: 'COOLDOWN-ROLL', characterId: 'cooldown-character', expiresAt: Date.now() + 60000 },
+    characters: [available],
+    activeRoll: { messageId: 'COOLDOWN-ROLL', characterId: available.id, expiresAt: Date.now() + 60000 },
     claimCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.CLAIM_COOLDOWN },
   })), 'utf8')
   await fs.writeFile(filenameFor(groupThree), JSON.stringify(createState(groupThree, {
-    characters: [{ ...available, id: 'expired-character' }],
-    activeRoll: { messageId: 'EXPIRED', characterId: 'expired-character', expiresAt: Date.now() - 1 },
+    characters: [available],
+    activeRoll: { messageId: 'EXPIRED', characterId: available.id, expiresAt: Date.now() - 1 },
   })), 'utf8')
   await fs.writeFile(filenameFor(groupFour), JSON.stringify(createState(groupFour, {
     albums: ['Dragon Ball Z', 'Dragon Ball Z Kai'],
+    pendingVotes: { [userOne]: true },
     characters: [
       { ...available, id: 'claimed-character', owner: userTwo },
       { ...available, id: 'claimed-character-other-album', album: 'Dragon Ball Z Kai', owner: userTwo },
@@ -217,7 +223,7 @@ try {
     })),
   })), 'utf8')
   await fs.writeFile(filenameFor(groupEight), JSON.stringify(createState(groupEight, {
-    characters: [{ ...available, id: 'owned-character', owner: userTwo, claimedAt: Date.now() }],
+    characters: [{ ...available, id: 'owned-character', name: 'Owned Character', owner: userTwo, claimedAt: Date.now() }],
   })), 'utf8')
   await fs.writeFile(filenameFor(groupNine), JSON.stringify(createState(groupNine, {
     characters: Array.from({ length: 4 }, (_, index) => ({
@@ -229,11 +235,23 @@ try {
   await fs.writeFile(filenameFor(groupTen), JSON.stringify(createState(groupTen, {
     characters: [{ ...available, id: 'wanted-roll', name: 'Wanted Roll' }],
     users: { [userTwo]: { wishlist: ['wanted-roll'] } },
+    pendingVotes: { [userOne]: true },
   })), 'utf8')
+  await fs.writeFile(filenameFor(groupSeven), JSON.stringify(createState(groupSeven, {
+    enabled: false,
+    characters: [{ ...available, id: 'retired-character', name: 'Retired Character' }],
+  })), 'utf8')
+  await fs.writeFile(path.join(testDataDirectory, 'catalog.json'), JSON.stringify({
+    version: 1,
+    albums: [],
+    characters: [],
+    deletedCharacterIds: ['retired-character'],
+  }), 'utf8')
 
   const { conn, sent, replies } = createConnection()
   await runCommand(conn, groupMessage(groupSeven), 'rw')
   assert.match(replies.at(-1).text, /desactivado/, 'Mudae debe comenzar apagado')
+  assert.ok(!(await readState(groupSeven)).characters.some((character) => character.id === 'retired-character'), 'un personaje borrado no debe volver desde un estado antiguo')
   await runCommand(conn, groupMessage(groupSeven), 'menumudae')
   assert.match(replies.at(-1).text, /%addpj/)
   assert.doesNotMatch(replies.at(-1).text, /variante/i)
@@ -241,6 +259,10 @@ try {
   assert.match(replies.at(-1).text, /%wishremove/)
   assert.match(replies.at(-1).text, /%addpj <álbum> \+ <nombre>/)
   assert.ok(handler.command.includes('toppj'))
+  assert.ok(handler.command.includes('ainfo'))
+  assert.ok(!animeInfoHandler.command.includes('ainfo'))
+  assert.ok(animeInfoHandler.command.includes('animedata'))
+  assert.ok(!legacySeriesHandler.command.includes('ainfo'))
   assert.ok(!handler.command.includes('top'))
   assert.ok(handler.command.includes('menumudae'))
 
@@ -250,11 +272,16 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'onmudae', '', { isOwner: true })
   assert.equal((await readState(groupOne)).enabled, true)
   assert.equal((await readState(groupTwo)).enabled, true)
+  const sentBeforeUnvotedRoll = sent.length
+  await runCommand(conn, groupMessage(groupOne), 'rw')
+  assert.match(replies.at(-1).text, /votarpj Goku/, 'debe explicar cómo votar antes de tirar')
+  assert.equal(sent.length, sentBeforeUnvotedRoll, 'no debe tirar sin un voto pendiente')
 
   await runCommand(conn, groupMessage(groupTwo), 'votarpj', 'Trunks')
   assert.match(replies.at(-1).text, /1\.125/)
+  assert.equal((await readState(groupTwo)).pendingVotes[userOne], true, 'un voto válido habilita una tirada')
   await runCommand(conn, groupMessage(groupTwo), 'votarpj', 'Trunks')
-  assert.match(replies.at(-1).text, /últimas 24 horas/, 'un usuario solo puede votar una vez cada 24 horas')
+  assert.match(replies.at(-1).text, /voto pendiente/, 'no permite acumular votos pendientes')
   await runCommand(conn, groupMessage(groupTwo, userTwo), 'votarpj', 'Trunks')
   assert.match(replies.at(-1).text, /1\.250/, 'otro usuario puede emitir su propio voto')
   assert.equal((await readState(groupTwo)).characters[0].value, 1250)
@@ -263,6 +290,19 @@ try {
   assert.match(replies.at(-1).text, /ya existe/, 'debe rechazar álbum duplicado ignorando case')
   assert.deepEqual((await readState(groupOne)).albums, ['Dragon Ball Z'])
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Other Album', { isAdmin: true })
+  await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
+  assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/)
+  assert.match(replies.at(-1).text, /Trunks/)
+  assert.match(replies.at(-1).text, /Goku/)
+  assert.match(replies.at(-1).text, /\$1\.000/, 'ainfo debe mostrar el valor de cada personaje')
+  await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
+  assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
+  await runCommand(conn, groupMessage(groupOne), 'votarpj', 'Goku')
+  assert.match(replies.at(-1).text, /VOTO REGISTRADO/)
+
+  await runCommand(conn, groupMessage(groupOne), 'delpj', 'Dragon Ball Z + Goku', { isAdmin: true })
+  assert.match(replies.at(-1).text, /Solo el owner del bot/)
+  assert.ok((await readState(groupOne)).characters.some((character) => character.name === 'Goku'))
 
   const credentialsToRestore = {
     CLOUDINARY_URL: process.env.CLOUDINARY_URL,
@@ -302,8 +342,8 @@ try {
   await runCommand(conn, mentionedUser, 'personajes', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/)
-  assert.match(replies.at(-1).text, /\$1\.500/)
-  await runCommand(conn, groupMessage(groupOne), 'verpj', 'Goku')
+  assert.match(replies.at(-1).text, /\$1\.625/)
+  await runCommand(conn, groupMessage(groupOne), 'verpj', 'Góku')
   const characterInfo = sent.at(-1)
   assert.equal(characterInfo.content.image.url, available.imageUrl)
   assert.match(characterInfo.content.caption, /👑 \*Dueño:\* @5491222222222/)
@@ -336,7 +376,14 @@ try {
   assert.match(replies.at(-1).text, /Wish 3/)
   assert.doesNotMatch(replies.at(-1).text, /Wish 1/)
 
+  await runCommand(conn, groupMessage(groupTen), 'wishlist')
+  const groupTenAvailable = (await readState(groupTen)).characters.filter((character) => !character.owner)
+  const wantedRollIndex = groupTenAvailable.findIndex((character) => character.id === 'wanted-roll')
+  assert.notEqual(wantedRollIndex, -1, 'el personaje deseado debe estar disponible para el roll')
+  const originalRandom = Math.random
+  Math.random = () => (wantedRollIndex + 0.5) / groupTenAvailable.length
   await runCommand(conn, groupMessage(groupTen), 'rw')
+  Math.random = originalRandom
   const wantedRoll = sent.at(-1)
   assert.match(wantedRoll.content.caption, /\*Deseado por:\* @5491222222222/)
   assert.deepEqual(wantedRoll.content.mentions, [userTwo], 'el roll debe etiquetar a quienes lo tienen en wishlist')
@@ -349,10 +396,11 @@ try {
   assert.match(rollMessage.content.caption, /Trunks/)
   assert.match(rollMessage.content.caption, /\*Trunks\*/)
   assert.doesNotMatch(rollMessage.content.caption, /variante/i)
-  assert.match((await readState(groupOne)).activeRoll.messageId, /^ROLL-/)
+  assert.match((await readState(groupOne)).activeRolls[0].messageId, /^ROLL-/)
 
   await runCommand(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /ROLL ACTIVO/, 'no debe solapar rolls activos')
+  assert.match(replies.at(-1).text, /votarpj <nombre>/, 'una tirada consume el voto pendiente')
+  assert.equal((await readState(groupOne)).activeRolls.length, 1, 'no debe crear otra tirada sin otro voto')
 
   await handler.all.call(conn, groupMessage(groupOne))
   const reactionListener = conn.ev.listeners.get('messages.reaction')?.[0]
@@ -364,7 +412,7 @@ try {
   }])
   assert.equal((await readState(groupOne)).characters[0].owner, null, 'ignora reacciones a otro mensaje')
 
-  const activeRollId = (await readState(groupOne)).activeRoll.messageId
+  const activeRollId = (await readState(groupOne)).activeRolls[0].messageId
   await reactionListener([{
     key: { remoteJid: groupOne, id: activeRollId, participant: botJid },
     reaction: { text: '❤️', key: { participant: botJid, fromMe: true } },
@@ -392,8 +440,10 @@ try {
   ])
   const claimed = await readState(groupOne)
   assert.ok([userOne, userTwo].includes(claimed.characters[0].owner), 'debe asignar el personaje a un ganador')
+  assert.equal(claimed.activeRolls.length, 0, 'debe eliminar el roll activo inmediatamente al reclamar')
   assert.equal(claimed.activeRoll, null, 'debe cerrar el roll inmediatamente al reclamar')
-  assert.equal(Object.values(claimed.claimCooldowns).length, 1, 'solamente un usuario gana el cooldown')
+  assert.equal(Object.keys(claimed.claimCounts).length, 1, 'solamente un usuario debe quedar registrado como ganador')
+  assert.equal(Object.values(claimed.claimCounts)[0], 1, 'el ganador debe consumir un reclamo')
   const claimMessage = sent.find((message) => /¡Reclamado!/.test(message.content.text || ''))
   assert.ok(claimMessage, 'debe confirmar el reclamo')
   assert.match(claimMessage.content.text, /\*Trunks\*/)
@@ -402,8 +452,11 @@ try {
 
   await runCommand(conn, groupMessage(groupOne), 'personajes')
   assert.match(replies.at(-1).text, /Trunks/)
+  const sentAfterClaim = sent.length
   await runCommand(conn, groupMessage(groupOne), 'rw')
-  assert.match(replies.at(-1).text, /ESPERÁ/, 'el cooldown de roll limita al usuario')
+  assert.match(replies.at(-1).text, /votarpj <nombre>/, 'el usuario debe votar antes de tirar otra vez')
+  assert.equal(sent.length, sentAfterClaim, 'no debe tirar sin un voto nuevo')
+  assert.equal((await readState(groupOne)).activeRolls.length, 0, 'el cooldown no debe crear otro roll')
 
   await handler.all.call(conn, groupMessage(groupTwo))
   await handler.all.call(conn, groupMessage(groupThree))
@@ -413,7 +466,7 @@ try {
   }])
   const stillAvailable = await readState(groupTwo)
   assert.equal(stillAvailable.characters[0].owner, null, 'el cooldown de claim bloquea al usuario')
-  assert.equal(stillAvailable.activeRoll.messageId, 'COOLDOWN-ROLL', 'otro usuario aún puede reclamar ese roll')
+  assert.equal(stillAvailable.activeRolls[0].messageId, 'COOLDOWN-ROLL', 'otro usuario aún puede reclamar ese roll')
   await reactionListener([{
     key: { remoteJid: groupTwo, id: 'COOLDOWN-ROLL' },
     reaction: { text: '❤️', key: { participant: userTwo } },
@@ -425,8 +478,9 @@ try {
     reaction: { text: '❤️', key: { participant: userOne } },
   }])
   assert.equal((await readState(groupThree)).characters[0].owner, null, 'rolls vencidos no se pueden reclamar')
+  const beforeSharedCatalogRoll = sent.length
   await runCommand(conn, groupMessage(groupFour), 'rw')
-  assert.match(replies.at(-1).text, /NO HAY PERSONAJES DISPONIBLES/, 'no debe generar roll sin personajes disponibles')
+  assert.equal(sent.length, beforeSharedCatalogRoll + 1, 'los personajes globales deben estar disponibles para los grupos')
   const groupOneState = await readState(groupOne)
   const groupTwoState = await readState(groupTwo)
   assert.equal(groupOneState.groupId, groupOne)
@@ -434,24 +488,25 @@ try {
   assert.equal(groupOneState.characters[0].owner, claimed.characters[0].owner, 'los datos de un grupo no deben cambiar al reclamar en otro')
   await runCommand(conn, groupMessage(groupFive), 'personajes', `@${userTwo.split('@')[0]}`)
   const migratedState = await readState(groupFive)
-  assert.equal(migratedState.characters[0].name, 'Nutella', 'migra el nombre a capitalización de título')
-  assert.equal(migratedState.characters[0].album, 'Postres', 'migra el álbum a capitalización de título')
-  assert.equal(migratedState.characters[0].owner, userTwo, 'la migración conserva el propietario')
-  assert.equal(Object.hasOwn(migratedState.characters[0], 'variant'), false, 'la migración elimina la variante')
+  const migratedCharacter = migratedState.characters.find((character) => character.id === 'legacy-character')
+  assert.equal(migratedCharacter.name, 'Nutella', 'migra el nombre a capitalización de título')
+  assert.equal(migratedCharacter.album, 'Postres', 'migra el álbum a capitalización de título')
+  assert.equal(migratedCharacter.owner, userTwo, 'la migración conserva el propietario')
+  assert.equal(Object.hasOwn(migratedCharacter, 'variant'), false, 'la migración elimina la variante')
 
-  await runCommand(conn, groupMessage(groupEight), 'quitarpj', 'Trunks')
+  await runCommand(conn, groupMessage(groupEight), 'quitarpj', 'Owned Character')
   assert.match(replies.at(-1).text, /Solo quien tiene el personaje/, 'solo el dueño puede liberar el personaje')
   const giftMessage = groupMessage(groupEight, userTwo)
   giftMessage.mentionedJid = [userOne]
-  await runCommand(conn, giftMessage, 'regalarpj', 'Trunks + @5491111111111')
-  assert.equal((await readState(groupEight)).characters[0].owner, userOne, 'regalarpj transfiere la propiedad al mencionado')
+  await runCommand(conn, giftMessage, 'regalarpj', 'Owned Character + @5491111111111')
+  assert.equal((await readState(groupEight)).characters.find((character) => character.id === 'owned-character').owner, userOne, 'regalarpj transfiere la propiedad al mencionado')
   assert.deepEqual(sent.at(-1).content.mentions, [userOne], 'el regalo etiqueta al destinatario')
-  await runCommand(conn, groupMessage(groupEight, userOne), 'quitarpj', 'Trunks')
-  const releasedCharacter = (await readState(groupEight)).characters[0]
+  await runCommand(conn, groupMessage(groupEight, userOne), 'quitarpj', 'Owned Character')
+  const releasedCharacter = (await readState(groupEight)).characters.find((character) => character.id === 'owned-character')
   assert.equal(releasedCharacter.owner, null, 'quitarpj deja el personaje disponible')
   assert.equal(Object.hasOwn(releasedCharacter, 'claimedAt'), false, 'quitarpj limpia la fecha de reclamo')
   const missingRecipient = groupMessage(groupEight, userTwo)
-  await runCommand(conn, missingRecipient, 'regalarpj', 'Trunks + @5491111111111')
+  await runCommand(conn, missingRecipient, 'regalarpj', 'Owned Character + @5491111111111')
   assert.match(replies.at(-1).text, /Mencioná/, 'regalarpj exige mencionar al destinatario')
   await runCommand(conn, groupMessage(groupOne), 'offmudae', '', { isOwner: true })
   assert.equal((await readState(groupOne)).enabled, false, 'offmudae debe persistir')

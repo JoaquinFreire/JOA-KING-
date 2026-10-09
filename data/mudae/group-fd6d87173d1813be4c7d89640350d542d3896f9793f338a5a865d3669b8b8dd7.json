@@ -49,7 +49,6 @@
     "Game Of Thrones",
     "Floricienta",
     "Hunger Games",
-    "Farándula",
     "Death Note",
     "Tomb Raider",
     "Code Geass",
@@ -328,14 +327,16 @@
     "Vis A Vis",
     "Mascotas",
     "Postres",
-    "Bot"
+    "Bot",
+    "Freefayeros",
+    "Serie"
   ],
   "characters": [
     {
       "id": "catalog-ec3b605c71a92ace923ac3b77792185f",
       "name": "Lionel Messi",
       "album": "Jugadores",
-      "value": 1000,
+      "value": 1125,
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505551/mudae/catalog/b7ec1c3993ef13f12bb4d5674393cc30.webp",
       "cloudinaryPublicId": "mudae/catalog/b7ec1c3993ef13f12bb4d5674393cc30",
       "createdAt": 1791505692735,
@@ -345,7 +346,7 @@
       "id": "catalog-990e50d3e2b4eccdda0d02b1c324a1f5",
       "name": "Goku",
       "album": "Dragon Ball",
-      "value": 1000,
+      "value": 1125,
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505552/mudae/catalog/1a39b0bce0988d080a3b64e89d056fd6.webp",
       "cloudinaryPublicId": "mudae/catalog/1a39b0bce0988d080a3b64e89d056fd6",
       "createdAt": 1791505693547,
@@ -449,16 +450,6 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505559/mudae/catalog/d4fbdf231eabdcc9aa60303848b60ebe.webp",
       "cloudinaryPublicId": "mudae/catalog/d4fbdf231eabdcc9aa60303848b60ebe",
       "createdAt": 1791505700708,
-      "owner": null
-    },
-    {
-      "id": "catalog-16339d69a0b625d9ff0218c7f57c604b",
-      "name": "Sebas",
-      "album": "Chanta",
-      "value": 1000,
-      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505560/mudae/catalog/e99bbf5df33252825fba4a0497f2cb01.webp",
-      "cloudinaryPublicId": "mudae/catalog/e99bbf5df33252825fba4a0497f2cb01",
-      "createdAt": 1791505701336,
       "owner": null
     },
     {
@@ -3459,7 +3450,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505766/mudae/catalog/cedc3ca29cc360588ecb4c4d8b2751a0.webp",
       "cloudinaryPublicId": "mudae/catalog/cedc3ca29cc360588ecb4c4d8b2751a0",
       "createdAt": 1791505907949,
-      "owner": null
+      "owner": "279985042518244@lid",
+      "claimedAt": 1791525471912
     },
     {
       "id": "catalog-bfe67ce59762c79218f2eef6fa14ee27",
@@ -4829,7 +4821,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791505856/mudae/catalog/fe102006c38218ea1be7d3fe822a749c.webp",
       "cloudinaryPublicId": "mudae/catalog/fe102006c38218ea1be7d3fe822a749c",
       "createdAt": 1791505997817,
-      "owner": null
+      "owner": "279985042518244@lid",
+      "claimedAt": 1791525405156
     },
     {
       "id": "catalog-59d8344ad3aed7dd04b8692911c6b5da",
@@ -7269,7 +7262,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791506022/mudae/catalog/1c5360be86776c8fe7778e2fddca12fe.webp",
       "cloudinaryPublicId": "mudae/catalog/1c5360be86776c8fe7778e2fddca12fe",
       "createdAt": 1791506163364,
-      "owner": null
+      "owner": "32594540392454@lid",
+      "claimedAt": 1791526087666
     },
     {
       "id": "catalog-e7b00dccb3f65539f7adf5121c3f1057",
@@ -11850,7 +11844,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791506331/mudae/catalog/df5c57a6258856b76cf6e6cbd19dc799.webp",
       "cloudinaryPublicId": "mudae/catalog/df5c57a6258856b76cf6e6cbd19dc799",
       "createdAt": 1791506472338,
-      "owner": null
+      "owner": "32594540392454@lid",
+      "claimedAt": 1791526042172
     },
     {
       "id": "catalog-58f5ce9531d93a4d7a17fead98dfcb74",
@@ -12300,7 +12295,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791506361/mudae/catalog/f4f4bdbe73375f943784703865f6d177.webp",
       "cloudinaryPublicId": "mudae/catalog/f4f4bdbe73375f943784703865f6d177",
       "createdAt": 1791506502372,
-      "owner": null
+      "owner": "59043620102371@lid",
+      "claimedAt": 1791525265243
     },
     {
       "id": "catalog-c22e758529810200e1098eee37dddce1",
@@ -19621,17 +19617,55 @@
       "cloudinaryPublicId": "mudae/95136749849b57ffd859/954715d7-62ff-4991-a3b5-4e8a82c12a8c",
       "createdAt": 1791440233503,
       "owner": null
+    },
+    {
+      "id": "546307ea-6d6e-40ed-8fbb-cc6d38f31e35",
+      "name": "Tía Luchi",
+      "album": "Freefayeros",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791524949/mudae/catalog/3f5698dc7bc870a5c753c0d5472fab29.webp",
+      "cloudinaryPublicId": "mudae/catalog/3f5698dc7bc870a5c753c0d5472fab29",
+      "createdAt": 1791525090846,
+      "owner": null
+    },
+    {
+      "id": "dc7dc24b-5e79-4f8f-be40-4a2f5e887a0b",
+      "name": "Lexie Grey",
+      "album": "Serie",
+      "value": 1000,
+      "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791526114/mudae/catalog/fbefdf83612cb624cb63add5d3433dad.webp",
+      "cloudinaryPublicId": "mudae/catalog/fbefdf83612cb624cb63add5d3433dad",
+      "createdAt": 1791526256065,
+      "owner": null
     }
   ],
   "users": {},
+  "rollCounts": {
+    "279985042518244@lid": 10,
+    "32594540392454@lid": 1,
+    "114864672526580@lid": 1
+  },
   "rollCooldowns": {
-    "114864672526580@lid": 1791507730003
+    "279985042518244@lid": 1791527248398
+  },
+  "claimCounts": {
+    "59043620102371@lid": 1,
+    "279985042518244@lid": 2,
+    "32594540392454@lid": 2
   },
   "claimCooldowns": {
-    "114864672526580@lid": 1791508933805
+    "114864672526580@lid": 1791508933805,
+    "279985042518244@lid": 1791529071912,
+    "32594540392454@lid": 1791529687666
   },
-  "voteCooldowns": {},
-  "activeRoll": null,
+  "voteCooldowns": {
+    "32594540392454@lid": 1791612426962,
+    "114864672526580@lid": 1791612466209
+  },
+  "pendingVotes": {},
+  "lastRollAt": 1791526081200,
+  "activeRolls": [],
   "createdAt": 1791507565772,
-  "updatedAt": 1791507733809
+  "updatedAt": 1791526256095,
+  "activeRoll": null
 }

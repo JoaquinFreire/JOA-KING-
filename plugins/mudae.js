@@ -49,7 +49,12 @@ let catalogCache = null
 let catalogLoad = null
 const reactionListenerSymbol = Symbol.for('joa-king.mudae.reaction-listener')
 
-export const normalizeMudaeIdentity = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
+export const normalizeMudaeIdentity = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/\p{Diacritic}/gu, '')
+  .trim()
+  .replace(/\s+/g, ' ')
+  .toLocaleLowerCase('es')
 export const normalizeMudaeLabel = (value) => String(value || '')
   .trim()
   .replace(/\s+/g, ' ')
@@ -69,6 +74,7 @@ const defaultState = (groupId) => ({
   claimCounts: {},
   claimCooldowns: {},
   voteCooldowns: {},
+  pendingVotes: {},
   lastRollAt: 0,
   activeRolls: [],
   createdAt: Date.now(),
@@ -78,6 +84,7 @@ const defaultCatalog = () => ({
   version: 1,
   albums: [],
   characters: [],
+  deletedCharacterIds: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
 })
@@ -111,8 +118,8 @@ const normalizeCatalogCharacter = (character) => {
 }
 
 const findCatalogCharacterIndex = (catalog, character) => {
-  const name = normalizeMudaeIdentity(character?.name || character?.nombre)
-  return catalog.characters.findIndex((item) => normalizeMudaeIdentity(item.name) === name)
+  const identity = makeCharacterIdentity(character?.album, character?.name || character?.nombre)
+  return catalog.characters.findIndex((item) => makeCharacterIdentity(item.album, item.name) === identity)
 }
 
 const loadCatalog = async () => {
@@ -132,6 +139,13 @@ const loadCatalog = async () => {
     }
 
     let migrated = false
+    if (!Array.isArray(catalog.deletedCharacterIds)) {
+      catalog.deletedCharacterIds = []
+      migrated = true
+    }
+    const deletedCharacterIds = [...new Set(catalog.deletedCharacterIds.map((id) => String(id || '').trim()).filter(Boolean))]
+    if (JSON.stringify(deletedCharacterIds) !== JSON.stringify(catalog.deletedCharacterIds)) migrated = true
+    catalog.deletedCharacterIds = deletedCharacterIds
     const albums = []
     for (const album of catalog.albums) {
       const normalized = normalizeMudaeLabel(album)
@@ -158,7 +172,7 @@ const loadCatalog = async () => {
         albums.push(normalized.album)
         migrated = true
       }
-      if (!characters.some((item) => normalizeMudaeIdentity(item.name) === normalizeMudaeIdentity(normalized.name))) {
+      if (!characters.some((item) => makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(normalized.album, normalized.name))) {
         characters.push(normalized)
       } else {
         migrated = true
@@ -180,7 +194,7 @@ const loadCatalog = async () => {
 }
 
 const saveCatalog = async (catalog) => {
-  await fs.mkdir(dataDirectory, { recursive: true })
+  await fs.mkdir(path.dirname(catalogFile), { recursive: true })
   catalog.updatedAt = Date.now()
   const temporaryFile = `${catalogFile}.${process.pid}.${crypto.randomUUID()}.tmp`
   try {
@@ -206,6 +220,7 @@ const addCatalogAlbum = (catalog, album) => {
 const upsertCatalogCharacter = (catalog, character) => {
   const normalized = normalizeCatalogCharacter(character)
   if (!normalized.name || !normalized.album || !normalized.imageUrl) return { character: null, added: false }
+  if (catalog.deletedCharacterIds.includes(normalized.id)) return { character: null, added: false }
   addCatalogAlbum(catalog, normalized.album)
   const index = findCatalogCharacterIndex(catalog, normalized)
   if (index >= 0) return { character: catalog.characters[index], added: false }
@@ -305,7 +320,7 @@ const loadState = async (groupId) => {
     state.activeRolls = state.activeRolls
       .filter((roll) => roll && typeof roll.messageId === 'string' && typeof roll.characterId === 'string' && Number.isFinite(Number(roll.expiresAt)))
       .map((roll) => ({ ...roll, expiresAt: Number(roll.expiresAt) }))
-    for (const key of ['rollCounts', 'rollCooldowns', 'claimCounts', 'claimCooldowns', 'voteCooldowns']) {
+    for (const key of ['rollCounts', 'rollCooldowns', 'claimCounts', 'claimCooldowns', 'voteCooldowns', 'pendingVotes']) {
       if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) {
         state[key] = {}
         migrated = true
@@ -453,7 +468,11 @@ const uploadCloudinaryImage = async ({ file, mimeType, filename, publicId }) => 
   })
   const result = await response.json().catch(() => ({}))
   if (!response.ok || !result.secure_url || !result.public_id) {
-    throw new Error(result.error?.message || `Cloudinary rechazó la imagen (HTTP ${response.status}).`)
+    const message = result.error?.message || `Cloudinary rechazó la imagen (HTTP ${response.status}).`
+    if (/invalid signature/i.test(message)) {
+      throw new Error(`${message} Verificá que CLOUDINARY_URL o las tres variables CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET pertenezcan a la misma cuenta, y que el API secret siga vigente.`)
+    }
+    throw new Error(message)
   }
   return { imageUrl: result.secure_url, cloudinaryPublicId: result.public_id }
 }
@@ -474,9 +493,10 @@ const deleteCloudinaryImage = async (publicId) => {
   if (!publicId) return
   const { cloudName, apiKey, apiSecret } = getCloudinaryCredentials()
   const timestamp = Math.floor(Date.now() / 1000)
-  const signature = makeCloudinarySignature({ public_id: publicId, timestamp }, apiSecret)
+  const signature = makeCloudinarySignature({ invalidate: true, public_id: publicId, timestamp }, apiSecret)
   const form = new URLSearchParams({
     public_id: publicId,
+    invalidate: 'true',
     api_key: apiKey,
     timestamp: String(timestamp),
     signature,
@@ -694,8 +714,8 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n        ✦ *%rw* — personaje aleatorio; reaccioná con ❤️ para reclamarlo (vence al minuto)
-    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n        ✦ *%rw* — después de votar, tirá un personaje aleatorio; reaccioná con ❤️ para reclamarlo (vence al minuto)
+    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar una tirada (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -843,7 +863,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'delpj' || action === 'delchar') {
-    if (!isAdminOrOwner(isOwner, isAdmin)) return conn.reply(m.chat, 'Solo los administradores del grupo pueden eliminar personajes.', m)
+    if (!isROwner && !isOwner) return conn.reply(m.chat, 'Solo el owner del bot puede eliminar personajes.', m)
     const parts = parseMudaeParts(text, 2)
     if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}delpj <álbum> + <nombre>`, m)
     return withGroupLock(m.chat, async () => {
@@ -863,6 +883,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         const lockedCatalog = await loadCatalog()
         const lockedIndex = lockedCatalog.characters.findIndex((item) => item.id === character.id)
         if (lockedIndex >= 0) lockedCatalog.characters.splice(lockedIndex, 1)
+        if (!lockedCatalog.deletedCharacterIds.includes(character.id)) lockedCatalog.deletedCharacterIds.push(character.id)
         await saveCatalog(lockedCatalog)
         syncStateWithCatalog(current, lockedCatalog)
       })
@@ -949,6 +970,9 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
       if (!current.enabled) return conn.reply(m.chat, 'Mudae está desactivado en este grupo.', m)
+      if (!current.pendingVotes[actor]) {
+        return conn.reply(m.chat, `🗳️ Para tirar *%rw*, primero tenés que votar por un personaje.\nUsá *${usedPrefix}votarpj <nombre>*; por ejemplo: *${usedPrefix}votarpj Goku*.`, m)
+      }
       const now = Date.now()
       current.activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
       if (now < Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN) return
@@ -984,6 +1008,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         if (!sent?.key?.id) throw new Error('WhatsApp no devolvió el ID del mensaje del roll.')
         current.activeRolls.push({ messageId: sent.key.id, characterId: character.id, expiresAt })
         current.rollCounts[actor] = rollCount + 1
+        delete current.pendingVotes[actor]
         current.lastRollAt = now
         if (rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT) {
           current.rollCooldowns[actor] = now + MUDAE_CONFIG.ROLL_EXHAUSTED_COOLDOWN
@@ -1018,6 +1043,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       `📚 *${album}*\n${characters.map((character) => `${number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
     ).join('\n\n')
     return sendLongText(conn, m.chat, `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}`, m)
+  }
+
+  if (action === 'ainfo') {
+    const albumQuery = normalizeMudaeIdentity(text)
+    if (!albumQuery) return conn.reply(m.chat, `Uso: ${usedPrefix}ainfo <álbum>`, m)
+    const album = state.albums.find((item) => normalizeMudaeIdentity(item) === albumQuery)
+    if (!album) return conn.reply(m.chat, `No encontré el álbum "${String(text).trim()}".`, m)
+    const characters = state.characters
+      .filter((character) => normalizeMudaeIdentity(character.album) === albumQuery)
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
+    const lines = characters.map((character, index) => `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`)
+    return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n\n${lines.join('\n')}\n\n🎴 Total: ${characters.length}`, m)
   }
 
   if (action === 'toppj') {
@@ -1068,12 +1106,16 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
       const now = Date.now()
       const availableAt = Number(current.voteCooldowns?.[actor] || 0)
+      if (current.pendingVotes[actor]) {
+        return conn.reply(m.chat, `Ya tenés un voto pendiente. Usá *${usedPrefix}rw* para tirar antes de volver a votar.`, m)
+      }
       if (availableAt > now) {
         const remainingHours = Math.ceil((availableAt - now) / (60 * 60 * 1000))
         return conn.reply(m.chat, `⏳ Ya votaste en las últimas 24 horas. Podés volver a votar en aproximadamente ${remainingHours} h.`, m)
       }
       character.value = Number(character.value || 0) + MUDAE_CONFIG.VOTE_VALUE_INCREMENT
       current.voteCooldowns[actor] = now + MUDAE_CONFIG.VOTE_COOLDOWN
+      current.pendingVotes[actor] = true
       await saveState(current)
       return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(MUDAE_CONFIG.VOTE_VALUE_INCREMENT)}).\nPodés votar de nuevo en 24 horas.`, m)
     })
@@ -1144,14 +1186,14 @@ handler.help = [
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> + @usuario',
-  'personajes [@usuario]', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
+  'personajes [@usuario]', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']
 handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
-  'rw', 'cd', 'quitarpj', 'regalarpj', 'personajes', 'toppj', 'verpj', 'votarpj',
+  'rw', 'cd', 'quitarpj', 'regalarpj', 'personajes', 'ainfo', 'toppj', 'verpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

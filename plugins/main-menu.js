@@ -299,13 +299,15 @@ let txt = `
  ✿  *%menumudae*
 > 𓃦 Ver comandos e instrucciones de Mudae.
  ✿  *%rw • %quitarpj • %regalarpj*
-> 𓃦 Reclamar, liberar o regalar tus personajes.
+> 𓃦 Votá con %votarpj <personaje> para habilitar una tirada; luego reclamá, liberá o regalá personajes.
  ✿  *%personajes • %toppj • %verpj*
 > 𓃦 Ver colecciones, ranking e información.
+ ✿  *%ainfo <álbum>*
+> 𓃦 Ver los personajes del álbum y sus valores.
  ✿  *%wish • %wishremove • %wishlist*
 > 𓃦 Guardar hasta 3 deseados y recibir aviso cuando salgan.
  ✿  *%votarpj <personaje>*
-> 𓃦 Votar una vez cada 24 horas para sumar 125 al valor.
+> 𓃦 Votar una vez cada 24 horas para sumar 125 al valor y habilitar una tirada.
  ✿  *%addalbum • %addpj • %editpj • %delpj • %delalbum*
 > 𓃦 Administrar álbumes y personajes (admins; %addpj responde a una imagen).
  ✿  *%onmudae • %offmudae*

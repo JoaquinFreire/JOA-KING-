@@ -8,6 +8,7 @@ database.json
 chistes.json
 Sessions/
 /data/mudae/instances/
+/data/mudae/group-*.json
 instagramarchivos/instagram_storage.json
 instagramarchivos/igdata/session.json
 .env

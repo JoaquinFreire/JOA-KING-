@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { readFileSync } from 'fs'
 import fs from 'fs/promises'
+import os from 'os'
 import path from 'path'
 import fetch from 'node-fetch'
 import { Blob, FormData } from 'formdata-node'
@@ -39,8 +40,15 @@ const loadLocalEnv = () => {
 
 loadLocalEnv()
 
-const dataDirectory = process.env.MUDAE_DATA_DIR || path.join(process.cwd(), 'data', 'mudae')
-const catalogFile = process.env.MUDAE_CATALOG_FILE || path.join(dataDirectory, 'catalog.json')
+const legacyDataDirectory = path.join(process.cwd(), 'data', 'mudae')
+const configuredDataDirectory = process.env.MUDAE_DATA_DIR
+const dataDirectory = configuredDataDirectory || path.join(legacyDataDirectory, 'instances', os.hostname().toLowerCase())
+const catalogFile = process.env.MUDAE_CATALOG_FILE || (
+  configuredDataDirectory
+    ? path.join(dataDirectory, 'catalog.json')
+    : path.join(legacyDataDirectory, 'catalog.json')
+)
+const migrateLegacyState = !configuredDataDirectory
 const groupLocks = new Map()
 const stateCache = new Map()
 const stateLoads = new Map()
@@ -63,6 +71,7 @@ export const normalizeMudaeLabel = (value) => String(value || '')
 const normalizeJid = (jid) => String(jid || '').trim().replace(/:\d+(?=@)/, '').toLowerCase()
 const isGroupJid = (jid) => typeof jid === 'string' && jid.endsWith('@g.us')
 const getStateFile = (groupId) => path.join(dataDirectory, `group-${crypto.createHash('sha256').update(groupId).digest('hex')}.json`)
+const getLegacyStateFile = (groupId) => path.join(legacyDataDirectory, path.basename(getStateFile(groupId)))
 const defaultState = (groupId) => ({
   groupId,
   enabled: false,
@@ -298,11 +307,22 @@ const loadState = async (groupId) => {
   if (pending) return pending
   const loading = (async () => {
     let state
+    let migrated = false
     try {
       state = JSON.parse(await fs.readFile(getStateFile(groupId), 'utf8'))
     } catch (error) {
       if (error?.code !== 'ENOENT') throw new Error(`No se pudo leer el estado de Mudae: ${error.message}`)
-      state = defaultState(groupId)
+      if (migrateLegacyState) {
+        try {
+          state = JSON.parse(await fs.readFile(getLegacyStateFile(groupId), 'utf8'))
+          migrated = true
+        } catch (legacyError) {
+          if (legacyError?.code !== 'ENOENT') {
+            throw new Error(`No se pudo migrar el estado anterior de Mudae: ${legacyError.message}`)
+          }
+        }
+      }
+      if (!state) state = defaultState(groupId)
     }
     if (!state || typeof state !== 'object' || state.groupId !== groupId) {
       throw new Error('El archivo de Mudae tiene un grupo inválido o está dañado.')
@@ -311,7 +331,6 @@ const loadState = async (groupId) => {
     if (!Array.isArray(state.albums) || !Array.isArray(state.characters) || !state.users || typeof state.users !== 'object') {
       throw new Error('El archivo de Mudae no tiene una estructura válida.')
     }
-    let migrated = false
     if (!Array.isArray(state.activeRolls) || (state.activeRoll && !state.activeRolls.length)) {
       state.activeRolls = state.activeRoll ? [state.activeRoll] : []
       delete state.activeRoll

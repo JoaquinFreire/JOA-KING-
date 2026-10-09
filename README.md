@@ -54,7 +54,7 @@ Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por eje
 
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 
-El catálogo (`data/mudae/catalog.json`) se comparte mediante Git. Los reclamos y demás estado de cada grupo se guardan en `MUDAE_DATA_DIR`. Para que dos bots tengan reclamos independientes, configura en el `.env` de cada PC rutas locales distintas, por ejemplo:
+El catálogo (`data/mudae/catalog.json`) se comparte mediante Git. Los reclamos y demás estado de cada grupo son locales y no se suben a Git. De forma predeterminada se guardan en `data/mudae/instances/<nombre-del-equipo>`; también puedes configurar rutas explícitas diferentes en cada PC:
 
 ```dotenv
 # PC principal
@@ -68,18 +68,18 @@ MUDAE_DATA_DIR=data/mudae/instances/secundario
 MUDAE_CATALOG_FILE=data/mudae/catalog.json
 ```
 
-`data/mudae/instances/` está excluida de Git. Si quieres conservar los reclamos que ya están en los archivos antiguos `data/mudae/group-*.json`, cópialos una sola vez a la carpeta local elegida en esa PC. La otra PC puede iniciar con su carpeta vacía para tener reclamos propios. No copies ni compartas esas carpetas locales.
-
-En la PC que ya tiene reclamos, copia los estados antes de iniciar el bot con la nueva ruta:
+`data/mudae/instances/` y los archivos antiguos `data/mudae/group-*.json` están excluidos de Git. Al iniciar sin una ruta explícita, el bot migra automáticamente los estados antiguos del directorio compartido a la carpeta local de esa PC. Para pasar por primera vez a una versión que deja de rastrear los archivos antiguos, detén el bot y respalda esos estados antes de hacer `git pull`:
 
 ```powershell
-New-Item -ItemType Directory -Force .\data\mudae\instances\principal
-Copy-Item .\data\mudae\group-*.json .\data\mudae\instances\principal\
+$local = ".\data\mudae\instances\$env:COMPUTERNAME"
+New-Item -ItemType Directory -Force $local
+Copy-Item .\data\mudae\group-*.json $local\
+git restore --worktree -- .\data\mudae\group-*.json
 ```
 
-En la segunda PC configura su propia ruta, por ejemplo `data/mudae/instances/secundario`, y no copies los archivos `group-*.json` si quieres que empiece sin esos reclamos.
+La copia se conserva localmente y no se mezcla con los reclamos de otra PC. Si la PC ya tenía cambios locales en `catalog.json`, consérvalos mediante un commit antes de actualizar; el catálogo es compartido y Git necesita integrar los cambios de ambas PCs. No restaures ni descartes el catálogo si contiene altas o bajas que quieres conservar.
 
-Para compartir altas y bajas del catálogo, primero trae los cambios de GitHub, detén el bot, realiza la operación en una PC y sube el `catalog.json` actualizado; luego haz pull y reinicia el bot en la otra. No edites el catálogo en ambas PCs a la vez: Git puede reportar un conflicto. Las bajas quedan registradas para evitar que estados antiguos vuelvan a agregar personajes eliminados.
+Para compartir altas y bajas del catálogo, primero trae los cambios de GitHub, detén el bot, realiza la operación en una PC y sube el `catalog.json` actualizado; luego haz pull y reinicia el bot en la otra. Evita editar el catálogo en ambas PCs a la vez: Git puede reportar un conflicto. Las bajas quedan registradas para evitar que estados antiguos vuelvan a agregar personajes eliminados.
 
 ## Instagram
 

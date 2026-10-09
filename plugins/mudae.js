@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { readFileSync } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import fetch from 'node-fetch'
@@ -6,7 +7,10 @@ import { Blob, FormData } from 'formdata-node'
 
 export const MUDAE_CONFIG = Object.freeze({
   ROLL_COOLDOWN: 5000,
-  CLAIM_COOLDOWN: 20 * 60 * 1000,
+  ROLL_LIMIT: 10,
+  ROLL_EXHAUSTED_COOLDOWN: 30 * 60 * 1000,
+  CLAIM_LIMIT: 2,
+  CLAIM_COOLDOWN: 60 * 60 * 1000,
   CLAIM_DURATION: 60 * 1000,
   VOTE_COOLDOWN: 24 * 60 * 60 * 1000,
   VOTE_VALUE_INCREMENT: 125,
@@ -14,10 +18,35 @@ export const MUDAE_CONFIG = Object.freeze({
   DEFAULT_CHARACTER_VALUE: 1000,
 })
 
+const loadLocalEnv = () => {
+  let pendingKey = ''
+  try {
+    for (const rawLine of readFileSync(path.join(process.cwd(), '.env'), 'utf8').split(/\r?\n/)) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith('#')) continue
+      const assignment = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line)
+      if (assignment) {
+        pendingKey = assignment[1]
+        if (process.env[pendingKey] === undefined) process.env[pendingKey] = assignment[2].replace(/^['"]|['"]$/g, '')
+        continue
+      }
+      if (pendingKey && process.env[pendingKey] !== undefined) process.env[pendingKey] += line.replace(/^['"]|['"]$/g, '')
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') console.warn('[MUDAE] No se pudo leer .env:', error?.message || error)
+  }
+}
+
+loadLocalEnv()
+
 const dataDirectory = process.env.MUDAE_DATA_DIR || path.join(process.cwd(), 'data', 'mudae')
+const catalogFile = process.env.MUDAE_CATALOG_FILE || path.join(dataDirectory, 'catalog.json')
 const groupLocks = new Map()
 const stateCache = new Map()
 const stateLoads = new Map()
+let catalogLock = Promise.resolve()
+let catalogCache = null
+let catalogLoad = null
 const reactionListenerSymbol = Symbol.for('joa-king.mudae.reaction-listener')
 
 export const normalizeMudaeIdentity = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
@@ -35,13 +64,202 @@ const defaultState = (groupId) => ({
   albums: [],
   characters: [],
   users: {},
+  rollCounts: {},
   rollCooldowns: {},
+  claimCounts: {},
   claimCooldowns: {},
   voteCooldowns: {},
-  activeRoll: null,
+  lastRollAt: 0,
+  activeRolls: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
 })
+const defaultCatalog = () => ({
+  version: 1,
+  albums: [],
+  characters: [],
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+})
+
+const withCatalogLock = async (operation) => {
+  const previous = catalogLock
+  let release
+  catalogLock = new Promise((resolve) => { release = resolve })
+  await previous.catch(() => {})
+  try {
+    return await operation()
+  } finally {
+    release()
+  }
+}
+
+const normalizeCatalogCharacter = (character) => {
+  const name = normalizeMudaeLabel(character?.name || character?.nombre)
+  const album = normalizeMudaeLabel(character?.album)
+  const imageUrl = String(character?.imageUrl || character?.imagen || '').trim()
+  const cloudinaryPublicId = String(character?.cloudinaryPublicId || '').trim()
+  return {
+    id: String(character?.id || crypto.randomUUID()),
+    name,
+    album,
+    value: Number(character?.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
+    imageUrl,
+    cloudinaryPublicId,
+    createdAt: Number(character?.createdAt || Date.now()),
+  }
+}
+
+const findCatalogCharacterIndex = (catalog, character) => {
+  const name = normalizeMudaeIdentity(character?.name || character?.nombre)
+  return catalog.characters.findIndex((item) => normalizeMudaeIdentity(item.name) === name)
+}
+
+const loadCatalog = async () => {
+  if (catalogCache) return catalogCache
+  if (catalogLoad) return catalogLoad
+  catalogLoad = (async () => {
+    let catalog
+    try {
+      catalog = JSON.parse(await fs.readFile(catalogFile, 'utf8'))
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw new Error(`No se pudo leer el catálogo global de Mudae: ${error.message}`)
+      catalog = defaultCatalog()
+    }
+    catalog = { ...defaultCatalog(), ...catalog }
+    if (!Array.isArray(catalog.albums) || !Array.isArray(catalog.characters)) {
+      throw new Error('El catálogo global de Mudae no tiene una estructura válida.')
+    }
+
+    let migrated = false
+    const albums = []
+    for (const album of catalog.albums) {
+      const normalized = normalizeMudaeLabel(album)
+      if (!normalized) {
+        migrated = true
+        continue
+      }
+      if (!albums.some((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(normalized))) {
+        albums.push(normalized)
+      } else {
+        migrated = true
+      }
+      if (normalized !== album) migrated = true
+    }
+
+    const characters = []
+    for (const character of catalog.characters) {
+      const normalized = normalizeCatalogCharacter(character)
+      if (!normalized.name || !normalized.album || !normalized.imageUrl) {
+        migrated = true
+        continue
+      }
+      if (!albums.some((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(normalized.album))) {
+        albums.push(normalized.album)
+        migrated = true
+      }
+      if (!characters.some((item) => normalizeMudaeIdentity(item.name) === normalizeMudaeIdentity(normalized.name))) {
+        characters.push(normalized)
+      } else {
+        migrated = true
+      }
+      if (JSON.stringify(normalized) !== JSON.stringify(character)) migrated = true
+    }
+
+    catalog.albums = albums
+    catalog.characters = characters
+    if (migrated) await saveCatalog(catalog)
+    else catalogCache = catalog
+    return catalog
+  })()
+  try {
+    return await catalogLoad
+  } finally {
+    if (catalogLoad) catalogLoad = null
+  }
+}
+
+const saveCatalog = async (catalog) => {
+  await fs.mkdir(dataDirectory, { recursive: true })
+  catalog.updatedAt = Date.now()
+  const temporaryFile = `${catalogFile}.${process.pid}.${crypto.randomUUID()}.tmp`
+  try {
+    await fs.writeFile(temporaryFile, `${JSON.stringify(catalog, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
+    await fs.rename(temporaryFile, catalogFile)
+    catalogCache = catalog
+  } catch (error) {
+    await fs.unlink(temporaryFile).catch(() => {})
+    catalogCache = null
+    throw new Error(`No se pudo guardar el catálogo global de Mudae: ${error.message}`)
+  }
+}
+
+const addCatalogAlbum = (catalog, album) => {
+  const normalized = normalizeMudaeLabel(album)
+  if (!normalized) return null
+  const existing = catalog.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(normalized))
+  if (existing) return existing
+  catalog.albums.push(normalized)
+  return normalized
+}
+
+const upsertCatalogCharacter = (catalog, character) => {
+  const normalized = normalizeCatalogCharacter(character)
+  if (!normalized.name || !normalized.album || !normalized.imageUrl) return { character: null, added: false }
+  addCatalogAlbum(catalog, normalized.album)
+  const index = findCatalogCharacterIndex(catalog, normalized)
+  if (index >= 0) return { character: catalog.characters[index], added: false }
+  catalog.characters.push(normalized)
+  return { character: normalized, added: true }
+}
+
+const syncStateWithCatalog = (state, catalog) => {
+  let migrated = false
+  const previousCharacters = Array.isArray(state.characters) ? state.characters : []
+  const previousById = new Map(previousCharacters.map((character) => [character.id, character]))
+  const nextCharacters = []
+
+  const previousAlbums = Array.isArray(state.albums) ? state.albums : []
+  const nextAlbums = [...catalog.albums]
+  if (
+    previousAlbums.length !== nextAlbums.length ||
+    previousAlbums.some((album, index) => normalizeMudaeIdentity(album) !== normalizeMudaeIdentity(nextAlbums[index]))
+  ) migrated = true
+  state.albums = nextAlbums
+
+  for (const catalogCharacter of catalog.characters) {
+    const previous = previousById.get(catalogCharacter.id) ||
+      previousCharacters.find((character) => normalizeMudaeIdentity(character.name) === normalizeMudaeIdentity(catalogCharacter.name))
+    const next = {
+      ...catalogCharacter,
+      value: Number(previous?.value || catalogCharacter.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
+      owner: previous?.owner ? normalizeJid(previous.owner) : null,
+    }
+    if (previous?.claimedAt) next.claimedAt = previous.claimedAt
+    nextCharacters.push(next)
+    if (!previous || JSON.stringify(previous) !== JSON.stringify(next)) migrated = true
+  }
+
+  if (previousCharacters.length !== nextCharacters.length) migrated = true
+  state.characters = nextCharacters
+  const validIds = new Set(nextCharacters.map((character) => character.id))
+  for (const user of Object.values(state.users || {})) {
+    if (!Array.isArray(user?.wishlist)) continue
+    const nextWishlist = user.wishlist.filter((id) => validIds.has(id))
+    if (nextWishlist.length !== user.wishlist.length) migrated = true
+    user.wishlist = nextWishlist
+  }
+  const activeRolls = Array.isArray(state.activeRolls)
+    ? state.activeRolls
+    : state.activeRoll ? [state.activeRoll] : []
+  const validRolls = activeRolls.filter((roll) => validIds.has(roll.characterId))
+  if (validRolls.length !== activeRolls.length || !Array.isArray(state.activeRolls) || state.activeRoll) {
+    state.activeRolls = validRolls
+    delete state.activeRoll
+    migrated = true
+  }
+  return migrated
+}
 
 const withGroupLock = async (groupId, operation) => {
   const previous = groupLocks.get(groupId) || Promise.resolve()
@@ -79,6 +297,21 @@ const loadState = async (groupId) => {
       throw new Error('El archivo de Mudae no tiene una estructura válida.')
     }
     let migrated = false
+    if (!Array.isArray(state.activeRolls) || (state.activeRoll && !state.activeRolls.length)) {
+      state.activeRolls = state.activeRoll ? [state.activeRoll] : []
+      delete state.activeRoll
+      migrated = true
+    }
+    state.activeRolls = state.activeRolls
+      .filter((roll) => roll && typeof roll.messageId === 'string' && typeof roll.characterId === 'string' && Number.isFinite(Number(roll.expiresAt)))
+      .map((roll) => ({ ...roll, expiresAt: Number(roll.expiresAt) }))
+    for (const key of ['rollCounts', 'rollCooldowns', 'claimCounts', 'claimCooldowns', 'voteCooldowns']) {
+      if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) {
+        state[key] = {}
+        migrated = true
+      }
+    }
+    state.lastRollAt = Number(state.lastRollAt || 0)
     state.albums = state.albums.map((album) => {
       const normalized = normalizeMudaeLabel(album)
       if (normalized !== album) migrated = true
@@ -88,10 +321,27 @@ const loadState = async (groupId) => {
       const album = normalizeMudaeLabel(character.album)
       const name = normalizeMudaeLabel(character.name)
       const normalizedCharacter = { ...character, album, name }
+      if (normalizedCharacter.owner) normalizedCharacter.owner = normalizeJid(normalizedCharacter.owner)
       if (album !== character.album || name !== character.name || Object.hasOwn(character, 'variant')) migrated = true
       delete normalizedCharacter.variant
       return normalizedCharacter
     })
+    const catalog = await withCatalogLock(async () => {
+      const currentCatalog = await loadCatalog()
+      let catalogMigrated = false
+      for (const album of state.albums) {
+        const before = currentCatalog.albums.length
+        addCatalogAlbum(currentCatalog, album)
+        if (currentCatalog.albums.length !== before) catalogMigrated = true
+      }
+      for (const character of state.characters) {
+        const result = upsertCatalogCharacter(currentCatalog, character)
+        if (result.added) catalogMigrated = true
+      }
+      if (catalogMigrated) await saveCatalog(currentCatalog)
+      return currentCatalog
+    })
+    if (syncStateWithCatalog(state, catalog)) migrated = true
     if (migrated) await saveState(state)
     else stateCache.set(groupId, state)
     return state
@@ -136,6 +386,11 @@ const findCharacter = (state, query) => {
 
 export const getCloudinaryCredentials = () => {
   const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim()
+  const environmentCredentials = {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+    apiKey: process.env.CLOUDINARY_API_KEY?.trim(),
+    apiSecret: process.env.CLOUDINARY_API_SECRET?.trim(),
+  }
   let urlCredentials = {}
   if (cloudinaryUrl) {
     let parsed
@@ -153,11 +408,8 @@ export const getCloudinaryCredentials = () => {
       apiSecret: decodeURIComponent(parsed.password),
     }
   }
-  const credentials = {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() || urlCredentials.cloudName,
-    apiKey: process.env.CLOUDINARY_API_KEY?.trim() || urlCredentials.apiKey,
-    apiSecret: process.env.CLOUDINARY_API_SECRET?.trim() || urlCredentials.apiSecret,
-  }
+  const hasCompleteEnvironmentCredentials = Object.values(environmentCredentials).every(Boolean)
+  const credentials = hasCompleteEnvironmentCredentials ? environmentCredentials : urlCredentials
   if (!credentials.cloudName || !credentials.apiKey || !credentials.apiSecret) {
     throw new Error('Configura CLOUDINARY_URL o CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET para administrar imágenes.')
   }
@@ -172,17 +424,27 @@ const makeCloudinarySignature = (parameters, apiSecret) => {
   return crypto.createHash('sha1').update(`${signedParameters}${apiSecret}`).digest('hex')
 }
 
-const uploadCharacterImage = async (buffer, mimeType, groupId) => {
+const makeMudaeCloudinaryPublicId = (source = '') => {
+  const hash = crypto.createHash('sha256').update(String(source || crypto.randomUUID())).digest('hex').slice(0, 32)
+  return `catalog/${hash}`
+}
+
+const uploadCloudinaryImage = async ({ file, mimeType, filename, publicId }) => {
   const { cloudName, apiKey, apiSecret } = getCloudinaryCredentials()
   const timestamp = Math.floor(Date.now() / 1000)
   const folder = 'mudae'
-  const publicId = `${crypto.createHash('sha256').update(groupId).digest('hex').slice(0, 20)}/${crypto.randomUUID()}`
-  const signature = makeCloudinarySignature({ folder, public_id: publicId, timestamp }, apiSecret)
+  const parameters = { folder, format: 'webp', public_id: publicId, timestamp }
+  const signature = makeCloudinarySignature(parameters, apiSecret)
   const form = new FormData()
-  form.set('file', new Blob([buffer], { type: mimeType || 'image/jpeg' }), 'character-image')
+  if (Buffer.isBuffer(file)) {
+    form.set('file', new Blob([file], { type: mimeType || 'image/jpeg' }), filename || 'character-image')
+  } else {
+    form.set('file', String(file || ''))
+  }
   form.set('api_key', apiKey)
   form.set('timestamp', String(timestamp))
   form.set('folder', folder)
+  form.set('format', 'webp')
   form.set('public_id', publicId)
   form.set('signature', signature)
   const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
@@ -195,6 +457,18 @@ const uploadCharacterImage = async (buffer, mimeType, groupId) => {
   }
   return { imageUrl: result.secure_url, cloudinaryPublicId: result.public_id }
 }
+
+const uploadCharacterImage = async (buffer, mimeType) => uploadCloudinaryImage({
+  file: buffer,
+  mimeType,
+  filename: 'character-image.webp',
+  publicId: makeMudaeCloudinaryPublicId(),
+})
+
+export const uploadRemoteMudaeImage = async (imageUrl, source = imageUrl) => uploadCloudinaryImage({
+  file: imageUrl,
+  publicId: makeMudaeCloudinaryPublicId(source),
+})
 
 const deleteCloudinaryImage = async (publicId) => {
   if (!publicId) return
@@ -214,7 +488,11 @@ const deleteCloudinaryImage = async (publicId) => {
   })
   const result = await response.json().catch(() => ({}))
   if (!response.ok || !['ok', 'not found'].includes(result.result)) {
-    throw new Error(result.error?.message || `Cloudinary no pudo borrar ${publicId} (HTTP ${response.status}).`)
+    const message = result.error?.message || `Cloudinary no pudo borrar ${publicId} (HTTP ${response.status}).`
+    if (/invalid signature/i.test(message)) {
+      throw new Error(`${message} Verificá que CLOUDINARY_URL o las tres variables CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET pertenezcan a la misma cuenta, y que el API secret siga vigente.`)
+    }
+    throw new Error(message)
   }
 }
 
@@ -340,37 +618,42 @@ const processReaction = async (conn, update) => {
 
   await withGroupLock(groupId, async () => {
     const state = await loadState(groupId)
-    const roll = state.activeRoll
-    if (!state.enabled || !roll || roll.messageId !== messageId || roll.expiresAt <= Date.now()) {
-      if (roll && roll.expiresAt <= Date.now()) {
-        state.activeRoll = null
+    const now = Date.now()
+    const rollIndex = state.activeRolls.findIndex((item) => item.messageId === messageId)
+    const roll = rollIndex >= 0 ? state.activeRolls[rollIndex] : null
+    if (!state.enabled || !roll || roll.expiresAt <= now) {
+      const remainingRolls = state.activeRolls.filter((item) => item.expiresAt > now)
+      if (remainingRolls.length !== state.activeRolls.length) {
+        state.activeRolls = remainingRolls
         await saveState(state)
       }
       return
     }
     const character = state.characters.find((item) => item.id === roll.characterId)
     if (!character || character.owner) {
-      state.activeRoll = null
+      state.activeRolls.splice(rollIndex, 1)
       await saveState(state)
       return
     }
-    const now = Date.now()
     const claimAvailableAt = Number(state.claimCooldowns[userJid] || 0)
-    if (claimAvailableAt > now) {
-      const remainingMinutes = Math.ceil((claimAvailableAt - now) / 60000)
-      await conn.sendMessage(groupId, { text: `Todavía tenés cooldown para reclamar: ${remainingMinutes} min. El personaje sigue disponible para este grupo.` })
-      return
-    }
+    if (claimAvailableAt > now) return
 
     character.owner = userJid
     character.claimedAt = now
-    state.claimCooldowns[userJid] = now + MUDAE_CONFIG.CLAIM_COOLDOWN
-    state.activeRoll = null
+    const previousClaims = Number(state.claimCounts[userJid] || 0)
+    const nextClaimCount = (claimAvailableAt > 0 ? 0 : previousClaims) + 1
+    state.claimCounts[userJid] = nextClaimCount
+    if (nextClaimCount >= MUDAE_CONFIG.CLAIM_LIMIT) {
+      state.claimCooldowns[userJid] = now + MUDAE_CONFIG.CLAIM_COOLDOWN
+    } else if (claimAvailableAt > 0) {
+      delete state.claimCooldowns[userJid]
+    }
+    state.activeRolls.splice(rollIndex, 1)
     await saveState(state)
 
     const name = await getDisplayName(conn, userJid)
     await conn.sendMessage(groupId, {
-      text: `🎉 *¡Reclamado!*\n\n🎴 *${character.name}*\n📚 ${character.album} · ${formatMoney(character.value)}\n👑 @${userJid.split('@')[0]}`,
+      text: `🎉 *¡Reclamado!*\n\n🎴 *${character.name}*\n📚 ${character.album} · ${formatMoney(character.value)}\n👑 @${userJid.split('@')[0]}${nextClaimCount >= MUDAE_CONFIG.CLAIM_LIMIT ? '\n⏳ Agotaste tus 2 reclamos; podés reclamar de nuevo en 1 hora.' : ''}`,
       mentions: [userJid],
     })
     console.log(`[MUDAE] ${character.id} reclamado por ${userJid} en ${groupId} (${name})`)
@@ -404,14 +687,45 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     return withGroupLock(m.chat, async () => {
       const state = await loadState(m.chat)
       state.enabled = action === 'onmudae'
-      if (!state.enabled) state.activeRoll = null
+      if (!state.enabled) state.activeRolls = []
       await saveState(state)
       return conn.reply(m.chat, `🎴 *MUDAE ${state.enabled ? 'ACTIVADO' : 'DESACTIVADO'}*\nEste grupo ${state.enabled ? 'ya puede jugar' : 'ya no puede jugar'}.`, m)
     })
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — personaje aleatorio; reaccioná con ❤️ para reclamarlo\n✦ *%votarpj <nombre>* — sumar *125* al valor (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n        ✦ *%rw* — personaje aleatorio; reaccioná con ❤️ para reclamarlo (vence al minuto)
+    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> + @usuario* — regalá uno a otra persona\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+  }
+
+  if (action === 'cd') {
+    const current = await loadState(m.chat)
+    const now = Date.now()
+    const formatWait = (time) => {
+      const totalSeconds = Math.ceil(Math.max(0, time) / 1000)
+      const minutes = Math.floor(totalSeconds / 60)
+      const seconds = totalSeconds % 60
+      return minutes ? `${minutes} min ${seconds} s` : `${seconds} s`
+    }
+    const rollCooldown = Number(current.rollCooldowns[actor] || 0) - now
+    const claimCooldown = Number(current.claimCooldowns[actor] || 0) - now
+    const voteCooldown = Number(current.voteCooldowns[actor] || 0) - now
+    const groupCooldown = Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN - now
+    const rollCount = rollCooldown > 0 ? Number(current.rollCounts[actor] || 0) : 0
+    const claimCount = claimCooldown > 0 ? Number(current.claimCounts[actor] || 0) : 0
+    const waits = [
+      `🎲 Tiradas RW: ${Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)}/${MUDAE_CONFIG.ROLL_LIMIT}${rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
+      `❤️ Reclamos: ${Math.max(0, MUDAE_CONFIG.CLAIM_LIMIT - claimCount)}/${MUDAE_CONFIG.CLAIM_LIMIT}${claimCooldown > 0 ? ` · disponibles en ${formatWait(claimCooldown)}` : ''}`,
+      `🗳️ Voto: ${voteCooldown > 0 ? `disponible en ${formatWait(voteCooldown)}` : 'disponible'}`,
+      `⏱️ Próxima tirada del grupo: ${groupCooldown > 0 ? `en ${formatWait(groupCooldown)}` : 'disponible'}`,
+    ]
+    const activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
+    if (activeRolls.length) {
+      waits.push(`🎴 Personajes activos: ${activeRolls.map((roll) =>
+        `${current.characters.find((character) => character.id === roll.characterId)?.name || 'Personaje'}: vence en ${formatWait(roll.expiresAt - now)}`
+      ).join(' · ')}`)
+    }
+    return conn.reply(m.chat, `⏳ *TUS ESPERAS*\n${waits.join('\n')}`, m)
   }
 
   const state = await ensureEnabled(m, conn)
@@ -423,12 +737,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!album) return conn.reply(m.chat, `Uso: ${usedPrefix}addalbum <nombre>`, m)
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
-      if (current.albums.some((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(album))) {
-        return conn.reply(m.chat, 'Ese álbum ya existe en este grupo.', m)
-      }
-      current.albums.push(album)
+      const added = await withCatalogLock(async () => {
+        const catalog = await loadCatalog()
+        if (catalog.albums.some((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(album))) return false
+        addCatalogAlbum(catalog, album)
+        await saveCatalog(catalog)
+        syncStateWithCatalog(current, catalog)
+        return true
+      })
+      if (!added) return conn.reply(m.chat, 'Ese álbum ya existe en el catálogo global.', m)
       await saveState(current)
-      return conn.reply(m.chat, `📚 *ÁLBUM CREADO*\n${album}`, m)
+      return conn.reply(m.chat, `📚 *ÁLBUM CREADO PARA TODOS LOS GRUPOS*\n${album}`, m)
     })
   }
 
@@ -445,15 +764,16 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!Buffer.isBuffer(image) || !image.length) throw new Error('No se pudo descargar la imagen citada.')
       return await withGroupLock(m.chat, async () => {
         const current = await loadState(m.chat)
-        const album = current.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(parts[0]))
+        const catalog = await loadCatalog()
+        const album = catalog.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(parts[0]))
         if (!album) return conn.reply(m.chat, `No existe el álbum "${parts[0]}". Crealo primero con %addalbum.`, m)
         const identity = normalizeMudaeIdentity(parts[1])
-        if (current.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
-          return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en este grupo. Los nombres deben ser únicos.', m)
+        if (catalog.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
+          return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catálogo global. Los nombres deben ser únicos.', m)
         }
         getCloudinaryCredentials()
         const mimeType = quotedImage.media.mimetype || 'image/jpeg'
-        const uploaded = await uploadCharacterImage(image, mimeType, m.chat)
+        const uploaded = await uploadCharacterImage(image, mimeType)
         const character = {
           id: crypto.randomUUID(),
           name: normalizeMudaeLabel(parts[1]),
@@ -464,8 +784,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           owner: null,
           createdAt: Date.now(),
         }
-        current.characters.push(character)
         try {
+          await withCatalogLock(async () => {
+            const lockedCatalog = await loadCatalog()
+            if (lockedCatalog.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
+              throw new Error('Ya existe un personaje con ese nombre en el catálogo global.')
+            }
+            lockedCatalog.characters.push(normalizeCatalogCharacter(character))
+            addCatalogAlbum(lockedCatalog, album)
+            await saveCatalog(lockedCatalog)
+            syncStateWithCatalog(current, lockedCatalog)
+          })
           await saveState(current)
         } catch (saveError) {
           try {
@@ -476,7 +805,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           }
           throw saveError
         }
-        return conn.reply(m.chat, `✅ *PERSONAJE AGREGADO*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}`, m)
+        return conn.reply(m.chat, `✅ *PERSONAJE AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}`, m)
       })
     } catch (error) {
       console.error('[MUDAE] No se pudo agregar un personaje:', error?.stack || error)
@@ -490,15 +819,24 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>`, m)
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
-      const original = current.characters.find((item) => makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(parts[0], parts[1]))
+      const catalog = await loadCatalog()
+      const original = catalog.characters.find((item) => makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(parts[0], parts[1]))
       if (!original) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
-      const album = current.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(parts[2]))
+      const album = catalog.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(parts[2]))
       if (!album) return conn.reply(m.chat, `No existe el álbum "${parts[2]}".`, m)
-      if (current.characters.some((item) => item.id !== original.id && normalizeMudaeIdentity(item.name) === normalizeMudaeIdentity(parts[3]))) {
-        return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en este grupo; no se realizaron cambios.', m)
+      if (catalog.characters.some((item) => item.id !== original.id && normalizeMudaeIdentity(item.name) === normalizeMudaeIdentity(parts[3]))) {
+        return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catálogo global; no se realizaron cambios.', m)
       }
-      original.album = album
-      original.name = normalizeMudaeLabel(parts[3])
+      await withCatalogLock(async () => {
+        const lockedCatalog = await loadCatalog()
+        const lockedOriginal = lockedCatalog.characters.find((item) => item.id === original.id)
+        if (!lockedOriginal) throw new Error('El personaje ya no existe en el catálogo global.')
+        lockedOriginal.album = album
+        lockedOriginal.name = normalizeMudaeLabel(parts[3])
+        addCatalogAlbum(lockedCatalog, album)
+        await saveCatalog(lockedCatalog)
+        syncStateWithCatalog(current, lockedCatalog)
+      })
       await saveState(current)
       return conn.reply(m.chat, `✅ *PERSONAJE ACTUALIZADO*\n🎴 *${original.name}*\n📚 ${original.album}`, m)
     })
@@ -510,7 +848,8 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}delpj <álbum> + <nombre>`, m)
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
-      const matchingIndexes = current.characters.flatMap((item, index) =>
+      const catalog = await loadCatalog()
+      const matchingIndexes = catalog.characters.flatMap((item, index) =>
         makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(parts[0], parts[1]) ? [index] : []
       )
       if (matchingIndexes.length > 1) {
@@ -518,15 +857,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       }
       const index = matchingIndexes[0] ?? -1
       if (index < 0) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
-      const character = current.characters[index]
+      const character = catalog.characters[index]
       await deleteCloudinaryImage(character.cloudinaryPublicId)
-      current.characters.splice(index, 1)
-      for (const user of Object.values(current.users)) {
-        user.wishlist = (user.wishlist || []).filter((id) => id !== character.id)
-      }
-      if (current.activeRoll?.characterId === character.id) current.activeRoll = null
+      await withCatalogLock(async () => {
+        const lockedCatalog = await loadCatalog()
+        const lockedIndex = lockedCatalog.characters.findIndex((item) => item.id === character.id)
+        if (lockedIndex >= 0) lockedCatalog.characters.splice(lockedIndex, 1)
+        await saveCatalog(lockedCatalog)
+        syncStateWithCatalog(current, lockedCatalog)
+      })
       await saveState(current)
-      return conn.reply(m.chat, `🗑️ *PERSONAJE ELIMINADO*\n🎴 *${character.name}* — ${character.album}`, m)
+      return conn.reply(m.chat, `🗑️ *PERSONAJE ELIMINADO DEL CATÁLOGO GLOBAL*\n🎴 *${character.name}* — ${character.album}`, m)
     }).catch((error) => {
       console.error('[MUDAE] No se pudo eliminar un personaje:', error?.stack || error)
       return conn.reply(m.chat, `No se pudo eliminar el personaje.\n> ${error.message}`, m)
@@ -539,14 +880,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!album) return conn.reply(m.chat, `Uso: ${usedPrefix}delalbum <nombre>`, m)
     return withGroupLock(m.chat, async () => {
       const current = await loadState(m.chat)
-      const index = current.albums.findIndex((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(album))
+      const catalog = await loadCatalog()
+      const index = catalog.albums.findIndex((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(album))
       if (index < 0) return conn.reply(m.chat, 'No encontré ese álbum en este grupo.', m)
-      if (current.characters.some((character) => normalizeMudaeIdentity(character.album) === normalizeMudaeIdentity(current.albums[index]))) {
+      if (catalog.characters.some((character) => normalizeMudaeIdentity(character.album) === normalizeMudaeIdentity(catalog.albums[index]))) {
         return conn.reply(m.chat, 'No se puede eliminar un álbum que todavía tiene personajes. Eliminá o mové esos personajes primero.', m)
       }
-      const [deletedAlbum] = current.albums.splice(index, 1)
+      const [deletedAlbum] = catalog.albums.splice(index, 1)
+      await saveCatalog(catalog)
+      syncStateWithCatalog(current, catalog)
       await saveState(current)
-      return conn.reply(m.chat, `🗑️ *ÁLBUM ELIMINADO*\n${deletedAlbum}`, m)
+      return conn.reply(m.chat, `🗑️ *ÁLBUM ELIMINADO DEL CATÁLOGO GLOBAL*\n${deletedAlbum}`, m)
     })
   }
 
@@ -582,7 +926,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (gifting) {
         character.owner = recipient
         character.claimedAt = Date.now()
-        if (current.activeRoll?.characterId === character.id) current.activeRoll = null
+        current.activeRolls = current.activeRolls.filter((roll) => roll.characterId !== character.id)
         await saveState(current)
         return conn.sendMessage(m.chat, {
           text: `🎁 *PERSONAJE REGALADO*\n🎴 *${character.name}* — ${character.album}\n👑 Ahora pertenece a @${recipient.split('@')[0]}.`,
@@ -592,7 +936,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 
       character.owner = null
       delete character.claimedAt
-      if (current.activeRoll?.characterId === character.id) current.activeRoll = null
+      current.activeRolls = current.activeRolls.filter((roll) => roll.characterId !== character.id)
       await saveState(current)
       return conn.reply(m.chat, `🔓 *PERSONAJE LIBERADO*\n🎴 *${character.name}* — ${character.album}\nAhora cualquiera puede reclamarlo con %rw.`, m)
     }).catch((error) => {
@@ -606,15 +950,18 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const current = await loadState(m.chat)
       if (!current.enabled) return conn.reply(m.chat, 'Mudae está desactivado en este grupo.', m)
       const now = Date.now()
-      if (current.activeRoll?.expiresAt > now) {
-        return conn.reply(m.chat, `⏳ *HAY UN ROLL ACTIVO*\nReaccioná a ese personaje. Vence en ${Math.ceil((current.activeRoll.expiresAt - now) / 1000)} segundos.`, m)
-      }
-      current.activeRoll = null
+      current.activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
+      if (now < Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN) return
       const availableAt = Number(current.rollCooldowns[actor] || 0)
-      if (availableAt > now) {
-        return conn.reply(m.chat, `⏱️ *ESPERÁ UN MOMENTO*\nPodés volver a usar %rw en ${((availableAt - now) / 1000).toFixed(1)} segundos.`, m)
+      if (availableAt > now) return
+      if (availableAt > 0) {
+        current.rollCounts[actor] = 0
+        delete current.rollCooldowns[actor]
       }
-      const availableCharacters = current.characters.filter((character) => !character.owner)
+      const rollCount = Number(current.rollCounts[actor] || 0)
+      if (rollCount >= MUDAE_CONFIG.ROLL_LIMIT) return
+      const activeCharacterIds = new Set(current.activeRolls.map((roll) => roll.characterId))
+      const availableCharacters = current.characters.filter((character) => !character.owner && !activeCharacterIds.has(character.id))
       if (!availableCharacters.length) {
         await saveState(current)
         return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES DISPONIBLES*\nProbá de nuevo cuando agreguen más personajes.', m)
@@ -627,19 +974,24 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const wishLine = wishers.length
         ? `\n💖 *Deseado por:* ${wishers.map((jid) => `@${jid.split('@')[0]}`).join(', ')}`
         : ''
+      let sent
       try {
-        const sent = await conn.sendMessage(m.chat, {
+        sent = await conn.sendMessage(m.chat, {
           image: { url: character.imageUrl },
-          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}\n\nReaccioná con ❤️ para reclamarlo.\n⏱️ Tenés 1 minuto.`,
+          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}\n\nReaccioná con ❤️ para reclamarlo.\n⏱️ Vence en 1 minuto.${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
           mentions: wishers,
         })
         if (!sent?.key?.id) throw new Error('WhatsApp no devolvió el ID del mensaje del roll.')
-        current.activeRoll = { messageId: sent.key.id, characterId: character.id, expiresAt }
-        current.rollCooldowns[actor] = now + MUDAE_CONFIG.ROLL_COOLDOWN
+        current.activeRolls.push({ messageId: sent.key.id, characterId: character.id, expiresAt })
+        current.rollCounts[actor] = rollCount + 1
+        current.lastRollAt = now
+        if (rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT) {
+          current.rollCooldowns[actor] = now + MUDAE_CONFIG.ROLL_EXHAUSTED_COOLDOWN
+        }
         await saveState(current)
         return sent
       } catch (error) {
-        current.activeRoll = null
+        current.activeRolls = current.activeRolls.filter((roll) => roll.messageId !== sent?.key?.id)
         await saveState(current)
         throw error
       }
@@ -791,7 +1143,7 @@ handler.help = [
   'menumudae', 'addalbum <nombre>', 'addpj <álbum> + <nombre>',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
-  'rw', 'quitarpj <nombre>', 'regalarpj <nombre> + @usuario',
+  'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> + @usuario',
   'personajes [@usuario]', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
@@ -799,7 +1151,7 @@ handler.tags = ['mudae']
 handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
-  'rw', 'quitarpj', 'regalarpj', 'personajes', 'toppj', 'verpj', 'votarpj',
+  'rw', 'cd', 'quitarpj', 'regalarpj', 'personajes', 'toppj', 'verpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

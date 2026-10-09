@@ -1,5 +1,5 @@
 {
-  "groupId": "120363412011956970@g.us",
+  "groupId": "120363426108372817@g.us",
   "enabled": true,
   "albums": [
     "Jugadores",
@@ -9439,7 +9439,8 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791506169/mudae/catalog/7b5ac895a6741ddc9cb48526f992f5fb.webp",
       "cloudinaryPublicId": "mudae/catalog/7b5ac895a6741ddc9cb48526f992f5fb",
       "createdAt": 1791506310756,
-      "owner": null
+      "owner": "114864672526580@lid",
+      "claimedAt": 1791507733805
     },
     {
       "id": "catalog-8ca5cd0d0d1270d6651895f68058664a",
@@ -19609,8 +19610,7 @@
       "imageUrl": "https://res.cloudinary.com/dqvixvw1/image/upload/v1791438404/mudae/95136749849b57ffd859/1c868444-4894-40ac-93ba-b2d3af124b6f.jpg",
       "cloudinaryPublicId": "mudae/95136749849b57ffd859/1c868444-4894-40ac-93ba-b2d3af124b6f",
       "createdAt": 1791438544036,
-      "owner": "114864672526580@lid",
-      "claimedAt": 1791438574245
+      "owner": null
     },
     {
       "id": "e30ff48b-3bf6-4d00-92fc-e2050ab47629",
@@ -19625,13 +19625,13 @@
   ],
   "users": {},
   "rollCooldowns": {
-    "114864672526580@lid": 1791440250094
+    "114864672526580@lid": 1791507730003
   },
   "claimCooldowns": {
-    "114864672526580@lid": 1791439774245
+    "114864672526580@lid": 1791508933805
   },
   "voteCooldowns": {},
   "activeRoll": null,
-  "createdAt": 1791437539197,
-  "updatedAt": 1791507224556
+  "createdAt": 1791507565772,
+  "updatedAt": 1791507733809
 }

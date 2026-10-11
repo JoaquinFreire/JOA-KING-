@@ -176,13 +176,13 @@ let txt = `
 > 𓃦 Elegir usuarios al azar.
  ✿  *#ship • #shippear • #formarpareja*
 > 𓃦 Probar compatibilidad entre usuarios.
- ✿  *%pregunta <pregunta>*
+ ✿  *%pregunta • %preguntar <pregunta>*
 > 𓃦 Consultar al oráculo y recibir una respuesta aleatoria.
  ✿  *%formarpnormal [cantidad]*
 > 𓃦 Formar parejas al azar entre hombres y mujeres que registraron su sexo.
- ✿  *%formarpgay [cantidad]*
+ ✿  *%formarpgay • %formargay [cantidad]*
 > 𓃦 Formar parejas al azar entre hombres que registraron su sexo.
- ✿  *%formarplesbi [cantidad]*
+ ✿  *%formarplesbi • %formarlesbi [cantidad]*
 > 𓃦 Formar parejas al azar entre mujeres que registraron su sexo.
  ✿  *#personalidad*
 > 𓃦 Descubrir tu personalidad.

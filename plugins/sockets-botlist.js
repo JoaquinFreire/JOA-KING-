@@ -3,6 +3,24 @@ import fs from 'fs'
 
 const normalizeJid = (jid) => String(jid || '').trim().replace(/:\d+(?=@)/, '').toLowerCase()
 const jidNumber = (jid) => String(jid || '').split('@')[0].replace(/\D/g, '')
+const phoneNumbers = (...values) => new Set(values
+  .filter((value) => typeof value === 'string')
+  .filter((value) => !value.toLowerCase().endsWith('@lid'))
+  .map((value) => jidNumber(value))
+  .filter((value) => value.length >= 8 && value.length <= 15)
+  .flatMap((number) => {
+    const variants = [number]
+    if (number.startsWith('549')) variants.push(`54${number.slice(3)}`)
+    else if (number.startsWith('54')) variants.push(`549${number.slice(2)}`)
+    return variants
+  }))
+const socketPhoneNumbers = (socket) => phoneNumbers(
+  socket?.user?.jid,
+  socket?.user?.id,
+  socket?.user?.phoneNumber,
+  socket?.authState?.creds?.me?.jid,
+  socket?.authState?.creds?.me?.phoneNumber,
+)
 const getMentions = async (m, conn, text) => {
   const contextMentions = m.msg?.contextInfo?.mentionedJid ||
     m.message?.extendedTextMessage?.contextInfo?.mentionedJid ||
@@ -16,12 +34,36 @@ const getMentions = async (m, conn, text) => {
     ...(Array.isArray(parsedMentions) ? parsedMentions : []),
   ].map(normalizeJid).filter(Boolean))]
 }
+const mentionedPhoneNumbers = (mentions, groupMetadata) => {
+  const numbers = new Set(phoneNumbers(...mentions))
+  const participants = groupMetadata?.participants || []
+  for (const participant of participants) {
+    const identifiers = [
+      participant?.id,
+      participant?.jid,
+      participant?.lid,
+      participant?.phoneNumber,
+    ].map(normalizeJid).filter(Boolean)
+    if (!identifiers.some((identifier) => mentions.includes(identifier))) continue
+    for (const candidate of [participant?.id, participant?.jid, participant?.phoneNumber]) {
+      for (const number of phoneNumbers(candidate)) numbers.add(number)
+    }
+  }
+  return numbers
+}
+const socketDisplayJid = (socket) => [
+  socket?.user?.jid,
+  socket?.user?.id,
+  socket?.user?.phoneNumber,
+  socket?.authState?.creds?.me?.jid,
+].find((jid) => typeof jid === 'string' && jid.toLowerCase().endsWith('@s.whatsapp.net')) ||
+  socket?.user?.jid
 const isConnected = (socket) => {
   const readyState = socket?.ws?.socket?.readyState
   return Boolean(socket?.user?.jid) && readyState !== ws.CLOSED
 }
 
-const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix }) => {
+const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix, groupMetadata }) => {
   if (command === 'disconnectbot') {
     const sender = normalizeJid(m.sender)
     const senderJids = [sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt]
@@ -46,10 +88,15 @@ const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix }
 
     const mentions = await getMentions(m, conn, text)
     const textualNumber = String(text || '').match(/@(\+?[\d\s().-]{7,25})/)?.[1]?.replace(/\D/g, '')
-    const requestedNumber = jidNumber(mentions[0]) || textualNumber || ''
-    const target = requestedNumber
+    const requestedNumbers = mentionedPhoneNumbers(mentions, groupMetadata)
+    if (textualNumber) {
+      for (const number of phoneNumbers(textualNumber)) requestedNumbers.add(number)
+    }
+    const hasRequestedTarget = mentions.length > 0 || Boolean(textualNumber)
+    const target = hasRequestedTarget
       ? (global.conns || []).find((socket) =>
-        socket !== global.conn && isConnected(socket) && jidNumber(socket.user.jid) === requestedNumber
+        requestedNumbers.size > 0 && socket !== global.conn && isConnected(socket) &&
+        [...socketPhoneNumbers(socket)].some((number) => requestedNumbers.has(number))
       )
       : canDisconnectOwnSubBot
         ? invokingSocket
@@ -62,7 +109,7 @@ const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix }
       )
     }
 
-    const targetNumber = jidNumber(target.user.jid)
+    const targetNumber = jidNumber(socketDisplayJid(target))
     await conn.reply(m.chat, `🔌 Desconectando el subbot @${targetNumber}...`, m)
     target.intentionalDisconnect = true
     try {
@@ -89,7 +136,7 @@ const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix }
   const bots = [primary, ...subBots].filter(isConnected)
   const mentions = []
   const lines = bots.map((socket, index) => {
-    const jid = normalizeJid(socket.user.jid)
+    const jid = normalizeJid(socketDisplayJid(socket))
     const number = jidNumber(jid)
     mentions.push(jid)
     if (socket === primary) return `${index + 1}. Principal: @${number}`

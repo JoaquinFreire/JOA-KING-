@@ -56,6 +56,12 @@ await runFun('pregunta', '¿me va a salir bien?')
 assert.match(funMessages.at(-1).text, /CONSULTA AL ORÁCULO/)
 assert.match(funMessages.at(-1).text, /¿me va a salir bien\?/)
 assert.match(funMessages.at(-1).text, /sí|no|capaz|chance|veredicto/i)
+await runFun('preguntar', '¿sale el plan?')
+assert.match(funMessages.at(-1).text, /¿sale el plan\?/)
+for (const command of ['pregunta', 'preguntar', 'formarpnormal', 'formarpgay', 'formarplesbi']) {
+  assert.ok(funHandler.command.includes(command), `${command} debe estar registrado como comando`)
+}
+assert.ok(funHandler.command.every((command) => !command.includes(' ')), 'los patrones de uso no deben registrarse como comandos')
 
 global.db.data.users = {
   '5491111111111@s.whatsapp.net': { genre: 'Hombre' },
@@ -66,9 +72,14 @@ global.db.data.users = {
 const participants = Object.keys(global.db.data.users).map((id) => ({ id }))
 await runFun('formarpnormal', '', [], participants)
 assert.equal(funMessages.at(-1).content.mentions.length, 2)
+assert.match(funMessages.at(-1).content.text, /La mejor pareja del grupo/)
 assert.ok(funMessages.at(-1).content.mentions.some((jid) => global.db.data.users[jid].genre === 'Hombre'))
 assert.ok(funMessages.at(-1).content.mentions.some((jid) => global.db.data.users[jid].genre === 'Mujer'))
-await runFun('formarpgay', '', [], participants)
+await runFun('formarpnormal', '', ['8'], participants)
+assert.equal(funMessages.at(-1).content.mentions.length, 4, 'debe formar todas las parejas posibles aunque sean menos que las pedidas')
+assert.match(funMessages.at(-1).content.text, /Se formaron 2/)
+await runFun('formargay', '', ['5'], participants)
+assert.equal(funMessages.at(-1).content.mentions.length, 2, 'el alias gay debe formar hasta donde alcance')
 assert.ok(funMessages.at(-1).content.mentions.every((jid) => global.db.data.users[jid].genre === 'Hombre'))
 await runFun('formarplesbi', '', [], participants)
 assert.ok(funMessages.at(-1).content.mentions.every((jid) => global.db.data.users[jid].genre === 'Mujer'))

@@ -7,8 +7,8 @@ let pickRandom = list => list[Math.floor(Math.random() * list.length)]
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args }) => {
 try {
-let ps = (groupMetadata?.participants || []).map(v => v.id).filter(Boolean)
-if (command === 'pregunta') {
+let ps = [...new Set((groupMetadata?.participants || []).map(v => v.id || v.jid).filter(Boolean))]
+if (command === 'pregunta' || command === 'preguntar') {
 const question = String(text || '').trim()
 if (!question) return conn.reply(m.chat, `❀ Escribe una pregunta para el oráculo. Ejemplo: *${usedPrefix}pregunta ¿me va a ir bien?*`, m)
 const answers = [
@@ -134,27 +134,39 @@ texto += `${i + 1}.- ${toM(p.a)} y ${toM(p.b)}\n${frases[i % frases.length]}\n\n
 })
 return m.reply(texto.trim(), null, { mentions: menciones })
 }
-if (['formarpnormal', 'formarpgay', 'formarplesbi'].includes(command)) {
+const formationCommands = {
+formarpnormal: 'formarpnormal',
+formarpgay: 'formarpgay',
+formarplesbi: 'formarplesbi',
+formargay: 'formarpgay',
+formarlesbi: 'formarplesbi',
+}
+if (formationCommands[command]) {
+const formation = formationCommands[command]
 const genderByCommand = {
 formarpnormal: ['hombre', 'mujer'],
 formarpgay: ['hombre', 'hombre'],
 formarplesbi: ['mujer', 'mujer'],
 }
-const [firstGender, secondGender] = genderByCommand[command]
-const requestedCount = Number.parseInt(args[0], 10)
-const count = Number.isFinite(requestedCount) ? Math.min(Math.max(requestedCount, 1), 10) : 1
-const pools = {
-  hombre: ps.filter((jid) => String(global.db.data.users[jid]?.genre || '').trim().toLowerCase() === 'hombre'),
-  mujer: ps.filter((jid) => String(global.db.data.users[jid]?.genre || '').trim().toLowerCase() === 'mujer'),
+const [firstGender, secondGender] = genderByCommand[formation]
+const hasRequestedCount = Array.isArray(args) && args.length > 0
+const requestedCount = hasRequestedCount ? Number(args[0]) : 1
+if (!Number.isSafeInteger(requestedCount) || requestedCount < 1) {
+return conn.reply(m.chat, `❀ La cantidad debe ser un número entero mayor que cero.`, m)
 }
-const enoughUsers = firstGender === secondGender
-  ? pools[firstGender].length >= count * 2
-  : pools[firstGender].length >= count && pools[secondGender].length >= count
-if (!enoughUsers) {
+const pools = {
+hombre: ps.filter((jid) => String(global.db?.data?.users?.[jid]?.genre || '').trim().toLowerCase() === 'hombre'),
+mujer: ps.filter((jid) => String(global.db?.data?.users?.[jid]?.genre || '').trim().toLowerCase() === 'mujer'),
+}
+const availablePairs = firstGender === secondGender
+? Math.floor(pools[firstGender].length / 2)
+: Math.min(pools[firstGender].length, pools[secondGender].length)
+const count = Math.min(requestedCount, availablePairs)
+if (count === 0) {
 return conn.reply(
-  m.chat,
-  `ꕥ No hay suficientes personas con sexo registrado para formar ${count} pareja${count === 1 ? '' : 's'}. Usen %misexo hombre o %misexo mujer.`,
-  m
+m.chat,
+`ꕥ Todavía no hay suficientes personas con el sexo registrado para formar una pareja. Usen %misexo hombre o %misexo mujer y probá de nuevo.`,
+m
 )
 }
 const pairs = []
@@ -171,15 +183,20 @@ for (let index = 0; index < count; index++) {
   mentions.push(first, second)
 }
 const titles = {
-  formarpnormal: '💘 PAREJAS AL AZAR',
-  formarpgay: '🏳️‍🌈 PAREJAS GAY AL AZAR',
-  formarplesbi: '🏳️‍🌈 PAREJAS LESBIANAS AL AZAR',
+  formarpnormal: '😍 _La mejor pareja del grupo_ 😍',
+  formarpgay: '🏳️‍🌈 _La mejor pareja gay del grupo_ 🏳️‍🌈',
+  formarplesbi: '🏳️‍🌈 _La mejor pareja lesbiana del grupo_ 🏳️‍🌈',
+}
+const pluralTitles = {
+  formarpnormal: `😍 _Las ${count} mejores parejas del grupo_ 😍`,
+  formarpgay: `🏳️‍🌈 _Las ${count} mejores parejas gay del grupo_ 🏳️‍🌈`,
+  formarplesbi: `🏳️‍🌈 _Las ${count} mejores parejas lesbianas del grupo_ 🏳️‍🌈`,
 }
 const lines = pairs.map(([first, second], index) =>
-  `${index + 1}. ${toM(first)} + ${toM(second)}\n${pickRandom(['La química hizo match ✨', 'El destino shippea fuerte 💘', 'Una dupla con energía de novela 📺', 'El grupo ya pide segunda temporada 🍿', 'Match desbloqueado con éxito 💞'])}`
+  `${index + 1}.- ${toM(first)} y ${toM(second)}\n${pickRandom(['Esta pareja está destinada a estar junta 💙', 'Dos pequeños corazones que encontraron su lugar 💞', 'El destino ya los tenía en la misma historia ✨', 'La química del grupo hizo lo suyo 💘', 'Una dupla que merece su propia novela 📺'])}`
 )
 return conn.sendMessage(m.chat, {
-  text: `*${titles[command]}*\n\n${lines.join('\n\n')}`,
+  text: `${count === 1 ? titles[formation] : pluralTitles[formation]}\n\n${lines.join('\n\n')}${count < requestedCount ? `\n\n> Se formaron ${count}: no hay más personas disponibles con el sexo registrado.` : ''}`,
   mentions,
 }, { quoted: m })
 }
@@ -261,9 +278,9 @@ await m.react('✖️')
 conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
+handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'preguntar <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
 handler.tags = ['fun']
-handler.command = handler.help
+handler.command = ['top', 'sorteo', 'ship', 'shippear', 'pregunta', 'preguntar', 'afk', 'personalidad', 'formarpareja', 'formarpnormal', 'formarpgay', 'formarplesbi', 'formargay', 'formarlesbi', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
 handler.group = true
 
 export default handler

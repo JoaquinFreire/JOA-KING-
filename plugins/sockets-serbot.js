@@ -26,7 +26,7 @@ const JoaKingSubBotOptions = {}
 if (global.conns instanceof Array) console.log()
 else global.conns = []
 function isSubBotConnected(jid) { return global.conns.some(sock => sock?.user?.jid && sock.user.jid.split("@")[0] === jid.split("@")[0]) }
-let handler = async (m, { conn, args, text, usedPrefix, command, isOwner }) => {
+let handler = async (m, { conn, args, text, usedPrefix, command, isOwner, groupMetadata }) => {
 if (command === 'code') {
 const digits = String(text || (Array.isArray(args) ? args.join(' ') : '')).replace(/\D/g, '')
 if (digits.length < 8 || digits.length > 15) {
@@ -42,12 +42,25 @@ return m.reply(`ꕥ No se han encontrado espacios para *Sub-Bots* disponibles.`)
 let mentionedJid = await m.mentionedJid
 let who = mentionedJid && mentionedJid[0] ? mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
 let id = `${who.split`@`[0]}`
+const normalizeJid = (jid) => String(jid || '').trim().replace(/:\d+(?=@)/, '').toLowerCase()
+const senderParticipant = (groupMetadata?.participants || []).find((participant) =>
+  [participant.id, participant.jid, participant.lid].some((jid) => normalizeJid(jid) === normalizeJid(m.sender))
+)
+const ownerJid = [
+  m.key?.senderPn,
+  m.key?.remoteJidAlt,
+  senderParticipant?.phoneNumber,
+  senderParticipant?.jid,
+  senderParticipant?.id,
+  m.sender,
+].find((jid) => typeof jid === 'string' && jid.endsWith('@s.whatsapp.net')) || m.sender
 const subBotRoot = path.resolve(process.cwd(), global.jadi || 'Sessions/SubBot')
 let pathJoaKingSubBot = path.join(subBotRoot, id)
 if (!fs.existsSync(pathJoaKingSubBot)){
 fs.mkdirSync(pathJoaKingSubBot, { recursive: true })
 }
 JoaKingSubBotOptions.pathJoaKingSubBot = pathJoaKingSubBot
+JoaKingSubBotOptions.ownerJid = ownerJid
 JoaKingSubBotOptions.m = m
 JoaKingSubBotOptions.conn = conn
 JoaKingSubBotOptions.args = args
@@ -63,11 +76,12 @@ handler.command = ['qr', 'code']
 export default handler 
 
 export async function JoaKingSubBot(options) {
-let { pathJoaKingSubBot, m, conn, args, usedPrefix, command } = options
+let { pathJoaKingSubBot, ownerJid, m, conn, args, usedPrefix, command } = options
 const subBotRoot = path.resolve(process.cwd(), global.jadi || 'Sessions/SubBot')
 if (!pathJoaKingSubBot) {
 pathJoaKingSubBot = path.join(subBotRoot, String((m?.sender || Date.now()).split('@')[0] || Date.now()))
 }
+const subBotOwnerJid = ownerJid || m?.sender || `${path.basename(pathJoaKingSubBot)}@s.whatsapp.net`
 if (command === 'code') {
 command = 'qr'
 args = Array.isArray(args) ? [...args] : []
@@ -109,7 +123,7 @@ syncFullHistory: false,
 shouldSyncHistoryMessage: () => false
 }
 let sock = makeWASocket(connectionOptions)
-sock.subBotOwnerJid = `${path.basename(pathJoaKingSubBot)}@s.whatsapp.net`
+sock.subBotOwnerJid = subBotOwnerJid
 sock.sessionPath = pathJoaKingSubBot
 sock.isInit = false
 let isInit = true
@@ -261,7 +275,7 @@ const oldChats = sock.chats
 try { sock.ws.close() } catch { }
 sock.ev.removeAllListeners()
 sock = makeWASocket(connectionOptions, { chats: oldChats })
-sock.subBotOwnerJid = `${path.basename(pathJoaKingSubBot)}@s.whatsapp.net`
+sock.subBotOwnerJid = subBotOwnerJid
 sock.sessionPath = pathJoaKingSubBot
 isInit = true
 }

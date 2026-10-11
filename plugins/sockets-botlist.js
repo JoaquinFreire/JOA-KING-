@@ -110,23 +110,37 @@ const handler = async (m, { conn, command, text, isOwner, isROwner, usedPrefix, 
     }
 
     const targetNumber = jidNumber(socketDisplayJid(target))
-    await conn.reply(m.chat, `🔌 Desconectando el subbot @${targetNumber}...`, m)
     target.intentionalDisconnect = true
     try {
       if (typeof target.logout === 'function') {
         await target.logout()
-      } else {
-        target.ws?.close()
-        target.ev?.removeAllListeners()
-        const index = global.conns.indexOf(target)
-        if (index >= 0) global.conns.splice(index, 1)
-        if (target.sessionPath) fs.rmSync(target.sessionPath, { recursive: true, force: true })
       }
     } catch (error) {
+      if (!/connection\s+(?:is\s+)?closed/i.test(String(error?.message || error))) {
+        target.intentionalDisconnect = false
+        console.error(`[SUBBOT] No se pudo desconectar @${targetNumber}:`, error?.stack || error)
+        return conn.reply(m.chat, `No se pudo desconectar el subbot @${targetNumber}.\n> ${error.message}`, m)
+      }
+      console.warn(`[SUBBOT] @${targetNumber} ya tenía la conexión cerrada; limpiando la sesión local.`)
+    }
+
+    try {
+      if (typeof target.end === 'function') {
+        await target.end()
+      } else {
+        target.ev?.removeAllListeners()
+        target.ws?.close()
+      }
+      target.ev?.removeAllListeners()
+      const index = global.conns.indexOf(target)
+      if (index >= 0) global.conns.splice(index, 1)
+      if (target.sessionPath) fs.rmSync(target.sessionPath, { recursive: true, force: true })
+    } catch (error) {
+      target.intentionalDisconnect = false
       console.error(`[SUBBOT] No se pudo desconectar @${targetNumber}:`, error?.stack || error)
       return conn.reply(m.chat, `No se pudo desconectar el subbot @${targetNumber}.\n> ${error.message}`, m)
     }
-    return
+    return conn.reply(m.chat, `✅ Subbot @${targetNumber} desconectado correctamente.`, m)
   }
 
   const primary = global.conn

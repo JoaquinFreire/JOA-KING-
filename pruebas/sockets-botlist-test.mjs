@@ -15,11 +15,15 @@ const primary = {
   sendMessage: async (chat, content) => messages.push({ chat, content }),
 }
 let logoutCount = 0
+let endCount = 0
+let closeCount = 0
+let listenersRemoved = 0
 const subBot = {
   user: { jid: subBotJid },
   subBotOwnerJid: ownerJid,
-  ws: { socket: { readyState: ws.OPEN } },
+  ws: { socket: { readyState: ws.OPEN }, close: () => { closeCount += 1 } },
   logout: async () => { logoutCount += 1 },
+  ev: { removeAllListeners: () => { listenersRemoved += 1 } },
 }
 global.conn = primary
 global.conns = [subBot]
@@ -49,12 +53,19 @@ await handler(message('5493513117202@s.whatsapp.net', [subBotJid]), {
 })
 assert.equal(logoutCount, 1, 'el owner debe poder desconectar el subbot mencionado')
 assert.equal(subBot.intentionalDisconnect, true)
+assert.equal(closeCount, 1, 'debe cerrar el websocket local después del logout')
+assert.equal(global.conns.includes(subBot), false, 'debe quitar la conexión desconectada')
+assert.match(messages.at(-1).text, /desconectado correctamente/)
 
 const selfManagedSubBot = {
   ...subBot,
   user: { jid: subBotLid, id: subBotJid },
   reply: primary.reply,
-  logout: async () => { logoutCount += 1 },
+  logout: async () => {
+    logoutCount += 1
+    throw new Error('Connection Closed')
+  },
+  end: async () => { endCount += 1 },
 }
 global.conns = [selfManagedSubBot]
 await handler(message(ownerJid), {
@@ -79,9 +90,18 @@ await handler(message('5493513117202@s.whatsapp.net', [subBotLid]), {
   },
 })
 assert.equal(logoutCount, 2, 'el owner debe poder desconectar una mención LID resolviendo su número real')
+assert.equal(endCount, 1, 'si el logout encuentra la conexión cerrada, debe finalizar y limpiar el socket')
+assert.equal(global.conns.includes(selfManagedSubBot), false, 'debe limpiar una sesión que ya estaba cerrada')
+assert.match(messages.at(-1).text, /desconectado correctamente/)
+
+const ownSubBot = {
+  ...selfManagedSubBot,
+  logout: async () => { logoutCount += 1 },
+}
+global.conns = [ownSubBot]
 
 await handler(message(ownerJid, ['112233445566778899@lid']), {
-  conn: selfManagedSubBot,
+  conn: ownSubBot,
   command: 'disconnectbot',
   text: '@112233445566778899',
   usedPrefix: '%',
@@ -89,7 +109,7 @@ await handler(message(ownerJid, ['112233445566778899@lid']), {
 assert.equal(logoutCount, 2, 'una mención que no se pudo resolver no debe desconectar el subbot propio')
 
 await handler(message(ownerJid), {
-  conn: selfManagedSubBot,
+  conn: ownSubBot,
   command: 'disconnectbot',
   text: '',
   usedPrefix: '%',

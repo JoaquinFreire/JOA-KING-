@@ -36,6 +36,14 @@ assert.match(menuMessages.at(-1).content.text, /Coleccioná personajes/)
 assert.match(menuMessages.at(-1).content.text, /%albumespj/)
 assert.match(menuMessages.at(-1).content.text, /%pjs/)
 
+await menuHandler(menuMessage, {
+  conn: menuConnection,
+  args: ['tools'],
+  usedPrefix: '%',
+})
+assert.match(menuMessages.at(-1).content.text, /%translate/)
+assert.doesNotMatch(menuMessages.at(-1).content.text, /PAREJAS AL AZAR/)
+
 const funMessages = []
 const funConnection = {
   reply: async (chat, text) => funMessages.push({ chat, text }),

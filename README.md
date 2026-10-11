@@ -46,7 +46,7 @@ Para vincular una cuenta nuevamente:
 npm run qr
 ```
 
-Para vincular con código, usa `%code +549XXXXXXXXXX` e incluye el número internacional completo de la cuenta. `%bots` muestra las conexiones activas y quién administra cada subbot. El owner puede desconectar uno con `%disconnectbot @subbot`; quien inició un subbot también puede ejecutar `%disconnectbot` desde ese subbot para cerrar su propia sesión.
+Para vincular con código, usa `%code +549XXXXXXXXXX` e incluye el número internacional completo de la cuenta. `%bots` muestra las conexiones activas y quién administra cada subbot. El owner puede desconectar uno con `%disconnectbot @subbot`; quien inició un subbot también puede ejecutar `%disconnectbot` desde ese subbot para cerrar su propia sesión. Para ver las utilidades del menú, también puedes usar `%menu tools` además de `%menu utilities`.
 
 ## Mudae
 

@@ -26,7 +26,12 @@ const JoaKingSubBotOptions = {}
 if (global.conns instanceof Array) console.log()
 else global.conns = []
 function isSubBotConnected(jid) { return global.conns.some(sock => sock?.user?.jid && sock.user.jid.split("@")[0] === jid.split("@")[0]) }
-let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
+let handler = async (m, { conn, args, text, usedPrefix, command, isOwner }) => {
+if (command === 'code') {
+const digits = String(text || (Array.isArray(args) ? args.join(' ') : '')).replace(/\D/g, '')
+if (digits.length < 8 || digits.length > 15) {
+return conn.reply(m.chat, `Uso: ${usedPrefix}code +549XXXXXXXXXX\nIncluí el número completo de la cuenta que vas a vincular.`, m)
+}}
 if (!globalThis.db.data.settings[conn.user.jid].jadibotmd) return m.reply(`ꕥ El Comando *${command}* está desactivado temporalmente.`)
 let time = global.db.data.users[m.sender].Subs + 120000
 if (new Date - global.db.data.users[m.sender].Subs < 120000) return conn.reply(m.chat, `ꕥ Debes esperar ${msToTime(time - new Date())} para volver a vincular un *Sub-Bot.*`, m)
@@ -104,6 +109,8 @@ syncFullHistory: false,
 shouldSyncHistoryMessage: () => false
 }
 let sock = makeWASocket(connectionOptions)
+sock.subBotOwnerJid = `${path.basename(pathJoaKingSubBot)}@s.whatsapp.net`
+sock.sessionPath = pathJoaKingSubBot
 sock.isInit = false
 let isInit = true
 setTimeout(async () => {
@@ -130,9 +137,8 @@ setTimeout(() => { conn.sendMessage(m.sender, { delete: txtQR.key })}, 30000)
 return
 } 
 if (qr && mcode) {
-const explicitNumber = (Array.isArray(args) ? args : [])
-  .map((item) => String(item || '').trim())
-  .find((item) => /\d{8,}/.test(String(item).replace(/\D/g, '')))
+const explicitNumber = String(Array.isArray(args) ? args.join(' ') : '')
+  .match(/\+?\s*\d[\d\s().-]{6,}\d/)?.[0]
 const rawSenderNumber = String(m?.sender || '').replace(/@.*$/, '').replace(/\D/g, '')
 const pairingNumber = global.getSubBotPairingNumber ? global.getSubBotPairingNumber(explicitNumber, m?.sender, global.botNumber) : (
   explicitNumber ? String(explicitNumber).replace(/\D/g, '') : String(global.botNumber || '').replace(/\D/g, '')
@@ -172,6 +178,17 @@ delete global.conns[i]
 global.conns.splice(i, 1)
 }}
 const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.output?.payload?.statusCode
+if (connection === 'close' && sock.intentionalDisconnect) {
+try {
+fs.rmSync(pathJoaKingSubBot, { recursive: true, force: true })
+} catch (error) {
+console.error(`[SUBBOT] No se pudo eliminar la sesión desconectada ${path.basename(pathJoaKingSubBot)}:`, error)
+}
+sock.ev.removeAllListeners()
+const index = global.conns.indexOf(sock)
+if (index >= 0) global.conns.splice(index, 1)
+return
+}
 if (connection === 'close') {
 if (reason === 428) {
 console.log(chalk.bold.magentaBright(`\n╭┄┄┄┄┄┄┄┄┄┄┄┄┄┄ • • • ┄┄┄┄┄┄┄┄┄┄┄┄┄┄⟡\n┆ La conexión (+${path.basename(pathJoaKingSubBot)}) fue cerrada inesperadamente. Intentando reconectar...\n╰┄┄┄┄┄┄┄┄┄┄┄┄┄┄ • • • ┄┄┄┄┄┄┄┄┄┄┄┄┄┄⟡`))
@@ -244,6 +261,8 @@ const oldChats = sock.chats
 try { sock.ws.close() } catch { }
 sock.ev.removeAllListeners()
 sock = makeWASocket(connectionOptions, { chats: oldChats })
+sock.subBotOwnerJid = `${path.basename(pathJoaKingSubBot)}@s.whatsapp.net`
+sock.sessionPath = pathJoaKingSubBot
 isInit = true
 }
 if (!isInit) {

@@ -56,8 +56,10 @@ let txt = `
 > ✿ Comandos para registrar tu propio Bot.
  ✿  *#qr • #code*
 > 𓃦 Crear un Sub-Bot con un codigo QR/Code
- ✿  *#bots • #botlist*
-> 𓃦 Ver el numero de bots activos.
+ ✿  *#bots*
+> 𓃦 Ver cuántos bots están conectados y los números de sus subbots.
+ ✿  *#disconnectbot [@subbot]*
+> 𓃦 Desconectar un subbot (owner) o tu propio subbot.
  ✿  *#status • #estado*
 > 𓃦 Ver estado del bot.
  ✿  *#p • #ping*
@@ -80,6 +82,8 @@ let txt = `
 > ✿ Comandos de *Útilidades*.
  ✿  *#help • #menu*
 > 𓃦 Ver el menú de comandos.
+ ✿  *#menu <sección>*
+> 𓃦 Ver una parte del menú, por ejemplo *#menu descargar* o *#menu mudae*.
  ✿  *#sc • #script*
 > 𓃦 Link del repositorio oficial del Bot.
  ✿  *#sug • #suggest*
@@ -172,6 +176,14 @@ let txt = `
 > 𓃦 Elegir usuarios al azar.
  ✿  *#ship • #shippear • #formarpareja*
 > 𓃦 Probar compatibilidad entre usuarios.
+ ✿  *%pregunta <pregunta>*
+> 𓃦 Consultar al oráculo y recibir una respuesta aleatoria.
+ ✿  *%formarpnormal [cantidad]*
+> 𓃦 Formar parejas al azar entre hombres y mujeres que registraron su sexo.
+ ✿  *%formarpgay [cantidad]*
+> 𓃦 Formar parejas al azar entre hombres que registraron su sexo.
+ ✿  *%formarplesbi [cantidad]*
+> 𓃦 Formar parejas al azar entre mujeres que registraron su sexo.
  ✿  *#personalidad*
 > 𓃦 Descubrir tu personalidad.
  ✿  *%addpiropo creador + piropo*
@@ -300,12 +312,18 @@ let txt = `
 > 𓃦 Ver comandos e instrucciones de Mudae.
  ✿  *%rw • %quitarpj • %regalarpj • %suertepj*
 > 𓃦 Votá y tirá; reclamá, liberá, regalá o cambiá uno propio por suerte cada 12 horas.
+ ✿  *%cd • %votarpj <personaje>*
+> 𓃦 Ver cooldowns y votos para habilitar tiradas.
  ✿  *%cambiarpj <tuyo> + <del otro> • %aceptarcambio*
 > 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
- ✿  *%personajes • %toppj • %verpj*
-> 𓃦 Ver colecciones, ranking e información.
+ ✿  *%personajes [@usuario] • %pjs [@usuario]*
+> 𓃦 Ver tu colección o consultar la de otra persona.
+ ✿  *%toppj • %verpj <personaje>*
+> 𓃦 Ver el ranking e información de personajes.
  ✿  *%ainfo <álbum>*
 > 𓃦 Ver los personajes del álbum y sus valores.
+ ✿  *%albumespj*
+> 𓃦 Ver todos los álbumes y cuántos personajes tiene cada uno.
  ✿  *%wish • %wishremove • %wishlist*
 > 𓃦 Guardar hasta 3 deseados y recibir aviso cuando salgan.
  ✿  *%votarpj <personaje>*
@@ -429,6 +447,49 @@ if (sectionStart !== -1 && sectionEnd !== -1) {
 txt = txt.slice(0, sectionStart) + txt.slice(txt.indexOf('\n', sectionEnd + 1))
 }}
 removeMenuSection('ANIME')
+const requestedSection = Array.isArray(args) ? args.join(' ').trim().toLowerCase() : ''
+if (requestedSection) {
+const sectionAliases = {
+descargar: 'DESCARGAS',
+descargas: 'DESCARGAS',
+download: 'DESCARGAS',
+downloads: 'DESCARGAS',
+socket: 'SOCKETS',
+sockets: 'SOCKETS',
+util: 'UTILITIES',
+utilities: 'UTILITIES',
+fun: 'FUN',
+diversion: 'FUN',
+diversiones: 'FUN',
+perfil: 'PROFILES',
+perfiles: 'PROFILES',
+profile: 'PROFILES',
+profiles: 'PROFILES',
+grupo: 'GROUPS',
+grupos: 'GROUPS',
+groups: 'GROUPS',
+mudae: 'MUDAE',
+}
+const sectionName = sectionAliases[requestedSection]
+if (!sectionName) {
+return conn.reply(
+  m.chat,
+  `Sección no encontrada. Probá: *${usedPrefix}menu descargar*, *${usedPrefix}menu sockets*, *${usedPrefix}menu fun*, *${usedPrefix}menu perfiles*, *${usedPrefix}menu grupos* o *${usedPrefix}menu mudae*.`,
+  m
+)
+}
+const headingIndex = txt.indexOf(`${toRegionalText(sectionName)}✰`)
+const sectionStart = txt.lastIndexOf('\n╭', headingIndex)
+const sectionEnd = txt.indexOf('\n╰', headingIndex)
+const firstSectionStart = txt.indexOf('\n╭')
+if (headingIndex < 0 || sectionStart < 0 || sectionEnd < 0 || firstSectionStart < 0) {
+return conn.reply(m.chat, `No pude cargar la sección ${requestedSection} del menú.`, m)
+}
+const intro = txt.slice(0, firstSectionStart)
+const footerEnd = txt.indexOf('\n', sectionEnd + 1)
+const section = txt.slice(sectionStart + 1, footerEnd < 0 ? txt.length : footerEnd)
+txt = `${intro}\n\n${section}`
+}
 await conn.sendMessage(m.chat, { 
 text: txt.replaceAll('#', usedPrefix),
 contextInfo: {

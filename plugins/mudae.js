@@ -634,11 +634,12 @@ const getMentionedJids = async (m, conn, text) => {
     ...(Array.isArray(parsedMentions) ? parsedMentions : []),
   ].map(normalizeJid).filter(Boolean))]
 }
-const getMentionTarget = (m, text) => {
-  const mention = m.mentionedJid?.[0]
-  if (mention) return normalizeJid(mention)
-  const number = String(text || '').match(/@(\d{7,16})/)
-  return number ? `${number[1]}@s.whatsapp.net` : getActorJid(m)
+const getMentionTarget = async (m, conn, text) => {
+  const mentions = await getMentionedJids(m, conn, text)
+  if (mentions.length) return mentions[0]
+  const number = String(text || '').match(/@(\+?[\d\s().-]{7,25})/)
+  const digits = number?.[1].replace(/\D/g, '')
+  return digits ? `${digits}@s.whatsapp.net` : getActorJid(m)
 }
 
 const getDisplayName = async (conn, jid, fallback = '') => {
@@ -708,6 +709,8 @@ const getReactionSender = (conn, update) => {
 }
 
 const processReaction = async (conn, update) => {
+  const primaryJid = normalizeJid(global.conn?.user?.jid)
+  if (primaryJid && normalizeJid(conn?.user?.jid) !== primaryJid) return
   const groupId = update?.key?.remoteJid
   const messageId = update?.key?.id
   const reactionText = String(update?.reaction?.text || '').replace(/\uFE0F/g, '')
@@ -759,6 +762,8 @@ const processReaction = async (conn, update) => {
 }
 
 const registerReactionListener = (conn) => {
+  const primaryJid = normalizeJid(global.conn?.user?.jid)
+  if (primaryJid && normalizeJid(conn?.user?.jid) !== primaryJid) return
   if (!conn?.ev?.on || conn[reactionListenerSymbol]) return
   conn[reactionListenerSymbol] = true
   conn.ev.on('messages.reaction', async (updates) => {
@@ -792,8 +797,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n            ✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar (vence al minuto)
-    ✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes [@usuario]* — colección y valor total\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n        ✦ *%ainfo <álbum>* — ver todos los personajes y su valor\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -805,11 +809,13 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const seconds = totalSeconds % 60
       return minutes ? `${minutes} min ${seconds} s` : `${seconds} s`
     }
-    const rollCooldown = Number(current.rollCooldowns[actor] || 0) - now
+    const rollCooldownAt = Number(current.rollCooldowns[actor] || 0)
+    const rollCooldown = rollCooldownAt - now
     const claimCooldownAt = Number(current.claimCooldowns[actor] || 0)
     const claimCooldown = claimCooldownAt - now
     const voteCooldown = Number(current.voteCooldowns[actor] || 0) - now
-    const rollCount = rollCooldown > 0 ? Number(current.rollCounts[actor] || 0) : 0
+    const recordedRollCount = Number(current.rollCounts[actor] || 0)
+    const rollCount = rollCooldownAt > 0 && rollCooldown <= 0 ? 0 : recordedRollCount
     const recordedClaimCount = Number(current.claimCounts[actor] || 0)
     const claimCount = claimCooldown > 0
       ? recordedClaimCount
@@ -820,11 +826,9 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const activeCharacterIds = new Set(activeRolls.map((roll) => roll.characterId))
     const hasAvailableCharacter = current.characters.some((character) => !activeCharacterIds.has(character.id))
     const hasActiveVote = voteCooldown > 0
-    const availableRolls = hasAvailableCharacter && hasActiveVote
-      ? Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)
-      : 0
+    const remainingRolls = Math.max(0, MUDAE_CONFIG.ROLL_LIMIT - rollCount)
     const waits = [
-      `🎲 Tiradas RW: ${availableRolls}/${MUDAE_CONFIG.ROLL_LIMIT}${!hasAvailableCharacter ? ' · no hay personajes para tirar' : !hasActiveVote ? ' · necesitás votar' : rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
+      `🎲 Tiradas RW: ${remainingRolls}/${MUDAE_CONFIG.ROLL_LIMIT}${!hasAvailableCharacter ? ' · no hay personajes para tirar' : !hasActiveVote ? ' · necesitás votar' : rollCooldown > 0 ? ` · disponibles en ${formatWait(rollCooldown)}` : ''}`,
       `❤️ Reclamos: ${Math.max(0, MUDAE_CONFIG.CLAIM_LIMIT - claimCount)}/${MUDAE_CONFIG.CLAIM_LIMIT}${claimCooldown > 0 ? ` · disponibles en ${formatWait(claimCooldown)}` : ''}`,
       `🗳️ Voto: ${voteCooldown > 0 ? `nuevo voto disponible en ${formatWait(voteCooldown)} · tiradas habilitadas` : 'disponible'}`,
     ]
@@ -1003,6 +1007,24 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     })
   }
 
+  if (action === 'albumespj') {
+    if (!state.albums.length) return conn.reply(m.chat, '📚 Todavía no hay álbumes en este grupo.', m)
+    const lines = state.albums
+      .map((album) => {
+        const count = state.characters.filter((character) =>
+          normalizeMudaeIdentity(character.album) === normalizeMudaeIdentity(album)
+        ).length
+        return `📚 *${album}* — ${count} ${count === 1 ? 'personaje' : 'personajes'}`
+      })
+      .sort((first, second) => first.localeCompare(second, 'es'))
+    return sendLongText(
+      conn,
+      m.chat,
+      `📚 *ÁLBUMES DE PERSONAJES*\n\n${lines.join('\n')}\n\nÁlbumes: ${lines.length} · Personajes: ${state.characters.length}`,
+      m
+    )
+  }
+
   if (action === 'quitarpj' || action === 'regalarpj') {
     const gifting = action === 'regalarpj'
     const parts = parseMudaeParts(text, gifting ? 2 : 1)
@@ -1179,10 +1201,13 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       replacement.claimedAt = now
       current.tradeCooldowns[actor] = now + MUDAE_CONFIG.TRADE_COOLDOWN
       await saveState(current)
-      return conn.reply(
+      return conn.sendMessage(
         m.chat,
-        `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
-        m
+        {
+          image: { url: replacement.imageUrl },
+          caption: `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
+        },
+        { quoted: m }
       )
     }).catch((error) => {
       console.error('[MUDAE] No se pudo cambiar un personaje:', error?.stack || error)
@@ -1201,13 +1226,29 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       current.activeRolls = current.activeRolls.filter((roll) => roll.expiresAt > now)
       if (now < Number(current.lastRollAt || 0) + MUDAE_CONFIG.ROLL_COOLDOWN) return
       const availableAt = Number(current.rollCooldowns[actor] || 0)
-      if (availableAt > now) return
+      if (availableAt > now) {
+        const seconds = Math.ceil((availableAt - now) / 1000)
+        const minutes = Math.floor(seconds / 60)
+        return conn.reply(
+          m.chat,
+          `⏳ Agotaste tus ${MUDAE_CONFIG.ROLL_LIMIT} tiradas RW. Podés volver a tirar en ${minutes ? `${minutes} min ${seconds % 60} s` : `${seconds} s`}.`,
+          m
+        )
+      }
       if (availableAt > 0) {
         current.rollCounts[actor] = 0
         delete current.rollCooldowns[actor]
       }
       const rollCount = Number(current.rollCounts[actor] || 0)
-      if (rollCount >= MUDAE_CONFIG.ROLL_LIMIT) return
+      if (rollCount >= MUDAE_CONFIG.ROLL_LIMIT) {
+        current.rollCooldowns[actor] = now + MUDAE_CONFIG.ROLL_EXHAUSTED_COOLDOWN
+        await saveState(current)
+        return conn.reply(
+          m.chat,
+          `⏳ Agotaste tus ${MUDAE_CONFIG.ROLL_LIMIT} tiradas RW. Podés volver a tirar en 30 min.`,
+          m
+        )
+      }
       const activeCharacterIds = new Set(current.activeRolls.map((roll) => roll.characterId))
       const availableCharacters = current.characters.filter((character) => !activeCharacterIds.has(character.id))
       if (!availableCharacters.length) {
@@ -1250,7 +1291,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       try {
         sent = await conn.sendMessage(m.chat, {
           image: { url: character.imageUrl },
-          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}\n⏱️ Vence en 1 minuto.${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
+          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}${owner ? '' : '\n⏱️ Vence en 1 minuto.'}${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
           mentions,
         })
         if (!sent?.key?.id) throw new Error('WhatsApp no devolvió el ID del mensaje del roll.')
@@ -1274,8 +1315,8 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     })
   }
 
-  if (action === 'personajes') {
-    const target = getMentionTarget(m, text)
+  if (action === 'personajes' || action === 'pjs') {
+    const target = await getMentionTarget(m, conn, text)
     const collection = state.characters.filter((character) => normalizeJid(character.owner) === target)
     const ownerName = target === actor ? (m.pushName || await getDisplayName(conn, target)) : await getDisplayName(conn, target)
     if (!collection.length) return conn.reply(m.chat, `👑 *${ownerName} todavía no tiene personajes en este grupo.*`, m)
@@ -1290,7 +1331,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const details = [...grouped].map(([album, characters]) =>
       `📚 *${album}*\n${characters.map((character) => `${number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
     ).join('\n\n')
-    return sendLongText(conn, m.chat, `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}`, m)
+    return sendLongText(conn, m.chat, `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}`, m)
   }
 
   if (action === 'ainfo') {
@@ -1303,7 +1344,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
     if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
     const lines = characters.map((character, index) => `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`)
-    return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n\n${lines.join('\n')}\n\n🎴 Total: ${characters.length}`, m)
+    return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
   }
 
   if (action === 'toppj') {
@@ -1436,7 +1477,7 @@ handler.help = [
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
-  'personajes [@usuario]', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
+  'personajes [@usuario]', 'pjs [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']
@@ -1444,7 +1485,7 @@ handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
-  'personajes', 'ainfo', 'toppj', 'verpj', 'votarpj',
+  'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'verpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

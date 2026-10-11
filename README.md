@@ -46,13 +46,17 @@ Para vincular una cuenta nuevamente:
 npm run qr
 ```
 
+Para vincular con código, usa `%code +549XXXXXXXXXX` e incluye el número internacional completo de la cuenta. `%bots` muestra las conexiones activas y quién administra cada subbot. El owner puede desconectar uno con `%disconnectbot @subbot`; quien inició un subbot también puede ejecutar `%disconnectbot` desde ese subbot para cerrar su propia sesión.
+
 ## Mudae
 
 `%ainfo <álbum>` lista todos los personajes de ese álbum con sus valores y no distingue tildes (por ejemplo, `%ainfo dragon ball` encuentra `Dragón Ball`). Para la ficha de un anime usa `%animedata <nombre>`; ya no comparte el alias `%ainfo`. Las búsquedas de personajes por nombre, como `%verpj` y `%votarpj`, también ignoran tildes.
 
-Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por ejemplo, `%votarpj Goku`). Cada voto habilita tiradas durante 24 horas y se puede votar una vez cada 24 horas. Solo el owner del bot puede borrar personajes con `%delpj <álbum> + <nombre>`; el borrado también elimina la imagen de Cloudinary e invalida su caché.
+Para tirar `%rw`, primero vota por un personaje con `%votarpj <nombre>` (por ejemplo, `%votarpj Goku`). Cada voto habilita tiradas durante 24 horas y se puede votar una vez cada 24 horas. `%cd` muestra las tiradas restantes de tu cupo de 10, incluso si todavía necesitas votar; al agotarlo, se restablece después de 30 minutos. Solo el owner del bot puede borrar personajes con `%delpj <álbum> + <nombre>`; el borrado también elimina la imagen de Cloudinary e invalida su caché.
 
-En un grupo, `%regalarpj <nombre> @usuario` transfiere uno de tus personajes a la persona mencionada. `%suertepj <nombre>` cambia un personaje tuyo por otro libre al azar del grupo; solo puede usarse una vez cada 12 horas y no altera el valor del nuevo personaje. Para intercambiar directamente con otra persona, usa `%cambiarpj <tu personaje> + <personaje de la otra persona>`; la propuesta se anuncia en el grupo, solo el dueño destinatario puede aceptarla con `%aceptarcambio` y vence en 30 segundos. Solo puede haber una propuesta pendiente por grupo y ambos personajes deben tener dueño.
+En un grupo, `%personajes` (o `%pjs`) muestra tu colección; `%personajes @usuario` y `%pjs @usuario` consultan la de otra persona. `%albumespj` lista los álbumes y la cantidad de personajes que tiene cada uno. `%regalarpj <nombre> @usuario` transfiere uno de tus personajes a la persona mencionada. `%suertepj <nombre>` cambia un personaje tuyo por otro libre al azar del grupo y muestra la imagen del nuevo personaje; solo puede usarse una vez cada 12 horas y no altera el valor del nuevo personaje. Para intercambiar directamente con otra persona, usa `%cambiarpj <tu personaje> + <personaje de la otra persona>`; la propuesta se anuncia en el grupo, solo el dueño destinatario puede aceptarla con `%aceptarcambio` y vence en 30 segundos. Solo puede haber una propuesta pendiente por grupo y ambos personajes deben tener dueño.
+
+El menú principal acepta secciones, por ejemplo `%menu descargar`, `%menu fun` y `%menu mudae`; también puedes usar `%menumudae` para ver el menú de Mudae directamente. En los comandos de diversión, `%pregunta <pregunta>` responde con una predicción aleatoria. `%formarpnormal`, `%formarpgay` y `%formarplesbi` forman parejas usando el sexo registrado con `%misexo`; opcionalmente aceptan la cantidad de parejas, hasta 10.
 
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 

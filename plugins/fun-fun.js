@@ -8,6 +8,32 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args }) => {
 try {
 let ps = (groupMetadata?.participants || []).map(v => v.id).filter(Boolean)
+if (command === 'pregunta') {
+const question = String(text || '').trim()
+if (!question) return conn.reply(m.chat, `❀ Escribe una pregunta para el oráculo. Ejemplo: *${usedPrefix}pregunta ¿me va a ir bien?*`, m)
+const answers = [
+['Sí, de una.', '🔮 El oráculo no duda: *sí*.'],
+['No.', '🙅 Las estrellas dicen que *no* por ahora.'],
+['Casi seguro que sí.', '✨ Todo apunta a un *sí*.'],
+['Casi seguro que no.', '🌧️ La energía viene más para *no*.'],
+['Obvio que sí.', '💅 ¿Lo dudabas? *Sí, obvio*.'],
+['Ni en pedo.', '🪦 Respuesta corta: *no*.'],
+['Sí, pero vas a tener que poner de tu parte.', '🛠️ *Sí*, aunque no cae del cielo.'],
+['No por ahora; probá más adelante.', '⏳ Hoy pinta *no*, más adelante quién sabe.'],
+['Hay altas chances de que sí.', '📈 La probabilidad juega a tu favor: *sí*.'],
+['Las chances son bajísimas.', '📉 No parece que vaya a pasar.'],
+['100% sí.', '🚀 El universo firmó el permiso: *SÍ*.'],
+['Imposible. 100% no.', '🧱 El universo puso un límite: *no*.'],
+['Puede ser… el destino está viendo.', '👀 No hay veredicto todavía; puede pasar.'],
+['Preguntame después de un mate.', '🧉 El oráculo está en pausa, pero tira un *capaz*.'],
+['Sí, pero no se lo cuentes a nadie.', '🤫 Es un *sí* confidencial.'],
+['No, y encima ya lo sabías.', '🫠 La respuesta es *no*; no me mires así.'],
+['Todo indica que sí, pero no cantes victoria.', '🍀 Va para *sí*, con cautela.'],
+['Mmm… yo no me confiaría.', '🎲 Está complicado; mejor no apostar todo a que sí.'],
+]
+const [answer, style] = pickRandom(answers)
+return conn.reply(m.chat, `🔮 *CONSULTA AL ORÁCULO* 🔮\n\n❔ ${question}\n\n${style}\n💬 _${answer}_`, m)
+}
 if (command == 'top') {
 let cantidad = 10
 let texto = text
@@ -108,6 +134,55 @@ texto += `${i + 1}.- ${toM(p.a)} y ${toM(p.b)}\n${frases[i % frases.length]}\n\n
 })
 return m.reply(texto.trim(), null, { mentions: menciones })
 }
+if (['formarpnormal', 'formarpgay', 'formarplesbi'].includes(command)) {
+const genderByCommand = {
+formarpnormal: ['hombre', 'mujer'],
+formarpgay: ['hombre', 'hombre'],
+formarplesbi: ['mujer', 'mujer'],
+}
+const [firstGender, secondGender] = genderByCommand[command]
+const requestedCount = Number.parseInt(args[0], 10)
+const count = Number.isFinite(requestedCount) ? Math.min(Math.max(requestedCount, 1), 10) : 1
+const pools = {
+  hombre: ps.filter((jid) => String(global.db.data.users[jid]?.genre || '').trim().toLowerCase() === 'hombre'),
+  mujer: ps.filter((jid) => String(global.db.data.users[jid]?.genre || '').trim().toLowerCase() === 'mujer'),
+}
+const enoughUsers = firstGender === secondGender
+  ? pools[firstGender].length >= count * 2
+  : pools[firstGender].length >= count && pools[secondGender].length >= count
+if (!enoughUsers) {
+return conn.reply(
+  m.chat,
+  `ꕥ No hay suficientes personas con sexo registrado para formar ${count} pareja${count === 1 ? '' : 's'}. Usen %misexo hombre o %misexo mujer.`,
+  m
+)
+}
+const pairs = []
+const mentions = []
+const used = new Set()
+for (let index = 0; index < count; index++) {
+  const firstPool = pools[firstGender].filter((jid) => !used.has(jid))
+  const first = pickRandom(firstPool)
+  used.add(first)
+  const secondPool = pools[secondGender].filter((jid) => jid !== first && !used.has(jid))
+  const second = pickRandom(secondPool)
+  used.add(second)
+  pairs.push([first, second])
+  mentions.push(first, second)
+}
+const titles = {
+  formarpnormal: '💘 PAREJAS AL AZAR',
+  formarpgay: '🏳️‍🌈 PAREJAS GAY AL AZAR',
+  formarplesbi: '🏳️‍🌈 PAREJAS LESBIANAS AL AZAR',
+}
+const lines = pairs.map(([first, second], index) =>
+  `${index + 1}. ${toM(first)} + ${toM(second)}\n${pickRandom(['La química hizo match ✨', 'El destino shippea fuerte 💘', 'Una dupla con energía de novela 📺', 'El grupo ya pide segunda temporada 🍿', 'Match desbloqueado con éxito 💞'])}`
+)
+return conn.sendMessage(m.chat, {
+  text: `*${titles[command]}*\n\n${lines.join('\n\n')}`,
+  mentions,
+}, { quoted: m })
+}
 if (['gay','lesbiana','pajero','pajera','puto','puta','manco','manca','rata','prostituto','prostituta'].includes(command)) {
 const mentionedJid = await m.mentionedJid
 const usser = mentionedJid?.[0] || (m.quoted && await m.quoted.sender) || conn.parseMention(text)?.[0] || text || null
@@ -186,7 +261,7 @@ await m.react('✖️')
 conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['top', 'sorteo', 'ship', 'shippear', 'afk', 'personalidad', 'formarpareja', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
+handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
 handler.tags = ['fun']
 handler.command = handler.help
 handler.group = true

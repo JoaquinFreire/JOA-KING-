@@ -345,6 +345,9 @@ try {
   assert.match(replies.at(-1).text, /\$1\.000/, 'ainfo debe mostrar el valor de cada personaje')
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
+  await runCommand(conn, groupMessage(groupOne), 'albumespj')
+  assert.match(replies.at(-1).text, /Dragon Ball Z.*2 personajes/)
+  assert.match(replies.at(-1).text, /Other Album.*0 personajes/)
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'Goku')
   assert.match(replies.at(-1).text, /VOTO REGISTRADO/)
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'oku')
@@ -393,6 +396,13 @@ try {
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/)
   assert.match(replies.at(-1).text, /\$1\.625/)
+  await runCommand(conn, mentionedUser, 'pjs', '@5491222222222')
+  assert.match(replies.at(-1).text, /PERSONAJES DE/)
+  assert.match(replies.at(-1).text, /Goku/, 'pjs debe consultar la colección de la persona mencionada')
+  const formattedPhoneMention = groupMessage(groupOne)
+  formattedPhoneMention.mentionedJid = Promise.resolve([])
+  await runCommand(conn, formattedPhoneMention, 'pjs', '@+54 9 1222-222222')
+  assert.match(replies.at(-1).text, /Goku/, 'pjs debe normalizar menciones numéricas argentinas con + y separadores')
   await runCommand(conn, groupMessage(groupOne), 'verpj', 'Góku')
   const characterInfo = sent.at(-1)
   assert.equal(characterInfo.content.image.url, available.imageUrl)
@@ -415,7 +425,7 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'wish', 'Goku')
   assert.match(replies.at(-1).text, /WISHLIST/)
   await runCommand(conn, groupMessage(groupNine), 'cd')
-  assert.match(replies.at(-1).text, /Tiradas RW: 0\/10 · necesitás votar/, 'cd debe indicar 0 tiradas usables cuando falta votar')
+  assert.match(replies.at(-1).text, /Tiradas RW: 10\/10 · necesitás votar/, 'cd debe conservar la cuenta real aunque falte votar')
   await runCommand(conn, groupMessage(groupOne), 'wishlist')
   assert.match(replies.at(-1).text, /Goku/)
   await runCommand(conn, groupMessage(groupSix), 'toppj')
@@ -453,6 +463,8 @@ try {
   assert.equal(sent.length, sentAfterFirstWantedRoll + 1, 'el mismo voto debe habilitar otra tirada dentro de las 24 horas')
   const groupTenStateAfterSecondRoll = await readState(groupTen)
   assert.equal(groupTenStateAfterSecondRoll.rollCounts[userOne], 2, 'las tiradas múltiples deben contar dentro del límite diario')
+  await runCommand(conn, groupMessage(groupTen), 'cd')
+  assert.match(replies.at(-1).text, /Tiradas RW: 8\/10/, 'cd debe descontar cada tirada antes de agotar el cupo')
   const valueBeforeRepeatVote = groupTenStateAfterSecondRoll.characters.find((character) => character.id === 'wanted-roll').value
   await runCommand(conn, groupMessage(groupTen), 'votarpj', 'Wanted Roll')
   assert.match(replies.at(-1).text, /Ya votaste en las últimas 24 horas/, 'el cooldown del voto se mantiene aunque permita varias tiradas')
@@ -487,6 +499,16 @@ try {
   await handler.all.call(conn, groupMessage(groupOne))
   const reactionListener = conn.ev.listeners.get('messages.reaction')?.[0]
   assert.equal(typeof reactionListener, 'function', 'debe conectar el evento de reacciones')
+  const subBotConnection = createConnection()
+  subBotConnection.conn.user.jid = '5491333333333@s.whatsapp.net'
+  global.conn = { user: { jid: botJid } }
+  await handler.all.call(subBotConnection.conn, groupMessage(groupOne))
+  assert.equal(
+    subBotConnection.conn.ev.listeners.get('messages.reaction')?.length || 0,
+    0,
+    'los subbots no deben registrar listeners para responder reclamos'
+  )
+  delete global.conn
 
   await reactionListener([{
     key: { remoteJid: groupOne, id: 'MENSAJE-AJENO' },
@@ -605,6 +627,8 @@ try {
   const tradedState = await readState(groupEight)
   assert.equal(tradedState.characters.find((character) => character.id === 'owned-character').owner, null, 'el personaje descartado debe quedar libre')
   assert.equal(tradedState.characters.find((character) => character.id === freeCharacterBeforeTrade.id).owner, userOne, 'el usuario debe recibir el personaje libre al azar')
+  assert.equal(sent.at(-1).content.image.url, freeCharacterBeforeTrade.imageUrl, 'suertepj debe mostrar la imagen del nuevo personaje')
+  assert.match(sent.at(-1).content.caption, new RegExp(freeCharacterBeforeTrade.name), 'suertepj debe anunciar el personaje recibido')
   assert.ok(tradedState.tradeCooldowns[userOne] > Date.now(), 'el cambio debe iniciar un cooldown de 12 horas')
   await runCommand(conn, groupMessage(groupEight, userOne), 'suertepj', freeCharacterBeforeTrade.name)
   assert.match(replies.at(-1).text, /volver a usar %suertepj/, 'el segundo cambio por suerte debe respetar el cooldown')
@@ -714,6 +738,7 @@ try {
   const claimedRollMessage = sent.at(-1)
   assert.match(claimedRollMessage.content.caption, /Reclamado por:/, 'el roll debe indicar quién tiene el personaje')
   assert.match(claimedRollMessage.content.caption, /no se puede reclamar/, 'un personaje reclamado debe salir sin poder reclamarse')
+  assert.doesNotMatch(claimedRollMessage.content.caption, /vence en 1 minuto/i, 'un personaje reclamado no debe mostrar espera para reclamarlo')
   const claimedRollState = await readState(noAvailableGroup)
   const claimedRollCharacterId = claimedRollState.activeRolls.at(-1).characterId
   const previousClaimCount = claimedRollState.claimCounts[userOne] || 0

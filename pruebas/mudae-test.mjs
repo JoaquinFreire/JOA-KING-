@@ -14,6 +14,7 @@ const {
   MUDAE_CONFIG,
   getCloudinaryCredentials,
   hasQuotedMudaeImage,
+  hasQuotedMudaeGif,
   makeCharacterIdentity,
   normalizeMudaeIdentity,
   normalizeMudaeLabel,
@@ -208,6 +209,17 @@ try {
       download: async () => Buffer.from('image'),
     },
   }), true, 'debe detectar imagen citada en mensaje serializado')
+  assert.equal(hasQuotedMudaeGif({
+    quoted: {
+      mtype: 'videoMessage',
+      mimetype: 'video/mp4',
+      gifPlayback: true,
+      download: async () => Buffer.from('gif'),
+    },
+  }), true, 'debe reconocer un GIF de WhatsApp citado')
+  assert.equal(hasQuotedMudaeGif({
+    quoted: { mtype: 'videoMessage', mimetype: 'video/mp4', gifPlayback: false },
+  }), false, 'un video normal no debe marcarse como GIF especial')
   assert.equal(hasQuotedMudaeImage({
     msg: {
       contextInfo: {
@@ -306,7 +318,10 @@ try {
   assert.match(replies.at(-1).text, /%votarpj/)
   assert.match(replies.at(-1).text, /%wishremove/)
   assert.match(replies.at(-1).text, /%addpj <álbum> \+ <nombre>/)
+  assert.match(replies.at(-1).text, /respondé a un GIF para un especial/)
+  assert.match(replies.at(-1).text, /%overpj <nombre>/)
   assert.ok(handler.command.includes('toppj'))
+  assert.ok(handler.command.includes('overpj'))
   assert.ok(handler.command.includes('ainfo'))
   assert.ok(!animeInfoHandler.command.includes('ainfo'))
   assert.ok(animeInfoHandler.command.includes('animedata'))
@@ -367,15 +382,27 @@ try {
   delete process.env.CLOUDINARY_CLOUD_NAME
   delete process.env.CLOUDINARY_API_KEY
   delete process.env.CLOUDINARY_API_SECRET
+  const quotedGifCommand = groupMessage(groupOne)
+  quotedGifCommand.quoted = {
+    mtype: 'videoMessage',
+    mimetype: 'video/mp4',
+    gifPlayback: true,
+    download: async () => Buffer.from('test gif'),
+  }
+  await runCommand(conn, quotedGifCommand, 'addpj', 'Dragon Ball Z + Special GIF', { isAdmin: true })
+  assert.match(replies.at(-1).text, /Solo el owner/, 'solo el owner puede agregar personajes especiales con addpj')
+  await runCommand(conn, quotedGifCommand, 'addpj', 'Dragon Ball Z + Special GIF', { isOwner: true })
+  assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'addpj debe reconocer el GIF citado antes de validar Cloudinary')
+  assert.doesNotMatch(replies.at(-1).text, /No detecté la imagen o el GIF/)
   const repliedImageCommand = groupMessage(groupOne)
   repliedImageCommand.quoted = {
     mtype: 'imageMessage',
     mimetype: 'image/jpeg',
     download: async () => Buffer.from('test image'),
   }
-  await runCommand(conn, repliedImageCommand, 'addpj', 'Other Album + Trunks', { isAdmin: true })
+  await runCommand(conn, repliedImageCommand, 'addpj', 'Other Album + Trunks', { isOwner: true })
   assert.match(replies.at(-1).text, /nombres deben ser únicos/, 'no permite repetir el nombre en otro álbum')
-  await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isAdmin: true })
+  await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isOwner: true })
   assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'quoted image and valid arguments must pass usage validation')
   assert.doesNotMatch(replies.at(-1).text, /Uso:/)
   for (const [key, value] of Object.entries(credentialsToRestore)) {
@@ -770,6 +797,84 @@ try {
     null,
     'sincronizar el catálogo no debe mezclar los reclamos entre grupos'
   )
+
+  const gifCatalog = JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
+  gifCatalog.albums.push('Special GIF Album')
+  gifCatalog.characters.push({
+    id: 'special-gif-character',
+    name: 'Special GIF Character',
+    album: 'Special GIF Album',
+    value: MUDAE_CONFIG.GIFT_CHARACTER_VALUE,
+    imageUrl: 'https://res.cloudinary.com/example/video/upload/special-gif.mp4',
+    cloudinaryPublicId: 'mudae/test/special-gif',
+    mediaType: 'video',
+    isGift: true,
+    createdAt: Date.now(),
+  })
+  await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(gifCatalog), 'utf8')
+  const giftGroup = '120363000000000017@g.us'
+  await fs.writeFile(filenameFor(giftGroup), JSON.stringify(createState(giftGroup, {
+    characters: [{
+      ...available,
+      id: 'gift-group-regular',
+      name: 'Gift Group Regular',
+      value: 999999,
+    }],
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+  })), 'utf8')
+  assert.equal(MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 0.1)
+  assert.equal(MUDAE_CONFIG.GIFT_CHARACTER_VALUE, 6767)
+  await runCommand(conn, groupMessage(giftGroup), 'verpj', 'Special GIF Character')
+  assert.match(replies.at(-1).text, /GIF está oculto hasta que alguien lo reclame/)
+  assert.match(replies.at(-1).text, /\$6\.767/)
+  await runCommand(conn, groupMessage(giftGroup), 'overpj', 'Special GIF Character')
+  assert.match(replies.at(-1).text, /Solo el owner/, 'un usuario normal no puede usar overpj')
+  await runCommand(conn, groupMessage(giftGroup), 'overpj', 'Special GIF Character', { isOwner: true })
+  assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
+  assert.equal(sent.at(-1).content.gifPlayback, true)
+  const originalGiftRandom = Math.random
+  const originalGiftTimeout = global.setTimeout
+  Math.random = () => 0.05
+  global.setTimeout = (callback, milliseconds, ...args) =>
+    originalGiftTimeout(callback, milliseconds === MUDAE_CONFIG.GIFT_REVEAL_DELAY ? 0 : milliseconds, ...args)
+  try {
+    const sentBeforeGiftRoll = sent.length
+    await runCommand(conn, groupMessage(giftGroup), 'rw')
+    assert.equal(sent.length, sentBeforeGiftRoll + 2, 'el GIF debe anunciarse y revelarse en dos mensajes')
+    assert.match(sent.at(-2).content.text, /PERSONAJE CON IMAGEN OCULTA DESBLOQUEADO/)
+    assert.match(sent.at(-2).content.text, /5 segundos/)
+    assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
+    assert.match(sent.at(-1).content.caption, /\$6\.767/)
+  } finally {
+    Math.random = originalGiftRandom
+    global.setTimeout = originalGiftTimeout
+  }
+  const giftRoll = (await readState(giftGroup)).activeRolls.at(-1)
+  await handler.processReaction(conn, {
+    key: { remoteJid: giftGroup, id: giftRoll.messageId },
+    reaction: { text: '❤️', key: { participant: userOne } },
+  })
+  assert.equal(
+    (await readState(giftGroup)).characters.find((character) => character.id === 'special-gif-character').owner,
+    userOne,
+    'la reacción debe reclamar el GIF asociado al mensaje que revela el video'
+  )
+  await runCommand(conn, groupMessage(giftGroup), 'verpj', 'Special GIF Character')
+  assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
+
+  const regularRollGroup = '120363000000000018@g.us'
+  await fs.writeFile(filenameFor(regularRollGroup), JSON.stringify(createState(regularRollGroup, {
+    characters: [{ ...available, id: 'regular-roll-character', name: 'Regular Roll Character', value: 12000 }],
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+  })), 'utf8')
+  Math.random = () => 0.5
+  try {
+    await runCommand(conn, groupMessage(regularRollGroup), 'rw')
+  } finally {
+    Math.random = originalGiftRandom
+  }
+  assert.ok(sent.at(-1).content.image, 'la rama normal debe seguir enviando imágenes estáticas')
+  assert.doesNotMatch(sent.at(-1).content.caption, /Special GIF Character/, 'los GIF deben quedar fuera del ranking normal')
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

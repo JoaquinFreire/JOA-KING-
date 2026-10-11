@@ -318,8 +318,8 @@ let txt = `
 > 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
  ✿  *%personajes [@usuario] • %pjs [@usuario]*
 > 𓃦 Ver tu colección o consultar la de otra persona.
- ✿  *%toppj • %verpj <personaje>*
-> 𓃦 Ver el ranking e información de personajes.
+ ✿  *%toppj • %verpj <personaje> • %overpj <personaje>*
+> 𓃦 Ver el ranking y las fichas; %overpj muestra GIF especiales antes del reclamo (owner).
  ✿  *%ainfo <álbum>*
 > 𓃦 Ver los personajes del álbum y sus valores.
  ✿  *%albumespj*
@@ -329,7 +329,7 @@ let txt = `
  ✿  *%votarpj <personaje>*
 > 𓃦 Votar una vez cada 24 horas para sumar 125 al valor y habilitar una tirada.
  ✿  *%addalbum • %addpj • %editpj • %delpj • %delalbum*
-> 𓃦 Administrar álbumes y personajes (admins; %addpj responde a una imagen).
+> 𓃦 Administrar álbumes; solo el owner agrega personajes con imagen o GIF especial.
  ✿  *%onmudae • %offmudae*
 > 𓃦 Activar o desactivar Mudae en este grupo (owner).
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

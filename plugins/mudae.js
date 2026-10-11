@@ -16,6 +16,9 @@ export const MUDAE_CONFIG = Object.freeze({
   CLAIM_LIMIT: 2,
   CLAIM_COOLDOWN: 60 * 60 * 1000,
   CLAIM_DURATION: 60 * 1000,
+  GIFT_ROLL_PROBABILITY: 0.1,
+  GIFT_CHARACTER_VALUE: 6767,
+  GIFT_REVEAL_DELAY: 5000,
   TRADE_COOLDOWN: 12 * 60 * 60 * 1000,
   VOTE_COOLDOWN: 24 * 60 * 60 * 1000,
   VOTE_VALUE_INCREMENT: 125,
@@ -122,6 +125,7 @@ const normalizeCatalogCharacter = (character) => {
   const album = normalizeMudaeLabel(character?.album)
   const imageUrl = String(character?.imageUrl || character?.imagen || '').trim()
   const cloudinaryPublicId = String(character?.cloudinaryPublicId || '').trim()
+  const mediaType = character?.mediaType === 'video' || character?.isGift ? 'video' : 'image'
   return {
     id: String(character?.id || crypto.randomUUID()),
     name,
@@ -129,6 +133,8 @@ const normalizeCatalogCharacter = (character) => {
     value: Number(character?.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
     imageUrl,
     cloudinaryPublicId,
+    mediaType,
+    isGift: mediaType === 'video',
     createdAt: Number(character?.createdAt || Date.now()),
   }
 }
@@ -509,31 +515,33 @@ const makeMudaeCloudinaryPublicId = (source = '') => {
   return `catalog/${hash}`
 }
 
-const uploadCloudinaryImage = async ({ file, mimeType, filename, publicId }) => {
+const uploadCloudinaryMedia = async ({ file, mimeType, filename, publicId, mediaType = 'image' }) => {
   const { cloudName, apiKey, apiSecret } = getCloudinaryCredentials()
   const timestamp = Math.floor(Date.now() / 1000)
   const folder = 'mudae'
-  const parameters = { folder, format: 'webp', public_id: publicId, timestamp }
+  const resourceType = mediaType === 'video' ? 'video' : 'image'
+  const parameters = { folder, public_id: publicId, timestamp }
+  if (resourceType === 'image') parameters.format = 'webp'
   const signature = makeCloudinarySignature(parameters, apiSecret)
   const form = new FormData()
   if (Buffer.isBuffer(file)) {
-    form.set('file', new Blob([file], { type: mimeType || 'image/jpeg' }), filename || 'character-image')
+    form.set('file', new Blob([file], { type: mimeType || (resourceType === 'video' ? 'video/mp4' : 'image/jpeg') }), filename || (resourceType === 'video' ? 'character-gif.mp4' : 'character-image'))
   } else {
     form.set('file', String(file || ''))
   }
   form.set('api_key', apiKey)
   form.set('timestamp', String(timestamp))
   form.set('folder', folder)
-  form.set('format', 'webp')
+  if (resourceType === 'image') form.set('format', 'webp')
   form.set('public_id', publicId)
   form.set('signature', signature)
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType}/upload`, {
     method: 'POST',
     body: form,
   })
   const result = await response.json().catch(() => ({}))
   if (!response.ok || !result.secure_url || !result.public_id) {
-    const message = result.error?.message || `Cloudinary rechazó la imagen (HTTP ${response.status}).`
+    const message = result.error?.message || `Cloudinary rechazó el medio (HTTP ${response.status}).`
     if (/invalid signature/i.test(message)) {
       throw new Error(`${message} Verificá que CLOUDINARY_URL o las tres variables CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET pertenezcan a la misma cuenta, y que el API secret siga vigente.`)
     }
@@ -542,19 +550,26 @@ const uploadCloudinaryImage = async ({ file, mimeType, filename, publicId }) => 
   return { imageUrl: result.secure_url, cloudinaryPublicId: result.public_id }
 }
 
-const uploadCharacterImage = async (buffer, mimeType) => uploadCloudinaryImage({
+const uploadCharacterImage = async (buffer, mimeType) => uploadCloudinaryMedia({
   file: buffer,
   mimeType,
   filename: 'character-image.webp',
   publicId: makeMudaeCloudinaryPublicId(),
 })
+const uploadCharacterGif = async (buffer, mimeType) => uploadCloudinaryMedia({
+  file: buffer,
+  mimeType: mimeType || 'video/mp4',
+  filename: 'character-gif.mp4',
+  publicId: makeMudaeCloudinaryPublicId(),
+  mediaType: 'video',
+})
 
-export const uploadRemoteMudaeImage = async (imageUrl, source = imageUrl) => uploadCloudinaryImage({
+export const uploadRemoteMudaeImage = async (imageUrl, source = imageUrl) => uploadCloudinaryMedia({
   file: imageUrl,
   publicId: makeMudaeCloudinaryPublicId(source),
 })
 
-const deleteCloudinaryImage = async (publicId) => {
+const deleteCloudinaryMedia = async (publicId, mediaType = 'image') => {
   if (!publicId) return
   const { cloudName, apiKey, apiSecret } = getCloudinaryCredentials()
   const timestamp = Math.floor(Date.now() / 1000)
@@ -566,7 +581,8 @@ const deleteCloudinaryImage = async (publicId) => {
     timestamp: String(timestamp),
     signature,
   })
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/destroy`, {
+  const resourceType = mediaType === 'video' ? 'video' : 'image'
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType}/destroy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form,
@@ -617,6 +633,34 @@ const getQuotedImage = (m) => {
 }
 
 export const hasQuotedMudaeImage = (m) => Boolean(getQuotedImage(m))
+
+const getQuotedGif = (m) => {
+  const quoted = m.quoted
+  const quotedVideo = quoted?.mediaMessage?.videoMessage ||
+    quoted?.videoMessage ||
+    (quoted?.mtype === 'videoMessage' || quoted?.mediaType === 'videoMessage' || quoted?.mimetype?.startsWith('video/')
+      ? quoted
+      : null)
+  if (quotedVideo?.gifPlayback) {
+    return {
+      media: quotedVideo,
+      download: () => quoted?.download?.(),
+    }
+  }
+
+  let content = m.msg?.contextInfo?.quotedMessage ||
+    m.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
+    m.message?.videoMessage?.contextInfo?.quotedMessage
+  while (content && typeof content === 'object') {
+    if (content.videoMessage?.gifPlayback) return { media: content.videoMessage, download: null }
+    const wrapper = content.ephemeralMessage || content.documentWithCaptionMessage
+    if (!wrapper?.message) break
+    content = wrapper.message
+  }
+  return null
+}
+
+export const hasQuotedMudaeGif = (m) => Boolean(getQuotedGif(m))
 
 const requireGroup = (m) => isGroupJid(m.chat)
 const getActorJid = (m) => normalizeJid(m.sender || m.key?.participant || '')
@@ -797,7 +841,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha, imagen y dueño\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje (owner del bot)\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar (owner)\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n\n*👑 OWNER*\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar; respondé a un GIF para un especial (valor inicial 6767, 10% de probabilidad)\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -864,16 +908,23 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'addpj' || action === 'addchar') {
-    if (!isAdminOrOwner(isOwner, isAdmin)) return conn.reply(m.chat, 'Solo los administradores del grupo pueden agregar personajes.', m)
+    if (action === 'addpj' && !isOwner && !isROwner) {
+      return conn.reply(m.chat, 'Solo el owner del bot puede agregar personajes con %addpj.', m)
+    }
+    if (action === 'addchar' && !isAdminOrOwner(isOwner, isAdmin)) {
+      return conn.reply(m.chat, 'Solo los administradores del grupo pueden agregar personajes.', m)
+    }
     const parts = parseMudaeParts(text, 2)
-    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé al mensaje de una imagen con ese comando.`, m)
-    const quotedImage = getQuotedImage(m)
-    if (!quotedImage) return conn.reply(m.chat, 'No detecté la imagen respondida. Respondé directamente al mensaje que contiene la imagen y usá %addpj <álbum> + <nombre>.', m)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé al mensaje de una imagen o GIF con ese comando.`, m)
+    const quotedGif = action === 'addpj' ? getQuotedGif(m) : null
+    const quotedMedia = quotedGif || getQuotedImage(m)
+    if (!quotedMedia) return conn.reply(m.chat, 'No detecté la imagen o el GIF respondido. Respondé directamente al mensaje que contiene el medio y usá %addpj <álbum> + <nombre>.', m)
     try {
-      const image = typeof quotedImage.download === 'function'
-        ? await quotedImage.download()
-        : await conn.downloadM(quotedImage.media, 'image')
-      if (!Buffer.isBuffer(image) || !image.length) throw new Error('No se pudo descargar la imagen citada.')
+      const mediaType = quotedGif ? 'video' : 'image'
+      const media = typeof quotedMedia.download === 'function'
+        ? await quotedMedia.download()
+        : await conn.downloadM(quotedMedia.media, mediaType)
+      if (!Buffer.isBuffer(media) || !media.length) throw new Error(`No se pudo descargar ${quotedGif ? 'el GIF' : 'la imagen'} citada.`)
       return await withGroupLock(m.chat, async () => {
         const current = await loadState(m.chat)
         const catalog = await loadCatalog()
@@ -884,15 +935,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catálogo global. Los nombres deben ser únicos.', m)
         }
         getCloudinaryCredentials()
-        const mimeType = quotedImage.media.mimetype || 'image/jpeg'
-        const uploaded = await uploadCharacterImage(image, mimeType)
+        const mimeType = quotedMedia.media.mimetype || (quotedGif ? 'video/mp4' : 'image/jpeg')
+        const uploaded = quotedGif
+          ? await uploadCharacterGif(media, mimeType)
+          : await uploadCharacterImage(media, mimeType)
         const character = {
           id: crypto.randomUUID(),
           name: normalizeMudaeLabel(parts[1]),
           album,
-          value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
+          value: quotedGif ? MUDAE_CONFIG.GIFT_CHARACTER_VALUE : MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
           imageUrl: uploaded.imageUrl,
           cloudinaryPublicId: uploaded.cloudinaryPublicId,
+          mediaType,
+          isGift: Boolean(quotedGif),
           owner: null,
           createdAt: Date.now(),
         }
@@ -910,14 +965,14 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           await saveState(current)
         } catch (saveError) {
           try {
-            await deleteCloudinaryImage(uploaded.cloudinaryPublicId)
+            await deleteCloudinaryMedia(uploaded.cloudinaryPublicId, mediaType)
           } catch (cleanupError) {
-            console.error('[MUDAE] No se pudo limpiar de Cloudinary una imagen sin registro:', cleanupError?.stack || cleanupError)
-            throw new Error(`${saveError.message} La imagen ${uploaded.cloudinaryPublicId} también debe eliminarse manualmente de Cloudinary.`)
+            console.error('[MUDAE] No se pudo limpiar de Cloudinary un medio sin registro:', cleanupError?.stack || cleanupError)
+            throw new Error(`${saveError.message} El medio ${uploaded.cloudinaryPublicId} también debe eliminarse manualmente de Cloudinary.`)
           }
           throw saveError
         }
-        return conn.reply(m.chat, `✅ *PERSONAJE AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}`, m)
+        return conn.reply(m.chat, `✅ *PERSONAJE ${quotedGif ? 'GIF ESPECIAL ' : ''}AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${quotedGif ? '\n🎁 Probabilidad especial: 10% de los rolls.' : ''}`, m)
       })
     } catch (error) {
       console.error('[MUDAE] No se pudo agregar un personaje:', error?.stack || error)
@@ -970,7 +1025,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const index = matchingIndexes[0] ?? -1
       if (index < 0) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
       const character = catalog.characters[index]
-      await deleteCloudinaryImage(character.cloudinaryPublicId)
+      await deleteCloudinaryMedia(character.cloudinaryPublicId, character.mediaType)
       await withCatalogLock(async () => {
         const lockedCatalog = await loadCatalog()
         const lockedIndex = lockedCatalog.characters.findIndex((item) => item.id === character.id)
@@ -1201,12 +1256,20 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       replacement.claimedAt = now
       current.tradeCooldowns[actor] = now + MUDAE_CONFIG.TRADE_COOLDOWN
       await saveState(current)
+      const replacementIsGift = replacement.isGift || replacement.mediaType === 'video'
       return conn.sendMessage(
         m.chat,
-        {
-          image: { url: replacement.imageUrl },
-          caption: `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
-        },
+        replacementIsGift
+          ? {
+            video: { url: replacement.imageUrl },
+            mimetype: 'video/mp4',
+            gifPlayback: true,
+            caption: `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
+          }
+          : {
+            image: { url: replacement.imageUrl },
+            caption: `🍀 *CAMBIO POR SUERTE*\n🎴 *${unwanted.name}* — ${unwanted.album} quedó libre.\n✨ Recibiste *${replacement.name}* — ${replacement.album} (${formatMoney(replacement.value)}).\n⏳ Podés volver a usar %suertepj en 12 horas.`,
+          },
         { quoted: m }
       )
     }).catch((error) => {
@@ -1255,24 +1318,33 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         await saveState(current)
         return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES PARA TIRAR*\nProbá de nuevo cuando termine otro roll.', m)
       }
-      const rankedCharacters = [...current.characters].sort((first, second) =>
+      const giftCharacters = availableCharacters.filter((character) => character.isGift || character.mediaType === 'video')
+      const standardCharacters = availableCharacters.filter((character) => !character.isGift && character.mediaType !== 'video')
+      const rankedCharacters = current.characters
+        .filter((character) => !character.isGift && character.mediaType !== 'video')
+        .sort((first, second) =>
         Number(second.value || 0) - Number(first.value || 0)
       )
       const rankById = new Map(rankedCharacters.map((character, rank) => [character.id, rank]))
-      const weightedCharacters = availableCharacters.map((character) => ({
+      const weightedCharacters = standardCharacters.map((character) => ({
         character,
         weight: getRollWeight(rankById.get(character.id)),
       })).sort((first, second) =>
         rankById.get(first.character.id) - rankById.get(second.character.id)
       )
-      const totalWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
-      let randomWeight = Math.random() * totalWeight
-      let character = weightedCharacters.at(-1).character
-      for (const item of weightedCharacters) {
-        randomWeight -= item.weight
-        if (randomWeight < 0) {
-          character = item.character
-          break
+      let character
+      if (giftCharacters.length && (!standardCharacters.length || Math.random() < MUDAE_CONFIG.GIFT_ROLL_PROBABILITY)) {
+        character = giftCharacters[Math.floor(Math.random() * giftCharacters.length)]
+      } else {
+        const totalWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
+        let randomWeight = Math.random() * totalWeight
+        character = weightedCharacters.at(-1).character
+        for (const item of weightedCharacters) {
+          randomWeight -= item.weight
+          if (randomWeight < 0) {
+            character = item.character
+            break
+          }
         }
       }
       const expiresAt = now + MUDAE_CONFIG.CLAIM_DURATION
@@ -1289,11 +1361,27 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const mentions = [...new Set([...wishers, ...(owner ? [owner] : [])])]
       let sent
       try {
-        sent = await conn.sendMessage(m.chat, {
-          image: { url: character.imageUrl },
-          caption: `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}${owner ? '' : '\n⏱️ Vence en 1 minuto.'}${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`,
-          mentions,
-        })
+        const caption = `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}${owner ? '' : '\n⏱️ Vence en 1 minuto.'}${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`
+        if (character.isGift || character.mediaType === 'video') {
+          await conn.sendMessage(m.chat, {
+            text: `🎁 *PERSONAJE CON IMAGEN OCULTA DESBLOQUEADO*\n\n🎴 *${character.name}* apareció...\n⏳ En 5 segundos revelamos su GIF. ¡Atentos!`,
+            mentions: wishers,
+          }, { quoted: m })
+          await new Promise((resolve) => setTimeout(resolve, MUDAE_CONFIG.GIFT_REVEAL_DELAY))
+          sent = await conn.sendMessage(m.chat, {
+            video: { url: character.imageUrl },
+            mimetype: 'video/mp4',
+            gifPlayback: true,
+            caption,
+            mentions,
+          }, { quoted: m })
+        } else {
+          sent = await conn.sendMessage(m.chat, {
+            image: { url: character.imageUrl },
+            caption,
+            mentions,
+          }, { quoted: m })
+        }
         if (!sent?.key?.id) throw new Error('WhatsApp no devolvió el ID del mensaje del roll.')
         current.activeRolls.push({ messageId: sent.key.id, characterId: character.id, expiresAt })
         current.rollCounts[actor] = rollCount + 1
@@ -1370,13 +1458,30 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     }, { quoted: m })
   }
 
-  if (action === 'verpj') {
+  if (action === 'verpj' || action === 'overpj') {
+    const ownerView = action === 'overpj'
+    if (ownerView && !isOwner && !isROwner) {
+      return conn.reply(m.chat, 'Solo el owner del bot puede usar %overpj para ver personajes especiales antes de reclamarlos.', m)
+    }
     const query = String(text || '').trim()
-    if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}verpj <personaje>`, m)
+    if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}${action} <personaje>`, m)
     const { character, matches } = findCharacter(state, query)
     if (matches.length > 1) return replyAmbiguous(conn, m, matches)
     if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
     const info = await buildCharacterInfo(conn, character)
+    const isGift = character.isGift || character.mediaType === 'video'
+    if (isGift && !character.owner && !ownerView) {
+      return conn.reply(m.chat, `🎁 *PERSONAJE ESPECIAL*\n\n🎴 *${character.name}*\n📚 *Álbum:* ${character.album}\n💰 *Valor:* ${formatMoney(character.value)}\n🔒 Su GIF está oculto hasta que alguien lo reclame.`, m)
+    }
+    if (isGift) {
+      return conn.sendMessage(m.chat, {
+        video: { url: character.imageUrl },
+        mimetype: 'video/mp4',
+        gifPlayback: true,
+        caption: info,
+        mentions: character.owner ? [character.owner] : [],
+      }, { quoted: m })
+    }
     return conn.sendMessage(m.chat, {
       image: { url: character.imageUrl },
       caption: info,
@@ -1470,6 +1575,7 @@ handler.all = async function (m) {
 handler.init = registerReactionListener
 handler.processReaction = processReaction
 handler.hasQuotedImage = hasQuotedMudaeImage
+handler.hasQuotedGif = hasQuotedMudaeGif
 handler.help = [
   'onmudae', 'offmudae',
   'menumudae', 'addalbum <nombre>', 'addpj <álbum> + <nombre>',
@@ -1477,7 +1583,7 @@ handler.help = [
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
-  'personajes [@usuario]', 'pjs [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'votarpj <personaje>',
+  'personajes [@usuario]', 'pjs [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']
@@ -1485,7 +1591,7 @@ handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
-  'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'verpj', 'votarpj',
+  'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'verpj', 'overpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

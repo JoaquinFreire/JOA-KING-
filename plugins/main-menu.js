@@ -100,6 +100,10 @@ let txt = `
 > 𓃦 Repetir un mensaje
  ✿  *%fakemsg* [texto ficticio + respuesta del bot] {respondiendo a un mensaje}
 > 𓃦 Probar el texto citado y la respuesta visible del bot.
+ ✿  *%fakemsg2* [texto] {respondiendo a un mensaje}
+> 𓃦 Editar un mensaje citado (admins del grupo o owner).
+ ✿  *%owner*
+> 𓃦 Recibir el contacto del owner con su Instagram.
  ✿  *%vozarg • %vozloquendo • %vozloquendo2 • %vozanime* + [texto]
 > 𓃦 Generar audio con voz argentina, alternativa o anime; también puedes responder a un mensaje.
  ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML
@@ -110,7 +114,7 @@ let txt = `
 > 𓃦 Convertir una imagen/video a sticker
  ✿  *#toimg • #img* + {citar sticker}
 > 𓃦 Convertir un sticker/imagen de una vista a imagen.
- ✿  *#brat • #bratv • #qc • #emojimix*︎ 
+ ✿  *#brat* • *#bratv* • *#qc* • *#emojimix*
 > 𓃦 Crear stickers con texto.
  ✿  *#gitclone* + [Link]
 > 𓃦 Descargar un repositorio de Github.

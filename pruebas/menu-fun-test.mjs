@@ -6,6 +6,7 @@ global.plugins = {}
 global.conn = { user: { jid: '5493513117202@s.whatsapp.net' } }
 
 const { default: menuHandler } = await import('../plugins/main-menu.js')
+const { default: ownerHandler } = await import('../plugins/main-owner.js')
 const { default: funHandler } = await import('../plugins/fun-fun.js')
 const menuMessages = []
 const menuConnection = {
@@ -43,6 +44,14 @@ await menuHandler(menuMessage, {
 })
 assert.match(menuMessages.at(-1).content.text, /%translate/)
 assert.doesNotMatch(menuMessages.at(-1).content.text, /PAREJAS AL AZAR/)
+assert.match(menuMessages.at(-1).content.text, /%fakemsg2/)
+assert.match(menuMessages.at(-1).content.text, /%owner/)
+
+await ownerHandler(menuMessage, { conn: menuConnection })
+const ownerContact = menuMessages.at(-1).content.contacts
+assert.equal(ownerContact.displayName, 'Joako Freire')
+assert.match(ownerContact.contacts[0].vcard, /waid=5493513117202:\+5493513117202/)
+assert.match(ownerContact.contacts[0].vcard, /joako_freire/)
 
 const funMessages = []
 const funConnection = {

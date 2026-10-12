@@ -16,7 +16,7 @@ export const MUDAE_CONFIG = Object.freeze({
   CLAIM_LIMIT: 2,
   CLAIM_COOLDOWN: 60 * 60 * 1000,
   CLAIM_DURATION: 60 * 1000,
-  GIFT_ROLL_PROBABILITY: 0.1,
+  GIFT_ROLL_PROBABILITY: 0.01,
   GIFT_CHARACTER_VALUE: 6767,
   GIFT_REVEAL_DELAY: 5000,
   TRADE_COOLDOWN: 12 * 60 * 60 * 1000,
@@ -449,6 +449,8 @@ const getRollWeight = (rank) => rank === 0
     : rank < 30
       ? MUDAE_CONFIG.ROLL_WEIGHT_TOP_30
       : 1
+export const getGiftRollProbability = (giftCount) =>
+  Number(giftCount) > 0 ? MUDAE_CONFIG.GIFT_ROLL_PROBABILITY : 0
 const findCharacter = (state, query) => {
   const parts = String(query || '').split('+').map((part) => part.trim())
   const normalized = normalizeMudaeIdentity(query)
@@ -841,7 +843,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n\n*👑 OWNER*\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar; respondé a un GIF para un especial (valor inicial 6767, 10% de probabilidad)\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n\n*👑 OWNER*\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar; respondé a un GIF para un especial (valor inicial 6767, probabilidad reducida)\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -972,7 +974,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           }
           throw saveError
         }
-        return conn.reply(m.chat, `✅ *PERSONAJE ${quotedGif ? 'GIF ESPECIAL ' : ''}AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${quotedGif ? '\n🎁 Probabilidad especial: 10% de los rolls.' : ''}`, m)
+        return conn.reply(m.chat, `✅ *PERSONAJE ${quotedGif ? 'GIF ESPECIAL ' : ''}AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${quotedGif ? '\n🎁 Probabilidad especial muy reducida.' : ''}`, m)
       })
     } catch (error) {
       console.error('[MUDAE] No se pudo agregar un personaje:', error?.stack || error)
@@ -1332,12 +1334,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       })).sort((first, second) =>
         rankById.get(first.character.id) - rankById.get(second.character.id)
       )
+      const totalStandardWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
+      const giftRollProbability = getGiftRollProbability(giftCharacters.length)
       let character
-      if (giftCharacters.length && (!standardCharacters.length || Math.random() < MUDAE_CONFIG.GIFT_ROLL_PROBABILITY)) {
+      if (giftCharacters.length && Math.random() < giftRollProbability) {
         character = giftCharacters[Math.floor(Math.random() * giftCharacters.length)]
       } else {
-        const totalWeight = weightedCharacters.reduce((total, item) => total + item.weight, 0)
-        let randomWeight = Math.random() * totalWeight
+        if (!standardCharacters.length) {
+          await saveState(current)
+          return conn.reply(m.chat, '🎴 *NO HAY PERSONAJES PARA TIRAR*\nProbá de nuevo cuando termine otro roll.', m)
+        }
+        let randomWeight = Math.random() * totalStandardWeight
         character = weightedCharacters.at(-1).character
         for (const item of weightedCharacters) {
           randomWeight -= item.weight

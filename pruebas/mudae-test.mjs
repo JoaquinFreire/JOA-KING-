@@ -13,6 +13,7 @@ const {
   default: handler,
   MUDAE_CONFIG,
   getCloudinaryCredentials,
+  getGiftRollProbability,
   hasQuotedMudaeImage,
   hasQuotedMudaeGif,
   makeCharacterIdentity,
@@ -822,8 +823,13 @@ try {
     }],
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
   })), 'utf8')
-  assert.equal(MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 0.1)
+  assert.equal(MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 0.01)
   assert.equal(MUDAE_CONFIG.GIFT_CHARACTER_VALUE, 6767)
+  const totalGiftChance = getGiftRollProbability(3)
+  assert.equal(totalGiftChance, 0.01, 'el grupo de GIFs tiene un tope total de 1%')
+  assert.equal(getGiftRollProbability(100), MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 'el chance total de GIFs nunca supera 1%')
+  assert.equal(getGiftRollProbability(3, 0), totalGiftChance, 'la chance especial no depende de los personajes normales libres')
+  assert.equal(getGiftRollProbability(0), 0, 'sin GIFs no debe reservarse probabilidad especial')
   await runCommand(conn, groupMessage(giftGroup), 'verpj', 'Special GIF Character')
   assert.match(replies.at(-1).text, /GIF está oculto hasta que alguien lo reclame/)
   assert.match(replies.at(-1).text, /\$6\.767/)
@@ -834,7 +840,7 @@ try {
   assert.equal(sent.at(-1).content.gifPlayback, true)
   const originalGiftRandom = Math.random
   const originalGiftTimeout = global.setTimeout
-  Math.random = () => 0.05
+  Math.random = () => 0.001
   global.setTimeout = (callback, milliseconds, ...args) =>
     originalGiftTimeout(callback, milliseconds === MUDAE_CONFIG.GIFT_REVEAL_DELAY ? 0 : milliseconds, ...args)
   try {
@@ -875,6 +881,48 @@ try {
   }
   assert.ok(sent.at(-1).content.image, 'la rama normal debe seguir enviando imágenes estáticas')
   assert.doesNotMatch(sent.at(-1).content.caption, /Special GIF Character/, 'los GIF deben quedar fuera del ranking normal')
+
+  const onlyActiveRegularGroup = '120363000000000019@g.us'
+  const normalCharactersForAvailabilityTest = (await readState(regularRollGroup)).characters
+    .filter((character) => !character.isGift && character.mediaType !== 'video')
+  await fs.writeFile(filenameFor(onlyActiveRegularGroup), JSON.stringify(createState(onlyActiveRegularGroup, {
+    characters: [
+      ...normalCharactersForAvailabilityTest.map((character) => ({ ...character, owner: userTwo })),
+      {
+        id: 'waiting-special-gif',
+        name: 'Waiting Special GIF',
+        album: 'Special GIF Album',
+        value: MUDAE_CONFIG.GIFT_CHARACTER_VALUE,
+        imageUrl: 'https://res.cloudinary.com/example/video/upload/waiting-gif.mp4',
+        cloudinaryPublicId: 'mudae/test/waiting-gif',
+        mediaType: 'video',
+        isGift: true,
+      },
+    ],
+    activeRolls: [
+      ...normalCharactersForAvailabilityTest.map((character, index) => ({
+        messageId: `ACTIVE-CATALOG-ROLL-${index}`,
+        characterId: character.id,
+        expiresAt: Date.now() + MUDAE_CONFIG.CLAIM_DURATION,
+      })),
+    ],
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+  })), 'utf8')
+  const beforeNoRegularRoll = sent.length
+  const originalNoStandardRandom = Math.random
+  const originalNoStandardTimeout = global.setTimeout
+  let noStandardRandomCalls = 0
+  Math.random = () => noStandardRandomCalls++ === 0 ? 0.005 : 0
+  global.setTimeout = (callback, milliseconds, ...args) =>
+    originalNoStandardTimeout(callback, milliseconds === MUDAE_CONFIG.GIFT_REVEAL_DELAY ? 0 : milliseconds, ...args)
+  try {
+    await runCommand(conn, groupMessage(onlyActiveRegularGroup), 'rw')
+  } finally {
+    Math.random = originalNoStandardRandom
+    global.setTimeout = originalNoStandardTimeout
+  }
+  assert.equal(sent.length, beforeNoRegularRoll + 2, 'un GIF mantiene su probabilidad reducida aunque los personajes normales estén activos')
+  assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

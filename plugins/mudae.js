@@ -1438,7 +1438,13 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       .filter((character) => normalizeMudaeIdentity(character.album) === albumQuery)
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
     if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
-    const lines = characters.map((character, index) => `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`)
+    const lines = characters.map((character, index) => {
+      if (!character.owner) {
+        const firstLetter = Array.from(character.name.trim())[0] || '?'
+        return `${index + 1}. *${firstLetter}###* — 🔒 Aún sin desbloquear`
+      }
+      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`
+    })
     return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
   }
 

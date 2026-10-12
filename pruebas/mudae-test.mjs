@@ -356,9 +356,11 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Other Album', { isAdmin: true })
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/)
-  assert.match(replies.at(-1).text, /Trunks/)
+  assert.match(replies.at(-1).text, /T###.*Aún sin desbloquear/, 'los personajes sin dueño deben ocultar el nombre y señalar que siguen bloqueados')
+  assert.doesNotMatch(replies.at(-1).text, /Trunks/, 'ainfo no debe revelar el nombre completo de un personaje sin desbloquear')
   assert.match(replies.at(-1).text, /Goku/)
-  assert.match(replies.at(-1).text, /\$1\.000/, 'ainfo debe mostrar el valor de cada personaje')
+  assert.match(replies.at(-1).text, /\$1\.500/, 'ainfo debe mostrar el valor de los personajes desbloqueados')
+  assert.doesNotMatch(replies.at(-1).text, /\$1\.000/, 'ainfo no debe revelar el valor de personajes sin desbloquear')
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
   await runCommand(conn, groupMessage(groupOne), 'albumespj')
@@ -427,6 +429,7 @@ try {
   await runCommand(conn, mentionedUser, 'pjs', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/, 'pjs debe consultar la colección de la persona mencionada')
+  assert.doesNotMatch(replies.at(-1).text, /T###|Trunks/, 'pjs solo debe listar los personajes que ya tiene esa persona')
   const formattedPhoneMention = groupMessage(groupOne)
   formattedPhoneMention.mentionedJid = Promise.resolve([])
   await runCommand(conn, formattedPhoneMention, 'pjs', '@+54 9 1222-222222')
@@ -792,7 +795,8 @@ try {
   })
   await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(sharedCatalog), 'utf8')
   await runCommand(conn, groupMessage(groupTwo), 'ainfo', 'Shared Sync Test')
-  assert.match(replies.at(-1).text, /Shared Sync Character/, 'un cambio nuevo del catálogo debe aparecer en otro grupo ya cargado')
+  assert.match(replies.at(-1).text, /S###.*Aún sin desbloquear/, 'un personaje nuevo debe aparecer bloqueado en otro grupo ya cargado')
+  assert.doesNotMatch(replies.at(-1).text, /Shared Sync Character/, 'la consulta del álbum no debe revelar un personaje nuevo sin reclamo')
   assert.equal(
     (await readState(groupTwo)).characters.find((character) => character.id === 'shared-sync-character').owner,
     null,

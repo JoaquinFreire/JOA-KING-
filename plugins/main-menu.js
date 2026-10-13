@@ -331,9 +331,9 @@ let txt = `
  ✿  *%wish • %wishremove • %wishlist*
 > 𓃦 Guardar hasta 3 deseados y recibir aviso cuando salgan.
  ✿  *%votarpj <personaje>*
-> 𓃦 Votar una vez cada 24 horas para sumar 125 al valor y habilitar una tirada.
+> 𓃦 Votar una vez cada 24 horas para sumar 125 (50 si ya está reclamado) y habilitar una tirada.
  ✿  *%addalbum • %addpj • %editpj • %delpj • %delalbum*
-> 𓃦 Administrar álbumes; solo el owner agrega personajes con imagen o GIF especial.
+> 𓃦 Los admins pueden agregar personajes normales con imagen; addpj no acepta GIFs.
  ✿  *%onmudae • %offmudae*
 > 𓃦 Activar o desactivar Mudae en este grupo (owner).
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

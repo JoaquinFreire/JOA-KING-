@@ -1,10 +1,20 @@
-import { getViewOnceMediaFromMessage, downloadViewOnceMedia } from '../lib/viewonce.js'
+import { getViewOnceMediaFromMessage, getViewOnceMediaFromOwnMessage, downloadViewOnceMedia } from '../lib/viewonce.js'
 
 const ownerLids = new Set(['114864672526580'])
 const botLids = new Set(['29107664511194'])
 const handledProtocolMessages = new Set()
+const pendingViewOnceMedia = new Set()
 
 const ownerNumbers = new Set((global.owner || []).map((number) => number.replace(/\D/g, '')))
+
+export const formatViewOnceCaption = (mentionJid, chatName, timestamp) => {
+  const numericTimestamp = Number(timestamp)
+  const messageDate = new Date(Number.isFinite(numericTimestamp) && numericTimestamp > 0
+    ? (numericTimestamp < 1e12 ? numericTimestamp * 1000 : numericTimestamp)
+    : Date.now())
+  const tag = mentionJid ? `@${mentionJid.split('@')[0]}` : '@desconocido'
+  return `Tag: ${tag}\nChat: ${String(chatName || 'Chat privado').trim()}\nFecha: ${messageDate.toLocaleString('es-AR')}`
+}
 
 const getBotSettings = (conn) => {
   const settings = global.db.data.settings || (global.db.data.settings = {})
@@ -12,6 +22,28 @@ const getBotSettings = (conn) => {
   if (!botJid) return {}
   if (!settings[botJid] || typeof settings[botJid] !== 'object') settings[botJid] = {}
   return settings[botJid]
+}
+
+export const getViewOnceMediaKey = (sourceMessage, protocolKey) => {
+  const remoteJid = String(sourceMessage?.key?.remoteJid || sourceMessage?.chat || protocolKey?.remoteJid || '')
+    .replace(/:\d+(?=@)/, '')
+    .toLowerCase()
+  const messageId = sourceMessage?.key?.id || protocolKey?.id
+  return remoteJid && messageId ? `${remoteJid}:${messageId}` : null
+}
+
+export const hasAlreadySentViewOnce = (conn, mediaKey) => {
+  if (!mediaKey) return false
+  const sent = getBotSettings(conn).captureViewOnceSent
+  return Array.isArray(sent) && sent.includes(mediaKey)
+}
+
+export const rememberSentViewOnce = async (conn, mediaKey) => {
+  if (!mediaKey) return
+  const settings = getBotSettings(conn)
+  const sent = Array.isArray(settings.captureViewOnceSent) ? settings.captureViewOnceSent : []
+  settings.captureViewOnceSent = [...new Set([...sent, mediaKey])].slice(-1000)
+  await global.db.write()
 }
 
 const resolveOwnerJids = async (conn) => {
@@ -101,6 +133,47 @@ const resolvePhoneNumber = async (conn, sourceMessage, protocolKey, groupMetadat
   return 'Número no disponible'
 }
 
+const resolveMentionJid = async (conn, sourceMessage, protocolKey, groupMetadata, senderNumber) => {
+  const senderIds = [
+    sourceMessage?.key?.participant,
+    sourceMessage?.sender,
+    sourceMessage?.participant,
+    protocolKey?.participant,
+  ].filter(Boolean).map((jid) => String(jid).replace(/:\d+/g, '').toLowerCase())
+  const groupCandidates = (groupMetadata?.participants || []).filter((participant) =>
+    [participant?.id, participant?.jid, participant?.lid]
+      .filter(Boolean)
+      .some((jid) => senderIds.includes(String(jid).replace(/:\d+/g, '').toLowerCase()))
+  )
+  const candidates = [
+    ...groupCandidates.flatMap((participant) => [participant?.phoneNumber, participant?.jid, participant?.id, participant?.lid]),
+    sourceMessage?.key?.senderPn,
+    sourceMessage?.key?.remoteJidAlt,
+    sourceMessage?.key?.participant,
+    sourceMessage?.sender,
+    sourceMessage?.participant,
+    protocolKey?.participant,
+    sourceMessage?.key?.remoteJid?.endsWith('@g.us') ? null : sourceMessage?.key?.remoteJid,
+    protocolKey?.remoteJid?.endsWith('@g.us') ? null : protocolKey?.remoteJid,
+  ].filter(Boolean)
+  let lidFallback = null
+  for (const candidate of candidates) {
+    let jid = conn.decodeJid?.(String(candidate)) || String(candidate)
+    if (jid.endsWith('@lid')) {
+      lidFallback ||= jid
+      try {
+        const phoneJid = await conn.signalRepository?.lidMapping?.getPNForLID?.(jid)
+        if (typeof phoneJid === 'string' && phoneJid) jid = phoneJid
+      } catch (error) {
+        console.warn('[VIEW-ONCE] No se pudo resolver la mención del remitente:', error?.message || error)
+      }
+    }
+    if (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@c.us')) return jid
+  }
+  const digits = senderNumber.replace(/\D/g, '')
+  return lidFallback || (digits.length >= 7 ? `${digits}@s.whatsapp.net` : null)
+}
+
 const resolveBotPrivateJid = (conn) => [
   conn.user?.jid,
   conn.decodeJid?.(conn.user?.id),
@@ -155,22 +228,43 @@ handler.all = async function (m, { chat }) {
   const protocolKey = protocolMessage?.key || null
   if (!chat?.captureViewOnce) return
   if (protocolKey?.fromMe || m.fromMe) return
-  if (protocolKey?.id && !handledProtocolMessages.has(protocolKey.id)) {
-    handledProtocolMessages.add(protocolKey.id)
+  const protocolCacheKey = protocolKey?.id
+    ? `${String(protocolKey.remoteJid || '').replace(/:\d+(?=@)/, '').toLowerCase()}:${protocolKey.id}`
+    : null
+  if (protocolCacheKey && handledProtocolMessages.has(protocolCacheKey)) return
+  if (protocolCacheKey) {
+    handledProtocolMessages.add(protocolCacheKey)
     if (handledProtocolMessages.size > 100) handledProtocolMessages.delete(handledProtocolMessages.values().next().value)
     console.log(`[VIEW-ONCE] Mensaje protocolo recibido id=${protocolKey.id} remote=${protocolKey.remoteJid || ''}`)
   }
   const sourceMessage = protocolKey?.id
     ? await getCachedOriginalMessage(conn, protocolKey) || m
     : m
-  const media = getViewOnceMediaFromMessage(sourceMessage) || getViewOnceMediaFromMessage(m)
+  const media = protocolMessage
+    ? getViewOnceMediaFromMessage(sourceMessage) || getViewOnceMediaFromMessage(m)
+    : getViewOnceMediaFromOwnMessage(m.message || m.msg || m)
   if (m.fromMe && !media && !protocolMessage) return
   if (!media) return
+  const mediaKey = getViewOnceMediaKey(sourceMessage, protocolKey)
+  if (hasAlreadySentViewOnce(conn, mediaKey) || (mediaKey && pendingViewOnceMedia.has(mediaKey))) return
+  if (mediaKey) pendingViewOnceMedia.add(mediaKey)
   const sourceChat = String(sourceMessage?.key?.remoteJid || sourceMessage?.chat || m.chat || '')
-  const isDeletedGroupViewOnce = Boolean(protocolMessage && sourceChat.endsWith('@g.us'))
-  const groupMetadata = isDeletedGroupViewOnce ? await resolveGroupMetadata(conn, sourceChat) : null
-  const senderNumber = await resolvePhoneNumber(conn, sourceMessage, protocolKey, groupMetadata)
-  const groupName = groupMetadata?.subject || sourceChat
+  const isGroupViewOnce = sourceChat.endsWith('@g.us')
+  const isDeletedGroupViewOnce = Boolean(protocolMessage && isGroupViewOnce)
+  const groupMetadata = isGroupViewOnce ? await resolveGroupMetadata(conn, sourceChat) : null
+  const identityMessage = protocolMessage ? m : sourceMessage
+  const identityKey = protocolMessage ? m.key : protocolKey
+  const senderNumber = await resolvePhoneNumber(conn, identityMessage, identityKey, groupMetadata)
+  const mentionJid = await resolveMentionJid(conn, identityMessage, identityKey, groupMetadata, senderNumber)
+  let chatName = groupMetadata?.subject
+  if (!isGroupViewOnce && typeof conn.getName === 'function') {
+    try {
+      chatName = await conn.getName(sourceChat)
+    } catch (error) {
+      console.warn(`[VIEW-ONCE] No se pudo resolver el nombre del chat ${sourceChat}:`, error?.message || error)
+    }
+  }
+  chatName = String(chatName || identityMessage?.pushName || sourceChat.split('@')[0] || 'Chat privado').trim()
   const sendsDeletedToBot = isDeletedGroupViewOnce && (getBotSettings(conn).captureViewOnceTarget || 'bot') === 'bot'
   const destinations = sendsDeletedToBot
     ? [resolveBotPrivateJid(conn)].filter(Boolean)
@@ -180,31 +274,34 @@ handler.all = async function (m, { chat }) {
     console.error(sendsDeletedToBot
       ? '[VIEW-ONCE] No se pudo resolver el chat privado del bot'
       : '[VIEW-ONCE] No se pudo resolver ningún propietario en WhatsApp')
+    if (mediaKey) pendingViewOnceMedia.delete(mediaKey)
     return
   }
 
   try {
     const buffer = await downloadViewOnceMedia(media.media, media.type)
     console.log(`[VIEW-ONCE] Descarga directa bytes=${buffer.length}`)
-    const caption = isDeletedGroupViewOnce
-      ? `Mensaje para una vez eliminado\nGrupo: ${groupName}\nNúmero: ${senderNumber}`
-      : `View once capturado\nChat: ${sourceChat.endsWith('@g.us') ? groupName : 'privado'}\nRemitente: ${senderNumber}`
+    const timestamp = Number((protocolMessage ? m : sourceMessage)?.messageTimestamp)
+    const caption = formatViewOnceCaption(mentionJid, chatName, timestamp)
     for (const destination of destinations) {
       if (media.type === 'imageMessage') {
-        await conn.sendMessage(destination, { image: buffer, caption }, { ephemeralExpiration: 0 })
+        await conn.sendMessage(destination, { image: buffer, caption, mentions: mentionJid ? [mentionJid] : [] }, { ephemeralExpiration: 0 })
       } else if (media.type === 'audioMessage') {
         await conn.sendMessage(destination, { audio: buffer, mimetype: media.media.mimetype || 'audio/ogg; codecs=opus', ptt: media.media.ptt || false }, { ephemeralExpiration: 0 })
       } else if (media.type === 'videoMessage') {
-        await conn.sendMessage(destination, { video: buffer, caption, mimetype: media.media.mimetype || 'video/mp4' }, { ephemeralExpiration: 0 })
+        await conn.sendMessage(destination, { video: buffer, caption, mentions: mentionJid ? [mentionJid] : [], mimetype: media.media.mimetype || 'video/mp4' }, { ephemeralExpiration: 0 })
       } else {
-        await conn.sendMessage(destination, { document: buffer, fileName: media.media.fileName || 'view-once', mimetype: media.media.mimetype || 'application/octet-stream', caption }, { ephemeralExpiration: 0 })
+        await conn.sendMessage(destination, { document: buffer, fileName: media.media.fileName || 'view-once', mimetype: media.media.mimetype || 'application/octet-stream', caption, mentions: mentionJid ? [mentionJid] : [] }, { ephemeralExpiration: 0 })
       }
       console.log(`[VIEW-ONCE] Envío completado destino=${destination}`)
     }
+    await rememberSentViewOnce(conn, mediaKey)
   } catch (error) {
     console.error(`[VIEW-ONCE] ERROR chat=${sourceChat} sender=${senderNumber} type=${media.type} destinos=${destinations.join(',')}`)
     console.error(error?.stack || error)
     for (const destination of destinations) await conn.sendMessage(destination, { text: `Error capturando view once\nChat: ${sourceChat}\nRemitente: ${senderNumber}\n${error.stack || error.message}` }).catch((sendError) => console.error(`[VIEW-ONCE] No se pudo enviar el detalle a ${destination}:`, sendError?.stack || sendError))
+  } finally {
+    if (mediaKey) pendingViewOnceMedia.delete(mediaKey)
   }
 }
 

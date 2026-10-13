@@ -169,6 +169,7 @@ try {
   assert.equal(MUDAE_CONFIG.CLAIM_DURATION, 60 * 1000)
   assert.equal(MUDAE_CONFIG.VOTE_COOLDOWN, 24 * 60 * 60 * 1000)
   assert.equal(MUDAE_CONFIG.VOTE_VALUE_INCREMENT, 125)
+  assert.equal(MUDAE_CONFIG.CLAIMED_VOTE_VALUE_INCREMENT, 50)
   assert.equal(MUDAE_CONFIG.WISHLIST_LIMIT, 3)
   assert.equal(MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE, 1000)
   const previousCloudinaryUrl = process.env.CLOUDINARY_URL
@@ -272,7 +273,7 @@ try {
       ...available,
       id: `rank-character-${index}`,
       name: `Character ${index}`,
-      owner: `5491000000${String(index).padStart(3, '0')}@s.whatsapp.net`,
+      owner: index < 2 ? userTwo : `5491000000${String(index).padStart(3, '0')}@s.whatsapp.net`,
       value: (index + 1) * 100,
     })),
   })), 'utf8')
@@ -319,7 +320,9 @@ try {
   assert.match(replies.at(-1).text, /%votarpj/)
   assert.match(replies.at(-1).text, /%wishremove/)
   assert.match(replies.at(-1).text, /%addpj <álbum> \+ <nombre>/)
-  assert.match(replies.at(-1).text, /respondé a un GIF para un especial/)
+  assert.match(replies.at(-1).text, /imagen normal para agregar \(no acepta GIFs\)/)
+  assert.doesNotMatch(replies.at(-1).text, /GIF para un especial/)
+  assert.match(replies.at(-1).text, /125.*50.*ya está reclamado/)
   assert.match(replies.at(-1).text, /%overpj <nombre>/)
   assert.ok(handler.command.includes('toppj'))
   assert.ok(handler.command.includes('overpj'))
@@ -349,7 +352,6 @@ try {
   await runCommand(conn, groupMessage(groupTwo, userTwo), 'votarpj', 'Trunks')
   assert.match(replies.at(-1).text, /1\.250/, 'otro usuario puede emitir su propio voto')
   assert.equal((await readState(groupTwo)).characters[0].value, 1250)
-
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Dragon Ball Z', { isAdmin: true })
   assert.match(replies.at(-1).text, /ya existe/, 'debe rechazar álbum duplicado ignorando case')
   assert.deepEqual((await readState(groupOne)).albums, ['Dragon Ball Z'])
@@ -368,6 +370,12 @@ try {
   assert.match(replies.at(-1).text, /Other Album.*0 personajes/)
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'Goku')
   assert.match(replies.at(-1).text, /VOTO REGISTRADO/)
+  assert.match(replies.at(-1).text, /\(\+\$50, ya reclamado\)/, 'un personaje reclamado solo recibe 50 por voto')
+  assert.equal(
+    (await readState(groupOne)).characters.find((character) => character.id === 'character-2').value,
+    1550,
+    'el voto debe guardar el nuevo valor del personaje reclamado'
+  )
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'oku')
   assert.match(replies.at(-1).text, /voto pendiente/, 'votarpj debe resolver una palabra única que no esté al comienzo del nombre')
 
@@ -393,10 +401,9 @@ try {
     download: async () => Buffer.from('test gif'),
   }
   await runCommand(conn, quotedGifCommand, 'addpj', 'Dragon Ball Z + Special GIF', { isAdmin: true })
-  assert.match(replies.at(-1).text, /Solo el owner/, 'solo el owner puede agregar personajes especiales con addpj')
+  assert.match(replies.at(-1).text, /no acepta GIFs/, 'addpj no debe aceptar GIFs aunque lo use un admin')
   await runCommand(conn, quotedGifCommand, 'addpj', 'Dragon Ball Z + Special GIF', { isOwner: true })
-  assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'addpj debe reconocer el GIF citado antes de validar Cloudinary')
-  assert.doesNotMatch(replies.at(-1).text, /No detecté la imagen o el GIF/)
+  assert.match(replies.at(-1).text, /no acepta GIFs/, 'addpj debe rechazar GIFs incluso para el owner')
   const repliedImageCommand = groupMessage(groupOne)
   repliedImageCommand.quoted = {
     mtype: 'imageMessage',
@@ -405,7 +412,7 @@ try {
   }
   await runCommand(conn, repliedImageCommand, 'addpj', 'Other Album + Trunks', { isOwner: true })
   assert.match(replies.at(-1).text, /nombres deben ser únicos/, 'no permite repetir el nombre en otro álbum')
-  await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isOwner: true })
+  await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isAdmin: true })
   assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'quoted image and valid arguments must pass usage validation')
   assert.doesNotMatch(replies.at(-1).text, /Uso:/)
   for (const [key, value] of Object.entries(credentialsToRestore)) {
@@ -425,7 +432,7 @@ try {
   await runCommand(conn, mentionedUser, 'personajes', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/)
-  assert.match(replies.at(-1).text, /\$1\.625/)
+  assert.match(replies.at(-1).text, /\$1\.550/)
   await runCommand(conn, mentionedUser, 'pjs', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/, 'pjs debe consultar la colección de la persona mencionada')
@@ -461,7 +468,18 @@ try {
   assert.match(replies.at(-1).text, /Goku/)
   await runCommand(conn, groupMessage(groupSix), 'toppj')
   const rankMessage = sent.at(-1)
-  assert.match(rankMessage.content.text, /TOP 10 PERSONAJES/)
+  assert.match(rankMessage.content.text, /TOP 10 JUGADORES/)
+  assert.match(rankMessage.content.text, /Ranking por valor total/)
+  assert.match(rankMessage.content.text, /👑 quien tiene más personajes/)
+  assert.ok(
+    rankMessage.content.text.indexOf('@5491000000011') < rankMessage.content.text.indexOf('@5491222222222'),
+    'el ranking debe ordenar por valor total antes que cantidad de personajes'
+  )
+  assert.match(
+    rankMessage.content.text.split('\n').find((line) => line.includes('@5491222222222')),
+    /👑/,
+    'el usuario con más personajes debe quedar resaltado aunque el ranking sea por valor'
+  )
   assert.equal(rankMessage.content.mentions.length, 10, 'el ranking debe limitar menciones a diez personas')
   assert.equal((rankMessage.content.text.match(/@/g) || []).length, 10, 'el ranking debe mostrar solamente diez puestos')
 

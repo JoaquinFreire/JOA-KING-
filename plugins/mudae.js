@@ -22,6 +22,7 @@ export const MUDAE_CONFIG = Object.freeze({
   TRADE_COOLDOWN: 12 * 60 * 60 * 1000,
   VOTE_COOLDOWN: 24 * 60 * 60 * 1000,
   VOTE_VALUE_INCREMENT: 125,
+  CLAIMED_VOTE_VALUE_INCREMENT: 50,
   WISHLIST_LIMIT: 3,
   DEFAULT_CHARACTER_VALUE: 1000,
 })
@@ -843,7 +844,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking del grupo (top 10)\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n\n*👑 OWNER*\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen para agregar; respondé a un GIF para un especial (valor inicial 6767, probabilidad reducida)\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -910,23 +911,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'addpj' || action === 'addchar') {
-    if (action === 'addpj' && !isOwner && !isROwner) {
-      return conn.reply(m.chat, 'Solo el owner del bot puede agregar personajes con %addpj.', m)
-    }
-    if (action === 'addchar' && !isAdminOrOwner(isOwner, isAdmin)) {
+    if (!isAdminOrOwner(isOwner, isAdmin)) {
       return conn.reply(m.chat, 'Solo los administradores del grupo pueden agregar personajes.', m)
     }
     const parts = parseMudaeParts(text, 2)
-    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé al mensaje de una imagen o GIF con ese comando.`, m)
-    const quotedGif = action === 'addpj' ? getQuotedGif(m) : null
-    const quotedMedia = quotedGif || getQuotedImage(m)
-    if (!quotedMedia) return conn.reply(m.chat, 'No detecté la imagen o el GIF respondido. Respondé directamente al mensaje que contiene el medio y usá %addpj <álbum> + <nombre>.', m)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé al mensaje de una imagen normal con ese comando.`, m)
+    const quotedMedia = getQuotedImage(m)
+    if (!quotedMedia) return conn.reply(m.chat, 'No detecté una imagen normal. %addpj no acepta GIFs; respondé a una imagen y usá %addpj <álbum> + <nombre>.', m)
     try {
-      const mediaType = quotedGif ? 'video' : 'image'
+      const mediaType = 'image'
       const media = typeof quotedMedia.download === 'function'
         ? await quotedMedia.download()
         : await conn.downloadM(quotedMedia.media, mediaType)
-      if (!Buffer.isBuffer(media) || !media.length) throw new Error(`No se pudo descargar ${quotedGif ? 'el GIF' : 'la imagen'} citada.`)
+      if (!Buffer.isBuffer(media) || !media.length) throw new Error('No se pudo descargar la imagen citada.')
       return await withGroupLock(m.chat, async () => {
         const current = await loadState(m.chat)
         const catalog = await loadCatalog()
@@ -937,19 +934,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catálogo global. Los nombres deben ser únicos.', m)
         }
         getCloudinaryCredentials()
-        const mimeType = quotedMedia.media.mimetype || (quotedGif ? 'video/mp4' : 'image/jpeg')
-        const uploaded = quotedGif
-          ? await uploadCharacterGif(media, mimeType)
-          : await uploadCharacterImage(media, mimeType)
+        const mimeType = quotedMedia.media.mimetype || 'image/jpeg'
+        const uploaded = await uploadCharacterImage(media, mimeType)
         const character = {
           id: crypto.randomUUID(),
           name: normalizeMudaeLabel(parts[1]),
           album,
-          value: quotedGif ? MUDAE_CONFIG.GIFT_CHARACTER_VALUE : MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
+          value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
           imageUrl: uploaded.imageUrl,
           cloudinaryPublicId: uploaded.cloudinaryPublicId,
           mediaType,
-          isGift: Boolean(quotedGif),
+          isGift: false,
           owner: null,
           createdAt: Date.now(),
         }
@@ -974,7 +969,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           }
           throw saveError
         }
-        return conn.reply(m.chat, `✅ *PERSONAJE ${quotedGif ? 'GIF ESPECIAL ' : ''}AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${quotedGif ? '\n🎁 Probabilidad especial muy reducida.' : ''}`, m)
+        return conn.reply(m.chat, `✅ *PERSONAJE AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}`, m)
       })
     } catch (error) {
       console.error('[MUDAE] No se pudo agregar un personaje:', error?.stack || error)
@@ -1458,15 +1453,16 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       current.value += Number(character.value || 0)
       ranking.set(owner, current)
     }
-    const sorted = [...ranking].sort((a, b) => b[1].count - a[1].count || b[1].value - a[1].value || a[0].localeCompare(b[0]))
+    const sorted = [...ranking].sort((a, b) => b[1].value - a[1].value || b[1].count - a[1].count || a[0].localeCompare(b[0]))
     if (!sorted.length) return conn.reply(m.chat, '🏆 *TODAVÍA NO HAY RECLAMOS*\n¡Sé el primero en conseguir un personaje!', m)
     const medals = ['🥇', '🥈', '🥉']
     const top = sorted.slice(0, 10)
+    const mostCharacters = Math.max(...sorted.map(([, score]) => score.count))
     const lines = await Promise.all(top.map(async ([jid, score], index) =>
-      `${medals[index] || `*${index + 1}.*`} @${jid.split('@')[0]}  ·  🎴 ${score.count}  ·  💰 ${formatMoney(score.value)}`
+      `${medals[index] || `*${index + 1}.*`}${score.count === mostCharacters ? ' 👑' : ''} @${jid.split('@')[0]}  ·  🎴 ${score.count}  ·  💰 ${formatMoney(score.value)}`
     ))
     return conn.sendMessage(m.chat, {
-      text: `🏆 *TOP 10 PERSONAJES*\n_Ranking por cantidad de personajes · desempate por valor_\n\n${lines.join('\n')}`,
+      text: `🏆 *TOP 10 JUGADORES*\n_Ranking por valor total · 👑 quien tiene más personajes_\n\n${lines.join('\n')}`,
       mentions: top.map(([jid]) => jid),
     }, { quoted: m })
   }
@@ -1521,11 +1517,14 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         return conn.reply(m.chat, `⏳ Ya votaste en las últimas 24 horas. Podés volver a votar en aproximadamente ${remainingHours} h.`, m)
       }
       delete current.pendingVotes[actor]
-      character.value = Number(character.value || 0) + MUDAE_CONFIG.VOTE_VALUE_INCREMENT
+      const increment = character.owner
+        ? MUDAE_CONFIG.CLAIMED_VOTE_VALUE_INCREMENT
+        : MUDAE_CONFIG.VOTE_VALUE_INCREMENT
+      character.value = Number(character.value || 0) + increment
       current.voteCooldowns[actor] = now + MUDAE_CONFIG.VOTE_COOLDOWN
       current.pendingVotes[actor] = true
       await saveState(current)
-      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(MUDAE_CONFIG.VOTE_VALUE_INCREMENT)}).\nPodés tirar con *%rw* durante las próximas 24 horas y votar de nuevo después.`, m)
+      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(increment)}${character.owner ? ', ya reclamado' : ''}).\nPodés tirar con *%rw* durante las próximas 24 horas y votar de nuevo después.`, m)
     })
   }
 

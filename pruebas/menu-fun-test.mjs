@@ -46,6 +46,7 @@ await menuHandler(menuMessage, {
   args: ['fun'],
   usedPrefix: '%',
 })
+assert.match(menuMessages.at(-1).content.text, /\.screenwsp/)
 assert.match(menuMessages.at(-1).content.text, /%manco/)
 assert.match(menuMessages.at(-1).content.text, /%homofobico/)
 assert.match(menuMessages.at(-1).content.text, /%gay2/)
@@ -59,6 +60,7 @@ assert.match(menuMessages.at(-1).content.text, /%translate/)
 assert.doesNotMatch(menuMessages.at(-1).content.text, /PAREJAS AL AZAR/)
 assert.match(menuMessages.at(-1).content.text, /%fakemsg2/)
 assert.match(menuMessages.at(-1).content.text, /%owner/)
+assert.match(menuMessages.at(-1).content.text, /\.fms/)
 
 await ownerHandler(menuMessage, { conn: menuConnection })
 const ownerContact = menuMessages.at(-1).content.contacts

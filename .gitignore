@@ -19,3 +19,4 @@ __pycache__/
 npm-debug.log*
 pruebas/voices/*.onnx
 pruebas/voz-piper.wav
+data/mudae/catalog.json

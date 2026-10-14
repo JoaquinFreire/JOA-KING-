@@ -116,6 +116,8 @@ let txt = `
 > 𓃦 Convertir un sticker/imagen de una vista a imagen.
  ✿  *#brat* • *#bratv* • *#qc* • *#emojimix*
 > 𓃦 Crear stickers con texto.
+ ✿  *.fms [texto]*
+> 𓃦 Crear un sticker con diseño de mensaje de WhatsApp; también puedes responder a un mensaje.
  ✿  *#gitclone* + [Link]
 > 𓃦 Descargar un repositorio de Github.
  ✿  *#enhance • #remini • #hd*
@@ -162,6 +164,8 @@ let txt = `
 
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('FUN')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Juegos y comandos para divertirse.
+ ✿  *.screenwsp*
+> 𓃦 Recrear una vista aproximada del grupo con los mensajes recientes que recibió el bot.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
  ✿  *%flappy*

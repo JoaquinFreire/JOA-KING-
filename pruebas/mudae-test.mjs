@@ -359,12 +359,11 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Other Album', { isAdmin: true })
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/)
-  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'los personajes sin dueño deben mostrarse como bloqueados sin revelar nombre ni GIF')
-  assert.doesNotMatch(replies.at(-1).text, /T###|Aún sin desbloquear/, 'ainfo no debe mostrar iniciales ni el texto anterior de desbloqueo')
-  assert.doesNotMatch(replies.at(-1).text, /Trunks/, 'ainfo no debe revelar el nombre completo de un personaje sin desbloquear')
+  assert.match(replies.at(-1).text, /Trunks/, 'ainfo debe mostrar los personajes normales aunque no estén reclamados')
+  assert.match(replies.at(-1).text, /\$1\.000/, 'ainfo debe mostrar el valor de personajes normales sin reclamar')
+  assert.doesNotMatch(replies.at(-1).text, /Aún sin desbloquear/, 'ainfo no debe mostrar el estado de desbloqueo para personajes normales')
   assert.match(replies.at(-1).text, /Goku/)
   assert.match(replies.at(-1).text, /\$1\.500/, 'ainfo debe mostrar el valor de los personajes desbloqueados')
-  assert.doesNotMatch(replies.at(-1).text, /\$1\.000/, 'ainfo no debe revelar el valor de personajes sin desbloquear')
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
   await runCommand(conn, groupMessage(groupOne), 'albumespj')
@@ -815,8 +814,7 @@ try {
   })
   await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(sharedCatalog), 'utf8')
   await runCommand(conn, groupMessage(groupTwo), 'ainfo', 'Shared Sync Test')
-  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'un personaje nuevo debe aparecer bloqueado en otro grupo ya cargado')
-  assert.doesNotMatch(replies.at(-1).text, /Shared Sync Character/, 'la consulta del álbum no debe revelar un personaje nuevo sin reclamo')
+  assert.match(replies.at(-1).text, /Shared Sync Character/, 'un personaje normal debe aparecer en el álbum aunque no esté reclamado')
   assert.equal(
     (await readState(groupTwo)).characters.find((character) => character.id === 'shared-sync-character').owner,
     null,
@@ -847,6 +845,9 @@ try {
     }],
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
   })), 'utf8')
+  await runCommand(conn, groupMessage(giftGroup), 'ainfo', 'Special GIF Album')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'ainfo debe ocultar los gifts que todavía no fueron reclamados')
+  assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/, 'ainfo no debe revelar el nombre de un gift bloqueado')
   assert.equal(MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 0.01)
   assert.equal(MUDAE_CONFIG.GIFT_CHARACTER_VALUE, 6767)
   const totalGiftChance = getGiftRollProbability(3)

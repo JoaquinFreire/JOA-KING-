@@ -34,6 +34,7 @@ const groupSeven = '120363000000000007@g.us'
 const groupEight = '120363000000000008@g.us'
 const groupNine = '120363000000000009@g.us'
 const groupTen = '120363000000000010@g.us'
+const paginationGroup = '120363000000000020@g.us'
 const tradeGroup = '120363000000000016@g.us'
 const rankingTestGroups = Array.from({ length: 4 }, (_, index) =>
   `1203630000000000${11 + index}@g.us`
@@ -358,7 +359,8 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Other Album', { isAdmin: true })
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/)
-  assert.match(replies.at(-1).text, /T###.*Aún sin desbloquear/, 'los personajes sin dueño deben ocultar el nombre y señalar que siguen bloqueados')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'los personajes sin dueño deben mostrarse como bloqueados sin revelar nombre ni GIF')
+  assert.doesNotMatch(replies.at(-1).text, /T###|Aún sin desbloquear/, 'ainfo no debe mostrar iniciales ni el texto anterior de desbloqueo')
   assert.doesNotMatch(replies.at(-1).text, /Trunks/, 'ainfo no debe revelar el nombre completo de un personaje sin desbloquear')
   assert.match(replies.at(-1).text, /Goku/)
   assert.match(replies.at(-1).text, /\$1\.500/, 'ainfo debe mostrar el valor de los personajes desbloqueados')
@@ -813,7 +815,7 @@ try {
   })
   await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(sharedCatalog), 'utf8')
   await runCommand(conn, groupMessage(groupTwo), 'ainfo', 'Shared Sync Test')
-  assert.match(replies.at(-1).text, /S###.*Aún sin desbloquear/, 'un personaje nuevo debe aparecer bloqueado en otro grupo ya cargado')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'un personaje nuevo debe aparecer bloqueado en otro grupo ya cargado')
   assert.doesNotMatch(replies.at(-1).text, /Shared Sync Character/, 'la consulta del álbum no debe revelar un personaje nuevo sin reclamo')
   assert.equal(
     (await readState(groupTwo)).characters.find((character) => character.id === 'shared-sync-character').owner,
@@ -945,6 +947,38 @@ try {
   }
   assert.equal(sent.length, beforeNoRegularRoll + 2, 'un GIF mantiene su probabilidad reducida aunque los personajes normales estén activos')
   assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
+
+  const paginatedCharacters = Array.from({ length: 205 }, (_, index) => ({
+    id: `page-character-${String(index + 1).padStart(3, '0')}`,
+    name: `Character ${String(index + 1).padStart(3, '0')}`,
+    album: 'Pagination Album',
+    value: 1000,
+    imageUrl: `https://res.cloudinary.com/example/image/upload/character-${index + 1}.jpg`,
+    owner: userTwo,
+  }))
+  await fs.writeFile(filenameFor(paginationGroup), JSON.stringify(createState(paginationGroup, {
+    albums: ['Pagination Album'],
+    characters: paginatedCharacters,
+  })))
+  const paginationMessage = groupMessage(paginationGroup)
+  paginationMessage.mentionedJid = [userTwo]
+  const repliesBeforeFirstPage = replies.length
+  await runCommand(conn, paginationMessage, 'pjs', '@5491222222222')
+  assert.equal(replies.length, repliesBeforeFirstPage + 1, 'una consulta debe enviar solo una parte por mensaje')
+  assert.match(replies.at(-1).text, /Parte 1 de 3/)
+  assert.match(replies.at(-1).text, /Character 100/)
+  assert.doesNotMatch(replies.at(-1).text, /Character 101/)
+  assert.match(replies.at(-1).text, /%pjs 2 @5491222222222/, 'la primera parte debe indicar cómo pedir la siguiente para esa persona')
+  await runCommand(conn, paginationMessage, 'personajes', '2 @5491222222222')
+  assert.match(replies.at(-1).text, /Parte 2 de 3/)
+  assert.match(replies.at(-1).text, /Character 101/)
+  assert.match(replies.at(-1).text, /Character 200/)
+  assert.doesNotMatch(replies.at(-1).text, /Character 201/)
+  await runCommand(conn, paginationMessage, 'pjs', '3 @5491222222222')
+  assert.match(replies.at(-1).text, /Parte 3 de 3/)
+  assert.match(replies.at(-1).text, /Character 201/)
+  assert.match(replies.at(-1).text, /Character 205/)
+  assert.equal(replies.at(-1).text.includes('%pjs 4'), false, 'la última parte no debe sugerir una página siguiente')
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

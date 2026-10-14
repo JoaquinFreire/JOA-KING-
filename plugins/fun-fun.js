@@ -1,13 +1,84 @@
 import util from 'util'
 import path from 'path'
+import Jimp from 'jimp'
 
 let user = a => '@' + a.split('@')[0]
 let toM = a => '@' + a.split('@')[0]
 let pickRandom = list => list[Math.floor(Math.random() * list.length)]
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+const percentageGames = {
+gay: { label: 'gay', emoji: '🏳️‍🌈' },
+lesbiana: { label: 'lesbiana', emoji: '🏳️‍🌈' },
+gato: { label: 'gato', emoji: '🐈' },
+infiel: { label: 'infiel', emoji: '👀' },
+perra: { label: 'perra', emoji: '🐶' },
+tonto: { label: 'tonto', emoji: '🤪' },
+puto: { label: 'puto', emoji: '✨' },
+puta: { label: 'puta', emoji: '💅' },
+malapersona: { label: 'mala persona', emoji: '😈' },
+homofobico: { label: 'homofóbico', emoji: '🏳️‍🌈' },
+'homofóbico': { label: 'homofóbico', emoji: '🏳️‍🌈' },
+inteligente: { label: 'inteligente', emoji: '🧠' },
+amable: { label: 'amable', emoji: '💖' },
+buitre: { label: 'buitre', emoji: '🦅' },
+colafacil: { label: 'cola fácil', emoji: '🪑' },
+'colafácil': { label: 'cola fácil', emoji: '🪑' },
+cornudo: { label: 'cornudo', emoji: '🦌' },
+cornuda: { label: 'cornuda', emoji: '🦌' },
+simp: { label: 'simp', emoji: '💌' },
+tatiana: { label: 'Tatiana', emoji: '🎤' },
+pajero: { label: 'pajero', emoji: '🛋️' },
+pajera: { label: 'pajera', emoji: '🛋️' },
+antipala: { label: 'antipala', emoji: '🪏' },
+peronista: { label: 'peronista', emoji: '✌️' },
+pernonista: { label: 'peronista', emoji: '✌️' },
+manco: { label: 'manco', emoji: '🎮' },
+manca: { label: 'manca', emoji: '🎮' },
+rata: { label: 'rata', emoji: '🐀' },
+prostituto: { label: 'prostituto', emoji: '💃' },
+prostituta: { label: 'prostituta', emoji: '💃' },
+vago: { label: 'vago', emoji: '😴' },
+intenso: { label: 'intenso', emoji: '📣' },
+chismoso: { label: 'chismoso', emoji: '🫖' },
+dormilon: { label: 'dormilón', emoji: '💤' },
+dormilón: { label: 'dormilón', emoji: '💤' },
+fantasma: { label: 'fantasma', emoji: '👻' },
+despistado: { label: 'despistado', emoji: '🧭' },
+otaku: { label: 'otaku', emoji: '🍜' },
+gracioso: { label: 'gracioso', emoji: '😂' },
+toxico: { label: 'tóxico', emoji: '☣️' },
+'tóxico': { label: 'tóxico', emoji: '☣️' },
+dramatico: { label: 'dramático', emoji: '🎭' },
+'dramático': { label: 'dramático', emoji: '🎭' },
+}
 const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args }) => {
 try {
 let ps = [...new Set((groupMetadata?.participants || []).map(v => v.id || v.jid).filter(Boolean))]
+if (command === 'gay2') {
+const mentionedJid = await m.mentionedJid
+const target = mentionedJid?.[0] || (m.quoted && await m.quoted.sender) || conn.parseMention(text || '')?.[0] || m.sender
+const profileUrl = await conn.profilePictureUrl(target, 'image')
+const image = await Jimp.read(profileUrl)
+const colors = [
+  [228, 3, 3],
+  [255, 140, 0],
+  [255, 237, 0],
+  [0, 128, 38],
+  [0, 77, 255],
+  [117, 7, 135],
+]
+const stripeHeight = Math.ceil(image.bitmap.height / colors.length)
+for (const [index, [red, green, blue]] of colors.entries()) {
+const stripe = await Jimp.create(image.bitmap.width, Math.min(stripeHeight, image.bitmap.height - index * stripeHeight), Jimp.rgbaToInt(red, green, blue, 82))
+image.composite(stripe, 0, index * stripeHeight)
+}
+const result = await image.getBufferAsync(Jimp.MIME_JPEG)
+return conn.sendMessage(m.chat, {
+image: result,
+caption: `🏳️‍🌈 *Les presento a este gay:* @${target.split('@')[0]} 🏳️‍🌈`,
+mentions: [target],
+}, { quoted: m })
+}
 if (command === 'pregunta' || command === 'preguntar') {
 const question = String(text || '').trim()
 if (!question) return conn.reply(m.chat, `❀ Escribe una pregunta para el oráculo. Ejemplo: *${usedPrefix}pregunta ¿me va a ir bien?*`, m)
@@ -200,54 +271,14 @@ return conn.sendMessage(m.chat, {
   mentions,
 }, { quoted: m })
 }
-if (['gay','lesbiana','pajero','pajera','puto','puta','manco','manca','rata','prostituto','prostituta'].includes(command)) {
+if (Object.hasOwn(percentageGames, command)) {
 const mentionedJid = await m.mentionedJid
-const usser = mentionedJid?.[0] || (m.quoted && await m.quoted.sender) || conn.parseMention(text)?.[0] || text || null
-const userId = usser?.includes('@s.whatsapp.net') ? `@${usser.split('@')[0]}` : `*${usser}*`
-if (!usser) return conn.reply(m.chat, `❀ Por favor, mensiona a un Usuario para comprobar su test.`, m)
-const percentages = (500).getRandom()
-let emoji = ''
-let description = ''
-switch (command) {
-case 'gay':
-emoji = '🏳️‍🌈'
-description = percentages < 50 ? `💙 Los cálculos han arrojado que ${userId} es *${percentages}%* Gay ${emoji}\n> ✰ Eso es bajo, ¡Tú eres Joto, no Gay!` : percentages > 100 ? `💜 Los cálculos han arrojado que ${userId} es *${percentages}%* Gay ${emoji}\n> ✰ ¡Incluso más gay de lo que pensábamos!` : `🖤 Los cálculos han arrojado que ${userId} es *${percentages}%* Gay ${emoji}\n> ✰ Lo tuyo, lo tuyo es que eres Gay.`
-break
-case 'lesbiana':
-emoji = '🏳️‍🌈'
-description = percentages < 50 ? `👻 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n✰ Quizás necesites más películas románticas en tu vida.` : percentages > 100 ? `❣️ Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ ¡Eso es un amor extremo por las Chicas!` : `💗 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Mantén el amor floreciendo!`
-break
-case 'pajero': case 'pajera':
-emoji = '😏💦'
-description = percentages < 50 ? `🧡 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Tal vez necesites más hobbies!` : percentages > 100 ? `💕 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Eso es una resistencia admirable!` : `💞 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Mantén el buen trabajo (en solitario).`
-break
-case 'puto': case 'puta':
-emoji = '🔥🥵'
-description = percentages < 50 ? `😼 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✧ ¡Más suerte en tu próxima conquista!` : percentages > 100 ? `😻 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ ¡Estás en llamas!` : `😺 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Mantén ese encanto ardiente!`
-break
-case 'manco': case 'manca':
-emoji = '💩'
-description = percentages < 50 ? `🌟 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ ¡No eres el único en ese club!` : percentages > 100 ? `💌 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ ¡Tienes un talento muy especial!` : `🥷 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Mantén esa actitud valiente!`
-break
-case 'rata':
-emoji = '🐁'
-description = percentages < 50 ? `💥 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Nada de malo en disfrutar del queso!` : percentages > 100 ? `💖 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Un auténtico ratón de lujo!` : `👑 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Come queso con responsabilidad!`
-break
-case 'prostituto': case 'prostituta':
-emoji = '🫦👅'
-description = percentages < 50 ? `❀ Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ El mercado está en auge!` : percentages > 100 ? `💖 Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Un/a verdadero/a profesional!` : `✨️ Los cálculos han arrojado que ${userId} es *${percentages}%* ${command} ${emoji}\n> ✰ Siempre es hora de negocios!`
-break
-}
-const responses = ["El universo ha hablado.", "Los científicos lo confirman.", "¡Sorpresa!"]
-const response = responses[Math.floor(Math.random() * responses.length)]
-const cal = `ꕥ *CALCULADORA*\n\n${description}\n\n➤ ${response}`.trim()
-const hawemod = ["《 █▒▒▒▒▒▒▒▒▒▒▒》10%", "《 ████▒▒▒▒▒▒▒▒》30%", "《 ███████▒▒▒▒▒》50%", "《 ██████████▒▒》80%", "《 ████████████》100%"]
-let { key } = await conn.sendMessage(m.chat, { text: `ꕥ ¡Calculando Porcentaje!`, mentions: conn.parseMention(cal) }, { quoted: fkontak })
-for (let i = 0; i < hawemod.length; i++) {
-await new Promise(resolve => setTimeout(resolve, 1000))
-await conn.sendMessage(m.chat, { text: hawemod[i], edit: key, mentions: conn.parseMention(cal) }, { quoted: fkontak })
-}
-return await conn.sendMessage(m.chat, { text: cal, edit: key, mentions: conn.parseMention(cal) }, { quoted: fkontak })
+const target = mentionedJid?.[0] || (m.quoted && await m.quoted.sender) || conn.parseMention(text || '')?.[0] || m.sender
+const percentage = Math.floor(Math.random() * 100) + 1
+const { label, emoji } = percentageGames[command]
+const progress = `${'🟩'.repeat(Math.round(percentage / 10))}${'⬜'.repeat(10 - Math.round(percentage / 10))}`
+const result = `╭━━━〔 ${emoji} *TEST DE ${label.toLocaleUpperCase('es')}* 〕━━━╮\n\n👤 Resultado para: @${target.split('@')[0]}\n\n${progress} *${percentage}%*\n\n╰━━━━━━━━━━━━━━━━━━╯`
+return conn.sendMessage(m.chat, { text: result, mentions: [target] }, { quoted: m })
 }
 if (['doxear','doxxeo','doxeo'].includes(command)) {
 let mentionedJid = await m.mentionedJid
@@ -278,9 +309,9 @@ await m.react('✖️')
 conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'preguntar <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
+handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'preguntar <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', ...Object.keys(percentageGames), 'gay2 [@usuario]', 'doxear', 'doxeo', 'doxxeo']
 handler.tags = ['fun']
-handler.command = ['top', 'sorteo', 'ship', 'shippear', 'pregunta', 'preguntar', 'afk', 'personalidad', 'formarpareja', 'formarpnormal', 'formarpgay', 'formarplesbi', 'formargay', 'formarlesbi', 'gay', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituto', 'prostituta', 'doxear', 'doxeo', 'doxxeo']
+handler.command = ['top', 'sorteo', 'ship', 'shippear', 'pregunta', 'preguntar', 'afk', 'personalidad', 'formarpareja', 'formarpnormal', 'formarpgay', 'formarplesbi', 'formargay', 'formarlesbi', ...Object.keys(percentageGames), 'gay2', 'doxear', 'doxeo', 'doxxeo']
 handler.group = true
 
 export default handler

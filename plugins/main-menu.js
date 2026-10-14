@@ -188,6 +188,16 @@ let txt = `
 > 𓃦 Formar parejas al azar entre hombres que registraron su sexo.
  ✿  *%formarplesbi • %formarlesbi [cantidad]*
 > 𓃦 Formar parejas al azar entre mujeres que registraron su sexo.
+ ✿  *%manco • %manca • %gay • %gato • %infiel • %perra • %tonto • %puto • %puta • %simp*
+> 𓃦 Calcular un porcentaje divertido para vos o para alguien con @mención.
+ ✿  *%gay2 [@usuario]*
+> 𓃦 Enviar la foto de perfil con una capa arcoíris y una presentación divertida.
+ ✿  *%malapersona • %homofobico • %inteligente • %amable • %buitre • %colafacil • %cornudo • %cornuda*
+> 𓃦 Más tests de porcentaje para reírse entre amigos.
+ ✿  *%tatiana • %pajero • %pajera • %antipala • %peronista • %pernonista • %lesbiana • %rata • %vago*
+> 𓃦 También podés probar estos porcentajes con vos o mencionando a alguien.
+ ✿  *%prostituto • %prostituta • %intenso • %chismoso • %dormilon • %fantasma • %despistado • %otaku • %gracioso • %toxico • %dramatico*
+> 𓃦 Y más resultados graciosos, siempre entre amigos.
  ✿  *#personalidad*
 > 𓃦 Descubrir tu personalidad.
  ✿  *%addpiropo creador + piropo*
@@ -320,8 +330,8 @@ let txt = `
 > 𓃦 Ver cooldowns y votos para habilitar tiradas.
  ✿  *%cambiarpj <tuyo> + <del otro> • %aceptarcambio*
 > 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
- ✿  *%personajes [@usuario] • %pjs [@usuario]*
-> 𓃦 Ver tu colección o consultar la de otra persona.
+ ✿  *%personajes [página] [@usuario] • %pjs [página] [@usuario]*
+> 𓃦 Ver tu colección o consultar la de otra persona, en partes de hasta 100 (ej.: *%pjs 2 @usuario*).
  ✿  *%toppj • %verpj <personaje> • %overpj <personaje>*
 > 𓃦 Ver el ranking y las fichas; %overpj muestra GIF especiales antes del reclamo (owner).
  ✿  *%ainfo <álbum>*

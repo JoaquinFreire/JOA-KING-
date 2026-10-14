@@ -844,7 +844,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [@usuario]* — colección propia o de otra persona\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — personajes y valores del álbum; los bloqueados se muestran sin revelar el nombre ni el GIF\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -1406,22 +1406,40 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'personajes' || action === 'pjs') {
-    const target = await getMentionTarget(m, conn, text)
+    const rawText = String(text || '').trim()
+    const pageMatch = /^(\d+)(?:\s+|$)/.exec(rawText)
+    const page = pageMatch ? Number(pageMatch[1]) : 1
+    const targetText = pageMatch ? rawText.slice(pageMatch[0].length).trim() : rawText
+    const target = await getMentionTarget(m, conn, targetText)
     const collection = state.characters.filter((character) => normalizeJid(character.owner) === target)
     const ownerName = target === actor ? (m.pushName || await getDisplayName(conn, target)) : await getDisplayName(conn, target)
     if (!collection.length) return conn.reply(m.chat, `👑 *${ownerName} todavía no tiene personajes en este grupo.*`, m)
     const total = collection.reduce((sum, character) => sum + Number(character.value || 0), 0)
+    const pageSize = 100
+    const totalPages = Math.ceil(collection.length / pageSize)
+    if (!Number.isInteger(page) || page < 1 || page > totalPages) {
+      return conn.reply(m.chat, `📄 Página no válida. ${ownerName} tiene ${totalPages} ${totalPages === 1 ? 'página' : 'páginas'}; usá ${usedPrefix}pjs 1${target !== actor ? ` @${target.split('@')[0]}` : ''}.`, m)
+    }
+    const pageStart = (page - 1) * pageSize
+    const pageCharacters = collection.slice(pageStart, pageStart + pageSize)
     const grouped = new Map()
-    for (const character of collection) {
+    for (const character of pageCharacters) {
       const albumCharacters = grouped.get(character.album) || []
       albumCharacters.push(character)
       grouped.set(character.album, albumCharacters)
     }
     let number = 1
     const details = [...grouped].map(([album, characters]) =>
-      `📚 *${album}*\n${characters.map((character) => `${number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
+      `📚 *${album}*\n${characters.map((character) => `${pageStart + number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
     ).join('\n\n')
-    return sendLongText(conn, m.chat, `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}`, m)
+    const nextPageHint = page < totalPages
+      ? `\n➡️ Siguiente parte: ${usedPrefix}pjs ${page + 1}${target !== actor ? ` @${target.split('@')[0]}` : ''}`
+      : ''
+    return conn.reply(
+      m.chat,
+      `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n📄 Parte ${page} de ${totalPages}\n\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}${nextPageHint}`,
+      m
+    )
   }
 
   if (action === 'ainfo') {
@@ -1435,8 +1453,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
     const lines = characters.map((character, index) => {
       if (!character.owner) {
-        const firstLetter = Array.from(character.name.trim())[0] || '?'
-        return `${index + 1}. *${firstLetter}###* — 🔒 Aún sin desbloquear`
+        return `${index + 1}. 🔒 *Bloqueado* — GIF oculto`
       }
       return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`
     })
@@ -1595,7 +1612,7 @@ handler.help = [
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
-  'personajes [@usuario]', 'pjs [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
+  'personajes [página] [@usuario]', 'pjs [página] [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']

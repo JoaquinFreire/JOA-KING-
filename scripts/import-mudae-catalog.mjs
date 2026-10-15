@@ -86,7 +86,9 @@ for (const [index, item] of source.entries()) {
     skipped += 1
     continue
   }
-  if (catalog.characters.some((character) => normalizeMudaeIdentity(character.name) === normalizeMudaeIdentity(name))) {
+  if (catalog.characters.some((character) =>
+    makeCharacterIdentity(character.album, character.name) === makeCharacterIdentity(album, name)
+  )) {
     skipped += 1
     continue
   }

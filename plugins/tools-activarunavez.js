@@ -232,11 +232,6 @@ handler.all = async function (m, { chat }) {
     ? `${String(protocolKey.remoteJid || '').replace(/:\d+(?=@)/, '').toLowerCase()}:${protocolKey.id}`
     : null
   if (protocolCacheKey && handledProtocolMessages.has(protocolCacheKey)) return
-  if (protocolCacheKey) {
-    handledProtocolMessages.add(protocolCacheKey)
-    if (handledProtocolMessages.size > 100) handledProtocolMessages.delete(handledProtocolMessages.values().next().value)
-    console.log(`[VIEW-ONCE] Mensaje protocolo recibido id=${protocolKey.id} remote=${protocolKey.remoteJid || ''}`)
-  }
   const sourceMessage = protocolKey?.id
     ? await getCachedOriginalMessage(conn, protocolKey) || m
     : m
@@ -296,6 +291,11 @@ handler.all = async function (m, { chat }) {
       console.log(`[VIEW-ONCE] Envío completado destino=${destination}`)
     }
     await rememberSentViewOnce(conn, mediaKey)
+    if (protocolCacheKey) {
+      handledProtocolMessages.add(protocolCacheKey)
+      if (handledProtocolMessages.size > 100) handledProtocolMessages.delete(handledProtocolMessages.values().next().value)
+      console.log(`[VIEW-ONCE] Mensaje protocolo procesado id=${protocolKey.id} remote=${protocolKey.remoteJid || ''}`)
+    }
   } catch (error) {
     console.error(`[VIEW-ONCE] ERROR chat=${sourceChat} sender=${senderNumber} type=${media.type} destinos=${destinations.join(',')}`)
     console.error(error?.stack || error)

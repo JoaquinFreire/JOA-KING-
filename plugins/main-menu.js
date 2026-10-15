@@ -174,6 +174,8 @@ let txt = `
 > 𓃦 Armar un top aleatorio mencionando a integrantes del grupo.
  ✿  *%misexo hombre|mujer*
 > 𓃦 Elegirlo una vez; solo el owner puede cambiarlo mencionando al usuario.
+ ✿  *%parejadeldia*
+> 𓃦 Elegir la parejita del grupo; se mantiene hasta la medianoche de Argentina.
  ✿  *%topmujeres [tema] • %tophombres [tema]*
 > 𓃦 Tops aleatorios con quienes registraron su sexo.
  ✿  *%topgays*
@@ -336,8 +338,8 @@ let txt = `
 > 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
  ✿  *%personajes [página] [@usuario] • %pjs [página] [@usuario]*
 > 𓃦 Ver tu colección o consultar la de otra persona, en partes de hasta 100 (ej.: *%pjs 2 @usuario*).
- ✿  *%toppj • %verpj <personaje> • %overpj <personaje>*
-> 𓃦 Ver el ranking y las fichas; %overpj muestra GIF especiales antes del reclamo (owner).
+ ✿  *%toppj • %gpjs • %verpj <personaje> • %overpj <personaje>*
+> 𓃦 Ver rankings y fichas; %gpjs muestra el top 20 por valor y oculta los GIF no reclamados; %overpj muestra GIF antes del reclamo (owner).
  ✿  *%ainfo <álbum>*
 > 𓃦 Ver los personajes del álbum y sus valores.
  ✿  *%albumespj*

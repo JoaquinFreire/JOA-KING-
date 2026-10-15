@@ -118,4 +118,30 @@ await captureHandler.all.call(conn, repeatedQuoteMessage, { chat })
 assert.equal(groupMetadataCalls, 0, 'el registro persistente evita procesar de nuevo un view-once ya enviado')
 assert.equal(sentMessages, 0, 'no debe enviar nada si no se pudo resolver un destino privado')
 
+const retriableMessageId = 'VIEW-ONCE-RETRY'
+global.db.data.settings[botJid].captureViewOnceTarget = 'owner'
+const retriableDeleteMessage = {
+  chat: groupJid,
+  sender: '5491111111111@s.whatsapp.net',
+  mtype: 'protocolMessage',
+  message: {
+    protocolMessage: {
+      key: { id: retriableMessageId, remoteJid: groupJid, participant: '5491111111111@s.whatsapp.net' },
+    },
+  },
+}
+await captureHandler.all.call(conn, retriableDeleteMessage, { chat })
+global.__antideleteMessages.set(`${groupJid}:${retriableMessageId}`, {
+  key: {
+    id: retriableMessageId,
+    remoteJid: groupJid,
+    participant: '5491111111111@s.whatsapp.net',
+  },
+  message: { ...originalViewOnce },
+  messageTimestamp: 1_704_164_645,
+})
+await captureHandler.all.call(conn, retriableDeleteMessage, { chat })
+assert.equal(groupMetadataCalls, 1, 'un primer aviso sin el original no debe impedir procesar un reintento que ya puede recuperar la imagen')
+assert.equal(sentMessages, 0, 'no debe enviar la imagen cuando no hay un destino privado resoluble')
+
 console.log('Pruebas de regresión aprobadas.')

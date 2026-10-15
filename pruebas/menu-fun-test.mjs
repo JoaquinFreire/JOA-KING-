@@ -5,7 +5,11 @@ import path from 'node:path'
 import Jimp from 'jimp'
 
 global.botname = 'JOA-KING'
-global.db = { data: { users: {} } }
+let databaseWrites = 0
+global.db = {
+  data: { users: {}, chats: {} },
+  write: async () => { databaseWrites += 1 },
+}
 global.plugins = {}
 global.conn = { user: { jid: '5493513117202@s.whatsapp.net' } }
 
@@ -40,6 +44,14 @@ await menuHandler(menuMessage, {
 assert.match(menuMessages.at(-1).content.text, /Coleccioná personajes/)
 assert.match(menuMessages.at(-1).content.text, /%albumespj/)
 assert.match(menuMessages.at(-1).content.text, /%pjs/)
+assert.match(menuMessages.at(-1).content.text, /%gpjs/)
+assert.match(menuMessages.at(-1).content.text, /oculta los GIF no reclamados/)
+await menuHandler(menuMessage, {
+  conn: menuConnection,
+  args: ['fun'],
+  usedPrefix: '%',
+})
+assert.match(menuMessages.at(-1).content.text, /%parejadeldia/)
 
 await menuHandler(menuMessage, {
   conn: menuConnection,
@@ -50,6 +62,60 @@ assert.match(menuMessages.at(-1).content.text, /\.screenwsp/)
 assert.match(menuMessages.at(-1).content.text, /%manco/)
 assert.match(menuMessages.at(-1).content.text, /%homofobico/)
 assert.match(menuMessages.at(-1).content.text, /%gay2/)
+
+const maleOne = '5491111111111@s.whatsapp.net'
+const maleTwo = '5491111111112@s.whatsapp.net'
+const womanOne = '5491111111113@s.whatsapp.net'
+const womanTwo = '5491111111114@s.whatsapp.net'
+global.db.data.users[maleOne] = { genre: 'Hombre' }
+global.db.data.users[maleTwo] = { genre: 'Hombre' }
+global.db.data.users[womanOne] = { genre: 'Mujer' }
+global.db.data.users[womanTwo] = { genre: 'Mujer' }
+const dailyCoupleChat = {}
+const dailyCoupleMessage = { ...menuMessage, chat: 'daily-couple-group@g.us' }
+const dailyCoupleParticipants = [maleOne, maleTwo, womanOne, womanTwo].map((id) => ({ id }))
+const dailyOriginalDateNow = Date.now
+const dailyOriginalRandom = Math.random
+try {
+  Date.now = () => Date.UTC(2026, 9, 16, 2, 59)
+  Math.random = () => 0
+  await funHandler(dailyCoupleMessage, {
+    command: 'parejadeldia',
+    conn: menuConnection,
+    groupMetadata: { participants: dailyCoupleParticipants },
+    chat: dailyCoupleChat,
+  })
+  const firstCoupleMessage = menuMessages.at(-1).content
+  assert.match(firstCoupleMessage.text, /PAREJITA DEL DÍA/)
+  assert.match(firstCoupleMessage.text, /Hay encuentros que parecen casualidad/)
+  assert.deepEqual(firstCoupleMessage.mentions, [maleOne, womanOne])
+  assert.equal(dailyCoupleChat.dailyCouple.date, '2026-10-15', 'el día debe cambiar a medianoche de Argentina')
+  assert.equal(databaseWrites, 1)
+
+  Math.random = () => 0.99
+  await funHandler(dailyCoupleMessage, {
+    command: 'parejadeldia',
+    conn: menuConnection,
+    groupMetadata: { participants: dailyCoupleParticipants },
+    chat: dailyCoupleChat,
+  })
+  assert.deepEqual(menuMessages.at(-1).content.mentions, [maleOne, womanOne], 'repetir el comando durante el día debe conservar la pareja')
+  assert.equal(databaseWrites, 1, 'repetir el comando no debe guardar una pareja nueva')
+
+  Date.now = () => Date.UTC(2026, 9, 16, 3)
+  await funHandler(dailyCoupleMessage, {
+    command: 'parejadeldia',
+    conn: menuConnection,
+    groupMetadata: { participants: dailyCoupleParticipants },
+    chat: dailyCoupleChat,
+  })
+  assert.equal(dailyCoupleChat.dailyCouple.date, '2026-10-16')
+  assert.deepEqual(menuMessages.at(-1).content.mentions, [maleTwo, womanTwo], 'a medianoche de Argentina debe elegirse la pareja del nuevo día')
+  assert.equal(databaseWrites, 2)
+} finally {
+  Date.now = dailyOriginalDateNow
+  Math.random = dailyOriginalRandom
+}
 
 await menuHandler(menuMessage, {
   conn: menuConnection,

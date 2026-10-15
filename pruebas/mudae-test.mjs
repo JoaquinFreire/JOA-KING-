@@ -35,6 +35,7 @@ const groupEight = '120363000000000008@g.us'
 const groupNine = '120363000000000009@g.us'
 const groupTen = '120363000000000010@g.us'
 const paginationGroup = '120363000000000020@g.us'
+const gpjsGroup = '120363000000000021@g.us'
 const tradeGroup = '120363000000000016@g.us'
 const rankingTestGroups = Array.from({ length: 4 }, (_, index) =>
   `1203630000000000${11 + index}@g.us`
@@ -297,6 +298,15 @@ try {
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
     pendingVotes: { [userOne]: true },
   })), 'utf8')
+  await fs.writeFile(filenameFor(gpjsGroup), JSON.stringify(createState(gpjsGroup, {
+    characters: Array.from({ length: 25 }, (_, index) => ({
+      ...available,
+      id: `gpjs-character-${index}`,
+      name: `GPJS Character ${index}`,
+      value: (index + 100) * 1_000_000,
+      owner: index % 2 ? userTwo : null,
+    })),
+  })), 'utf8')
   await fs.writeFile(filenameFor(groupSeven), JSON.stringify(createState(groupSeven, {
     enabled: false,
     characters: [{ ...available, id: 'retired-character', name: 'Retired Character' }],
@@ -319,6 +329,8 @@ try {
   assert.match(replies.at(-1).text, /%aceptarcambio/)
   assert.doesNotMatch(replies.at(-1).text, /variante/i)
   assert.match(replies.at(-1).text, /%votarpj/)
+  assert.match(replies.at(-1).text, /%gpjs/)
+  assert.match(replies.at(-1).text, /GIF especiales sin reclamar aparecen bloqueados/)
   assert.match(replies.at(-1).text, /%wishremove/)
   assert.match(replies.at(-1).text, /%addpj <álbum> \+ <nombre>/)
   assert.match(replies.at(-1).text, /imagen normal para agregar \(no acepta GIFs\)/)
@@ -326,6 +338,7 @@ try {
   assert.match(replies.at(-1).text, /125.*50.*ya está reclamado/)
   assert.match(replies.at(-1).text, /%overpj <nombre>/)
   assert.ok(handler.command.includes('toppj'))
+  assert.ok(handler.command.includes('gpjs'))
   assert.ok(handler.command.includes('overpj'))
   assert.ok(handler.command.includes('ainfo'))
   assert.ok(!animeInfoHandler.command.includes('ainfo'))
@@ -827,7 +840,7 @@ try {
     id: 'special-gif-character',
     name: 'Special GIF Character',
     album: 'Special GIF Album',
-    value: MUDAE_CONFIG.GIFT_CHARACTER_VALUE,
+    value: 2_000_000,
     imageUrl: 'https://res.cloudinary.com/example/video/upload/special-gif.mp4',
     cloudinaryPublicId: 'mudae/test/special-gif',
     mediaType: 'video',
@@ -836,6 +849,7 @@ try {
   })
   await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(gifCatalog), 'utf8')
   const giftGroup = '120363000000000017@g.us'
+  const otherGiftGroup = '120363000000000022@g.us'
   await fs.writeFile(filenameFor(giftGroup), JSON.stringify(createState(giftGroup, {
     characters: [{
       ...available,
@@ -845,9 +859,16 @@ try {
     }],
     voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
   })), 'utf8')
+  await fs.writeFile(filenameFor(otherGiftGroup), JSON.stringify(createState(otherGiftGroup)), 'utf8')
   await runCommand(conn, groupMessage(giftGroup), 'ainfo', 'Special GIF Album')
   assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'ainfo debe ocultar los gifts que todavía no fueron reclamados')
   assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/, 'ainfo no debe revelar el nombre de un gift bloqueado')
+  await runCommand(conn, groupMessage(giftGroup), 'gpjs')
+  assert.match(replies.at(-1).text, /1\. 🔒 \*Bloqueado\*.*\$2\.000\.000/, 'gpjs debe conservar el puesto por valor y ocultar el nombre del gift disponible')
+  assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/, 'gpjs no debe revelar el nombre del gift disponible')
+  await runCommand(conn, groupMessage(otherGiftGroup), 'ainfo', 'Special GIF Album')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/, 'cada grupo empieza viendo el gift bloqueado')
+  assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/)
   assert.equal(MUDAE_CONFIG.GIFT_ROLL_PROBABILITY, 0.01)
   assert.equal(MUDAE_CONFIG.GIFT_CHARACTER_VALUE, 6767)
   const totalGiftChance = getGiftRollProbability(3)
@@ -857,7 +878,7 @@ try {
   assert.equal(getGiftRollProbability(0), 0, 'sin GIFs no debe reservarse probabilidad especial')
   await runCommand(conn, groupMessage(giftGroup), 'verpj', 'Special GIF Character')
   assert.match(replies.at(-1).text, /GIF está oculto hasta que alguien lo reclame/)
-  assert.match(replies.at(-1).text, /\$6\.767/)
+  assert.match(replies.at(-1).text, /\$2\.000\.000/)
   await runCommand(conn, groupMessage(giftGroup), 'overpj', 'Special GIF Character')
   assert.match(replies.at(-1).text, /Solo el owner/, 'un usuario normal no puede usar overpj')
   await runCommand(conn, groupMessage(giftGroup), 'overpj', 'Special GIF Character', { isOwner: true })
@@ -875,7 +896,7 @@ try {
     assert.match(sent.at(-2).content.text, /PERSONAJE CON IMAGEN OCULTA DESBLOQUEADO/)
     assert.match(sent.at(-2).content.text, /5 segundos/)
     assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
-    assert.match(sent.at(-1).content.caption, /\$6\.767/)
+    assert.match(sent.at(-1).content.caption, /\$2\.000\.000/)
   } finally {
     Math.random = originalGiftRandom
     global.setTimeout = originalGiftTimeout
@@ -890,6 +911,17 @@ try {
     userOne,
     'la reacción debe reclamar el GIF asociado al mensaje que revela el video'
   )
+  assert.equal(
+    (await readState(otherGiftGroup)).characters.find((character) => character.id === 'special-gif-character').owner,
+    null,
+    'reclamar un GIF en un grupo no debe desbloquearlo en otro grupo'
+  )
+  await runCommand(conn, groupMessage(otherGiftGroup), 'ainfo', 'Special GIF Album')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\* — GIF oculto/)
+  assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/)
+  await runCommand(conn, groupMessage(otherGiftGroup), 'gpjs')
+  assert.match(replies.at(-1).text, /🔒 \*Bloqueado\*.*\$2\.000\.000/)
+  assert.doesNotMatch(replies.at(-1).text, /Special GIF Character/)
   await runCommand(conn, groupMessage(giftGroup), 'verpj', 'Special GIF Character')
   assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
 
@@ -980,6 +1012,19 @@ try {
   assert.match(replies.at(-1).text, /Character 201/)
   assert.match(replies.at(-1).text, /Character 205/)
   assert.equal(replies.at(-1).text.includes('%pjs 4'), false, 'la última parte no debe sugerir una página siguiente')
+
+  await runCommand(conn, groupMessage(gpjsGroup), 'gpjs')
+  const characterRanking = replies.at(-1).text
+  assert.match(characterRanking, /TOP 20 PERSONAJES POR VALOR/)
+  assert.match(characterRanking, /1\. \*Gpjs Character 24\*.*✨ Disponible/)
+  assert.match(characterRanking, /2\. \*Gpjs Character 23\*.*🔒 Reclamado/)
+  assert.match(characterRanking, /20\. \*Gpjs Character 5\*/)
+  assert.doesNotMatch(characterRanking, /Gpjs Character 4\*/)
+  assert.equal(
+    characterRanking.split('\n').filter((line) => /^\d+\. \*/.test(line)).length,
+    20,
+    'gpjs debe mostrar exactamente los 20 personajes más valiosos, reclamados o disponibles'
+  )
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

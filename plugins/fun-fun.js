@@ -51,7 +51,7 @@ toxico: { label: 'tóxico', emoji: '☣️' },
 dramatico: { label: 'dramático', emoji: '🎭' },
 'dramático': { label: 'dramático', emoji: '🎭' },
 }
-const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args }) => {
+const handler = async (m, { groupMetadata, command, conn, text, usedPrefix, args, chat }) => {
 try {
 let ps = [...new Set((groupMetadata?.participants || []).map(v => v.id || v.jid).filter(Boolean))]
 if (command === 'gay2') {
@@ -104,6 +104,37 @@ const answers = [
 ]
 const [answer, style] = pickRandom(answers)
 return conn.reply(m.chat, `🔮 *CONSULTA AL ORÁCULO* 🔮\n\n❔ ${question}\n\n${style}\n💬 _${answer}_`, m)
+}
+if (command === 'parejadeldia') {
+const participants = [...new Set(ps)]
+const men = participants.filter((jid) =>
+String(global.db?.data?.users?.[jid]?.genre || '').trim().toLowerCase() === 'hombre'
+)
+const women = participants.filter((jid) =>
+String(global.db?.data?.users?.[jid]?.genre || '').trim().toLowerCase() === 'mujer'
+)
+if (!men.length || !women.length) {
+return conn.reply(m.chat, '💞 Para elegir la parejita del día hacen falta integrantes con %misexo hombre y %misexo mujer registrados.', m)
+}
+const dateParts = new Intl.DateTimeFormat('en', {
+timeZone: 'America/Argentina/Buenos_Aires',
+year: 'numeric',
+month: '2-digit',
+day: '2-digit',
+}).formatToParts(new Date(Date.now()))
+const dateKey = `${dateParts.find((part) => part.type === 'year')?.value}-${dateParts.find((part) => part.type === 'month')?.value}-${dateParts.find((part) => part.type === 'day')?.value}`
+const chatState = chat || global.db.data.chats[m.chat] || (global.db.data.chats[m.chat] = {})
+let dailyPair = chatState.dailyCouple
+if (dailyPair?.date !== dateKey) {
+dailyPair = { date: dateKey, man: pickRandom(men), woman: pickRandom(women) }
+chatState.dailyCouple = dailyPair
+await global.db.write()
+}
+const message = `╭━━━〔 💘 *PAREJITA DEL DÍA* 💘 〕━━━╮\n\n✨ Hoy el destino escribió una historia muy bonita para:\n\n💙 ${toM(dailyPair.man)}\n             💞\n🌷 ${toM(dailyPair.woman)}\n\nHay encuentros que parecen casualidad, pero tienen toda la magia de una historia esperando comenzar. Que nunca les falten las risas, la ternura y esos pequeños detalles que hacen enorme al amor. 🥰✨\n\n💌 *¡Que viva la parejita del día!* 💌\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+return conn.sendMessage(m.chat, {
+text: message,
+mentions: [dailyPair.man, dailyPair.woman],
+}, { quoted: m })
 }
 if (command == 'top') {
 let cantidad = 10
@@ -309,9 +340,9 @@ await m.react('✖️')
 conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
-handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'preguntar <pregunta>', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', ...Object.keys(percentageGames), 'gay2 [@usuario]', 'doxear', 'doxeo', 'doxxeo']
+handler.help = ['top', 'sorteo', 'ship', 'shippear', 'pregunta <pregunta>', 'preguntar <pregunta>', 'parejadeldia', 'afk', 'personalidad', 'formarpareja', 'formarpnormal [cantidad]', 'formarpgay [cantidad]', 'formarplesbi [cantidad]', ...Object.keys(percentageGames), 'gay2 [@usuario]', 'doxear', 'doxeo', 'doxxeo']
 handler.tags = ['fun']
-handler.command = ['top', 'sorteo', 'ship', 'shippear', 'pregunta', 'preguntar', 'afk', 'personalidad', 'formarpareja', 'formarpnormal', 'formarpgay', 'formarplesbi', 'formargay', 'formarlesbi', ...Object.keys(percentageGames), 'gay2', 'doxear', 'doxeo', 'doxxeo']
+handler.command = ['top', 'sorteo', 'ship', 'shippear', 'pregunta', 'preguntar', 'parejadeldia', 'afk', 'personalidad', 'formarpareja', 'formarpnormal', 'formarpgay', 'formarplesbi', 'formargay', 'formarlesbi', ...Object.keys(percentageGames), 'gay2', 'doxear', 'doxeo', 'doxxeo']
 handler.group = true
 
 export default handler

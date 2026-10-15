@@ -286,7 +286,9 @@ const syncStateWithCatalog = (state, catalog) => {
 
   for (const catalogCharacter of catalog.characters) {
     const previous = previousById.get(catalogCharacter.id) ||
-      previousCharacters.find((character) => normalizeMudaeIdentity(character.name) === normalizeMudaeIdentity(catalogCharacter.name))
+      previousCharacters.find((character) =>
+        makeCharacterIdentity(character.album, character.name) === makeCharacterIdentity(catalogCharacter.album, catalogCharacter.name)
+      )
     const next = {
       ...catalogCharacter,
       value: Number(previous?.value || catalogCharacter.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
@@ -844,7 +846,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%gpjs* — top 20 por valor; los GIF especiales sin reclamar aparecen bloqueados\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -1484,6 +1486,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     }, { quoted: m })
   }
 
+  if (action === 'gpjs') {
+    const top = [...state.characters]
+      .sort((a, b) => Number(b.value || 0) - Number(a.value || 0) || a.name.localeCompare(b.name, 'es'))
+      .slice(0, 20)
+    if (!top.length) return conn.reply(m.chat, '🎴 *TODAVÍA NO HAY PERSONAJES*', m)
+    const lines = top.map((character, index) => {
+      const isLockedGift = !character.owner && (character.isGift || character.mediaType === 'video')
+      const label = isLockedGift ? '🔒 *Bloqueado*' : `*${character.name}*`
+      return `${index + 1}. ${label} · 💰 ${formatMoney(character.value)} · ${character.owner ? '🔒 Reclamado' : '✨ Disponible'}`
+    })
+    return conn.reply(m.chat, `🏆 *TOP 20 PERSONAJES POR VALOR*\n\n${lines.join('\n')}`, m)
+  }
+
   if (action === 'verpj' || action === 'overpj') {
     const ownerView = action === 'overpj'
     if (ownerView && !isOwner && !isROwner) {
@@ -1612,7 +1627,7 @@ handler.help = [
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
-  'personajes [página] [@usuario]', 'pjs [página] [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
+  'personajes [página] [@usuario]', 'pjs [página] [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'gpjs', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']
@@ -1620,7 +1635,7 @@ handler.command = [
   'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
-  'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'verpj', 'overpj', 'votarpj',
+  'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',
   'wish', 'wishremove', 'wishlist',
 ]
 handler.group = true

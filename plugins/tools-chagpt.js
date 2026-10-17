@@ -31,13 +31,63 @@ await m.react('✔️')
 break
 }
 case 'ia': case 'chatgpt': {
-if (!text) return conn.reply(m.chat, `❀ Ingrese una petición.`, m)
+if (!text) return conn.reply(m.chat, `❀ Che {nombre}, decime algo para charlar. Ejemplo: *${usedPrefix}ia cómo estás?*`.replace("{nombre}", username), m)
 await m.react('🕒')
-const basePrompt = `Tu nombre es ${botname} y parece haber sido creada por ${etiqueta}. Tu versión actual es ${vs}, Tú usas el idioma Español. Llamarás a las personas por su nombre ${username}, te gusta ser divertida, y te encanta aprender. Lo más importante es que debes ser amigable con la persona con la que estás hablando. ${username}`
-const url = `${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(basePrompt)}`
-const res = await axios.get(url)
-if (!res.data?.status || !res.data?.data) throw new Error('Respuesta inválida de Delirius')
-await conn.sendMessage(m.chat, { text: res.data.data }, { quoted: m })
+
+const systemPrompt = `Sos ${botname}, un asistente de WhatsApp criado en Argentina. Hablás en español rioplatense con lunfardo y mucha buena onda. Usá palabras como che, boludo (en sentido de amigo), chabón, pibe, posta, re, groso, yapa, fiaca, laburo, quilombo, afano, cana, curda, mortificar, barra, festejar. Sé amigable, divertido, relajado, con nivel pero sin ser formal. Nunca uses inglés salvo que sea necesario. No seas grosero ni ofensivo. Respondé siempre en castellano argentino. El usuario se llama ${username}.`
+
+let respuesta = null
+
+/* ── Intento 1: DG AI API (gratis, sin clave) ── */
+try {
+  const url1 = `https://api.dgpt.fun/v1/chat/completions?message=${encodeURIComponent(text)}&system=${encodeURIComponent(systemPrompt)}`
+  const r1 = await axios.get(url1, { timeout: 15000 })
+  if (r1.data && (r1.data.response || r1.data.message || r1.data.answer || r1.data.content)) {
+    respuesta = r1.data.response || r1.data.message || r1.data.answer || r1.data.content
+  }
+} catch {}
+
+/* ── Intento 2: TorGPT (gratis, sin clave) ── */
+if (!respuesta) {
+  try {
+    const url2 = `https://api.torgpt.com/v1/chat/completions?message=${encodeURIComponent(text)}&system=${encodeURIComponent(systemPrompt)}`
+    const r2 = await axios.get(url2, { timeout: 15000 })
+    if (r2.data && (r2.data.response || r2.data.message || r2.data.answer || r2.data.content)) {
+      respuesta = r2.data.response || r2.data.message || r2.data.answer || r2.data.content
+    }
+  } catch {}
+}
+
+/* ── Intento 3: Delirius (si está configurado) ── */
+if (!respuesta && global.APIs?.delirius?.url) {
+  try {
+    const url3 = `${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(systemPrompt)}`
+    const r3 = await axios.get(url3, { timeout: 15000 })
+    if (r3.data?.data) {
+      respuesta = r3.data.data
+    }
+  } catch {}
+}
+
+/* ── Respaldo local: SIEMPRE responde, no se gasta nada ── */
+if (!respuesta) {
+  const LUNARDOS_RESP = [
+    "Che {nombre}, posta que no te entiendo bien, pero me mandaste algo. Decime de qué va así te ayudo, boludo. 😉",
+    "{nombre}, ¡qué groso que me escribas! No capté el mensaje, pero estoy acá para lo que necesites. ¿Qué hacés? 🍻",
+    "Che, pibe, no sé de qué me hablás pero me encanta charlar con vos. Contame más, que te escucho. 🤙",
+    "{nombre}, mirá, no te entendí del todo, pero estoy acá para vos. Decime qué necesitás y te ayudo como buen argentino. 🇦🇷",
+    "¡Che boludo! Me mandaste algo pero no le agarré el hilo. Hablame en buen castellano y te respondo al toque. 🍕",
+    "{nombre}, qué fiaca me da no entenderte, pero igual te voy a ayudar. Decime de qué se trata, pibe. 🤝",
+    "Che, posta que no capté nada, pero no te preocupes que te presto una mano. Contame qué onda. 🙌",
+    "{nombre}, me mandaste algo pero no sé de qué va. Si me explicás mejor, te doy una respuesta de nivel, groso. 🥂",
+    "¡Che! No te entendí bien, pero estoy acá para charlar. Decime qué necesitas y te ayudo como buen porteño. 🗽",
+    "{nombre}, quilombo total con tu mensaje, pero no te preocupes, te respondo igual. ¿Qué hacés en tu día? 🌮"
+  ]
+  const t = LUNARDOS_RESP[Math.floor(Math.random() * LUNARDOS_RESP.length)]
+  respuesta = t.replace(/\{nombre\}/g, username) + "\n\n_(Respuesta gratuita y local, sin gastar nada.)_"
+}
+
+await conn.sendMessage(m.chat, { text: respuesta }, { quoted: m })
 await m.react('✔️')
 break
 }
@@ -55,13 +105,12 @@ await m.react('✔️')
 break
 }}} catch (error) {
 await m.react('✖️')
-conn.reply(m.chat, `⚠︎ Se ha producido un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
+conn.reply(m.chat, `⚠︎ Che, hubo un problema.\n> Usa *${usedPrefix}report* para informarlo.\n\n${error.message}`, m)
 }}
 
 handler.command = ['gemini', 'bard', 'openai', 'dalle', 'flux', 'ia', 'chatgpt', 'luminai']
 handler.help = ['gemini', 'bard', 'openai', 'dalle', 'flux', 'ia', 'chatgpt', 'luminai']
 handler.tags = ['tools']
-handler.group = true
 
 export default handler
 

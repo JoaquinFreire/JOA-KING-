@@ -5,6 +5,7 @@ import os from 'os'
 import path from 'path'
 import fetch from 'node-fetch'
 import { Blob, FormData } from 'formdata-node'
+import Jimp from 'jimp'
 
 export const MUDAE_CONFIG = Object.freeze({
   ROLL_COOLDOWN: 5000,
@@ -25,6 +26,8 @@ export const MUDAE_CONFIG = Object.freeze({
   CLAIMED_VOTE_VALUE_INCREMENT: 50,
   WISHLIST_LIMIT: 3,
   DEFAULT_CHARACTER_VALUE: 1000,
+  GUESS_GAME_LIVES: 3,
+  GUESS_GAME_DURATION: 15 * 60 * 1000,
 })
 
 const loadLocalEnv = () => {
@@ -97,6 +100,7 @@ const defaultState = (groupId) => ({
   lastRollAt: 0,
   activeRolls: [],
   pendingTrade: null,
+  guessGame: null,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 })
@@ -637,6 +641,178 @@ const getQuotedImage = (m) => {
   return null
 }
 
+const getMudaeImage = (m) => {
+  const currentType = m?.mtype || m?.mediaType
+  const currentImage = m?.msg?.imageMessage || m?.message?.imageMessage
+  if (currentType === 'imageMessage' || currentImage) {
+    return {
+      media: currentImage || m.msg,
+      download: () => m.download?.(),
+    }
+  }
+  return getQuotedImage(m)
+}
+
+const makeMudaeSilhouette = async (imageUrl) => {
+  let sourceUrl = String(imageUrl || '')
+  try {
+    const url = new URL(sourceUrl)
+    if (url.hostname === 'res.cloudinary.com' && url.pathname.includes('/image/upload/')) {
+      url.pathname = url.pathname.replace('/image/upload/', '/image/upload/f_png/').replace(/\.webp$/i, '.png')
+      sourceUrl = url.toString()
+    }
+  } catch {}
+
+  const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(15000) })
+  if (!response.ok) throw new Error(`No se pudo descargar la imagen del personaje (HTTP ${response.status}).`)
+  const buffer = await response.buffer()
+  if (!buffer.length || buffer.length > 12 * 1024 * 1024) throw new Error('La imagen supera el tamaño permitido para el juego.')
+
+  const image = await Jimp.read(buffer)
+  image.scaleToFit(640, 640)
+  const { data, width, height } = image.bitmap
+  const pixelCount = width * height
+  const backgroundSamples = []
+  for (const [x, y] of [[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]]) {
+    const offset = (y * width + x) * 4
+    if (data[offset + 3] > 12) backgroundSamples.push([data[offset], data[offset + 1], data[offset + 2]])
+  }
+  const matchesBackground = (offset) => {
+    if (data[offset + 3] <= 12) return true
+    return backgroundSamples.some(([red, green, blue]) => {
+      const dr = data[offset] - red
+      const dg = data[offset + 1] - green
+      const db = data[offset + 2] - blue
+      return dr * dr + dg * dg + db * db <= 52 * 52 * 3
+    })
+  }
+
+  const background = new Uint8Array(pixelCount)
+  const queue = new Int32Array(pixelCount)
+  let readIndex = 0
+  let writeIndex = 0
+  const addIfBackground = (pixel) => {
+    if (pixel < 0 || pixel >= pixelCount || background[pixel]) return
+    const offset = pixel * 4
+    if (!matchesBackground(offset)) return
+    background[pixel] = 1
+    queue[writeIndex++] = pixel
+  }
+  for (let x = 0; x < width; x++) {
+    addIfBackground(x)
+    addIfBackground((height - 1) * width + x)
+  }
+  for (let y = 1; y < height - 1; y++) {
+    addIfBackground(y * width)
+    addIfBackground(y * width + width - 1)
+  }
+  while (readIndex < writeIndex) {
+    const pixel = queue[readIndex++]
+    const x = pixel % width
+    if (x > 0) addIfBackground(pixel - 1)
+    if (x + 1 < width) addIfBackground(pixel + 1)
+    if (pixel >= width) addIfBackground(pixel - width)
+    if (pixel + width < pixelCount) addIfBackground(pixel + width)
+  }
+
+  image.scan(0, 0, width, height, (x, y, offset) => {
+    const pixel = y * width + x
+    const isBackground = background[pixel] || data[offset + 3] <= 12
+    const color = isBackground ? 0xff : 0x12
+    data[offset] = color
+    data[offset + 1] = color
+    data[offset + 2] = color
+    data[offset + 3] = 255
+  })
+  return image.getBufferAsync(Jimp.MIME_PNG)
+}
+
+const getQuotedMessageId = (m) => m?.quoted?.id || m?.quoted?.key?.id ||
+  m?.msg?.contextInfo?.stanzaId || m?.message?.extendedTextMessage?.contextInfo?.stanzaId || ''
+
+const revealGuessGame = async (conn, state, game, winner = '') => {
+  const character = state.characters.find((item) => item.id === game.characterId)
+  state.guessGame = null
+  await saveState(state)
+  if (!character) return conn.reply(state.groupId, 'Terminó la ronda, pero el personaje ya no está en el catálogo.', null)
+  const winLine = winner ? `🎉 @${winner.split('@')[0]} adivinó correctamente y ganó la ronda.` : 'Se terminó la ronda. ¡Acá está la respuesta:'
+  return conn.sendMessage(state.groupId, {
+    image: { url: character.imageUrl },
+    caption: `${winLine}\n\n🎴 *${character.name}*\n📚 ${character.album}`,
+    mentions: winner ? [winner] : [],
+  })
+}
+
+const startGuessGame = async (m, conn, state) => {
+  const existing = state.guessGame
+  if (existing && Number(existing.expiresAt) > Date.now()) {
+    return conn.reply(m.chat, `Ya hay una ronda activa. Respondan a la imagen con su intento. Cada persona empieza con ${MUDAE_CONFIG.GUESS_GAME_LIVES} vidas.`, m)
+  }
+  if (existing) await revealGuessGame(conn, state, existing)
+
+  const candidates = state.characters.filter((character) =>
+    character?.imageUrl && !character.isGift && character.mediaType !== 'video'
+  )
+  if (!candidates.length) return conn.reply(m.chat, 'Todavía no hay personajes con imágenes normales para iniciar el juego.', m)
+  const character = candidates[Math.floor(Math.random() * candidates.length)]
+  const silhouette = await makeMudaeSilhouette(character.imageUrl)
+  const challenge = await conn.sendMessage(m.chat, {
+    image: silhouette,
+    mimetype: 'image/png',
+    caption: `🔎 *¿Quién es este personaje?*\nRespondé a esta imagen con tu intento. Cada jugador tiene ${MUDAE_CONFIG.GUESS_GAME_LIVES} vidas; cada error consume una. Quien acierte gana la ronda.\n⏳ La ronda dura 15 minutos.`,
+  }, { quoted: m })
+  state.guessGame = {
+    characterId: character.id,
+    challengeMessageId: challenge?.key?.id || '',
+    startedAt: Date.now(),
+    expiresAt: Date.now() + MUDAE_CONFIG.GUESS_GAME_DURATION,
+    lives: {},
+  }
+  await saveState(state)
+  return challenge
+}
+
+const processGuessGameMessage = async (conn, m) => {
+  if (!isGroupJid(m?.chat) || m?.fromMe || m?.key?.fromMe || typeof m.text !== 'string') return
+  if (/^[\u200e\u200f]*[%@&#]/.test(m.text.trim())) return
+  const quotedMessageId = getQuotedMessageId(m)
+  if (!quotedMessageId || !getActorJid(m)) return
+  await withGroupLock(m.chat, async () => {
+    const state = await loadState(m.chat)
+    const game = state.guessGame
+    if (!game || quotedMessageId !== game.challengeMessageId) return
+    if (Number(game.expiresAt) <= Date.now()) {
+      return revealGuessGame(conn, state, game)
+    }
+
+    const actor = getActorJid(m)
+    const remainingLives = Number.isInteger(game.lives?.[actor])
+      ? game.lives[actor]
+      : MUDAE_CONFIG.GUESS_GAME_LIVES
+    if (remainingLives <= 0) {
+      return conn.reply(m.chat, `Te quedaste sin vidas en esta ronda. El resto puede seguir intentando.`, m)
+    }
+
+    const character = state.characters.find((item) => item.id === game.characterId)
+    if (!character) {
+      state.guessGame = null
+      await saveState(state)
+      return conn.reply(m.chat, 'Se canceló la ronda porque el personaje ya no está en el catálogo.', m)
+    }
+    if (normalizeMudaeIdentity(m.text) === normalizeMudaeIdentity(character.name)) {
+      return revealGuessGame(conn, state, game, actor)
+    }
+
+    game.lives[actor] = remainingLives - 1
+    await saveState(state)
+    const remaining = game.lives[actor]
+    const name = await getDisplayName(conn, actor)
+    return conn.reply(m.chat, remaining
+      ? `❌ *${name}*, no era ese. Te quedan *${remaining}/${MUDAE_CONFIG.GUESS_GAME_LIVES} vidas*.`
+      : `❌ *${name}*, no era ese. Te quedaste sin vidas; el resto puede seguir intentando.`, m)
+  })
+}
+
 export const hasQuotedMudaeImage = (m) => Boolean(getQuotedImage(m))
 
 const getQuotedGif = (m) => {
@@ -839,7 +1015,10 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     return withGroupLock(m.chat, async () => {
       const state = await loadState(m.chat)
       state.enabled = action === 'onmudae'
-      if (!state.enabled) state.activeRolls = []
+      if (!state.enabled) {
+        state.activeRolls = []
+        state.guessGame = null
+      }
       await saveState(state)
       return conn.reply(m.chat, `🎴 *MUDAE ${state.enabled ? 'ACTIVADO' : 'DESACTIVADO'}*\nEste grupo ${state.enabled ? 'ya puede jugar' : 'ya no puede jugar'}.`, m)
     })
@@ -892,6 +1071,23 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   const state = await ensureEnabled(m, conn)
   if (!state) return
 
+  if (action === 'adivinardb') {
+    if (normalizeMudaeIdentity(text) === 'terminar') {
+      return withGroupLock(m.chat, async () => {
+        const current = await loadState(m.chat)
+        if (!current.guessGame) return conn.reply(m.chat, 'No hay una ronda de adivinar activa.', m)
+        return revealGuessGame(conn, current, current.guessGame)
+      })
+    }
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      return startGuessGame(m, conn, current)
+    }).catch((error) => {
+      console.error('[MUDAE] No se pudo iniciar adivinardb:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo iniciar la ronda.\n> ${error.message}`, m)
+    })
+  }
+
   if (action === 'addalbum') {
     if (!isAdminOrOwner(isOwner, isAdmin)) return conn.reply(m.chat, 'Solo los administradores del grupo pueden crear álbumes.', m)
     const album = normalizeMudaeLabel(text)
@@ -917,9 +1113,9 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       return conn.reply(m.chat, 'Solo los administradores del grupo pueden agregar personajes.', m)
     }
     const parts = parseMudaeParts(text, 2)
-    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé al mensaje de una imagen normal con ese comando.`, m)
-    const quotedMedia = getQuotedImage(m)
-    if (!quotedMedia) return conn.reply(m.chat, 'No detecté una imagen normal. %addpj no acepta GIFs; respondé a una imagen y usá %addpj <álbum> + <nombre>.', m)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé a una imagen normal o enviá el comando como descripción de la imagen.`, m)
+    const quotedMedia = getMudaeImage(m)
+    if (!quotedMedia) return conn.reply(m.chat, 'No detecté una imagen normal. %addpj no acepta GIFs; respondé a una imagen o enviá la imagen junto con %addpj <álbum> + <nombre>.', m)
     try {
       const mediaType = 'image'
       const media = typeof quotedMedia.download === 'function'
@@ -1613,7 +1809,10 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 }
 
 handler.all = async function (m) {
-  if (isGroupJid(m?.chat)) registerReactionListener(this)
+  if (isGroupJid(m?.chat)) {
+    registerReactionListener(this)
+    await processGuessGameMessage(this, m)
+  }
 }
 
 handler.init = registerReactionListener
@@ -1622,7 +1821,7 @@ handler.hasQuotedImage = hasQuotedMudaeImage
 handler.hasQuotedGif = hasQuotedMudaeGif
 handler.help = [
   'onmudae', 'offmudae',
-  'menumudae', 'addalbum <nombre>', 'addpj <álbum> + <nombre>',
+  'menumudae', 'adivinardb (responde a la imagen para adivinar)', 'adivinardb terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
@@ -1632,7 +1831,7 @@ handler.help = [
 ]
 handler.tags = ['mudae']
 handler.command = [
-  'onmudae', 'offmudae', 'menumudae', 'addalbum', 'addpj', 'editpj', 'delpj',
+  'onmudae', 'offmudae', 'menumudae', 'adivinardb', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
   'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',

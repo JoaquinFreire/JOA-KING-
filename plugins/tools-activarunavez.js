@@ -198,6 +198,7 @@ const handler = async (m, { conn, text, command, isROwner, isOwner, chat }) => {
   const textValue = (text || '').trim().toLowerCase()
   const antiDeleteTargets = ['antidelete', 'antideleteprivate', 'antideleteprivado', 'antidelete private', 'antidelete privado']
   if ((commandValue === 'on' || commandValue === 'off') && antiDeleteTargets.includes(textValue)) return
+  if (commandValue === 'on' && textValue === 'aternos') return
   if (!await isConfiguredOwner(conn, m, isROwner, isOwner)) return conn.reply(m.chat, 'Solo el dueño puede usar este comando.', m)
 
   const value = commandValue === 'on' && textValue === 'noveruna' ? 'on noveruna' : textValue

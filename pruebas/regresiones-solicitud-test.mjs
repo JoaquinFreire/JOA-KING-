@@ -1,4 +1,15 @@
 import assert from 'node:assert/strict'
+import Jimp from 'jimp'
+import { beginCommandExecution } from '../lib/command-execution.js'
+
+const guardedMessage = { chat: 'chat@s.whatsapp.net', key: { id: 'DUPLICATE-COMMAND' } }
+const firstExecution = beginCommandExecution(guardedMessage, 'hd')
+assert.ok(firstExecution, 'el primer intento debe adquirir el bloqueo')
+assert.equal(beginCommandExecution(guardedMessage, 'hd'), null, 'un segundo intento simultáneo del mismo mensaje debe ignorarse')
+firstExecution.finish()
+assert.equal(beginCommandExecution(guardedMessage, 'hd'), null, 'un mensaje repetido tras terminar también debe ignorarse')
+assert.ok(beginCommandExecution(guardedMessage, 'read'), 'el mismo mensaje puede ejecutar otro comando distinto')
+assert.ok(beginCommandExecution({ chat: guardedMessage.chat, key: { id: 'NEW-MESSAGE' } }, 'hd'), 'un mensaje nuevo debe poder ejecutar el comando')
 
 global.db = {
   data: {
@@ -25,13 +36,29 @@ assert.match(statusReply, /Comandos ejecutados.*3/)
 
 global.owner = []
 global.__antideleteMessages = new Map()
-const { default: captureHandler, formatViewOnceCaption } = await import('../plugins/tools-activarunavez.js')
+const { default: captureHandler, formatViewOnceCaption, resolveOwnerJids, sendToOwner } = await import('../plugins/tools-activarunavez.js')
+const { responseToImageBuffer, enhanceImageLocally } = await import('../plugins/tools-hd.js')
 const { getViewOnceMediaFromOwnMessage } = await import('../lib/viewonce.js')
 const {
   getViewOnceMediaKey,
+  getQuotedViewOnceSource,
   hasAlreadySentViewOnce,
   rememberSentViewOnce,
 } = await import('../plugins/tools-activarunavez.js')
+global.owner = ['5493513117202']
+assert.deepEqual(await resolveOwnerJids(), ['5493513117202@s.whatsapp.net'], 'el destino owner debe usar el número configurado sin depender de onWhatsApp')
+global.ownerLids = ['114864672526580']
+const ownerRouteAttempts = []
+await sendToOwner({
+  sendMessage: async (jid) => {
+    ownerRouteAttempts.push(jid)
+    if (jid.endsWith('@s.whatsapp.net')) throw new Error('PN no disponible')
+    return { key: { id: 'OWNER-FALLBACK-SENT' } }
+  },
+}, '5493513117202@s.whatsapp.net', { image: Buffer.from('x') }, {})
+assert.deepEqual(ownerRouteAttempts, ['5493513117202@s.whatsapp.net', '114864672526580@lid'], 'si falla el número, debe intentar el LID configurado del owner')
+global.ownerLids = []
+global.owner = []
 const expectedDate = new Date(1_704_164_645_000).toLocaleString('es-AR')
 assert.equal(
   formatViewOnceCaption('5491111111111@s.whatsapp.net', 'Grupo de prueba', 1_704_164_645),
@@ -53,6 +80,47 @@ assert.equal(
   null,
   'responder a una foto view-once no debe volver a contarla como un medio nuevo'
 )
+const quotedViewOnce = getQuotedViewOnceSource({
+  chat: groupJid,
+  sender: '5491222222222@s.whatsapp.net',
+  message: {
+    extendedTextMessage: {
+      contextInfo: {
+        stanzaId: originalMessageId,
+        participant: '5491111111111@s.whatsapp.net',
+        quotedMessage: originalViewOnce,
+      },
+    },
+  },
+})
+assert.equal(quotedViewOnce?.media.type, 'imageMessage', 'al responder a una imagen view-once debe recuperar el medio citado')
+assert.equal(quotedViewOnce?.sourceMessage.key.id, originalMessageId, 'la captura citada debe deduplicarse con el ID original')
+const imageBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xd9])
+assert.deepEqual(
+  await responseToImageBuffer({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'image/jpeg' },
+    arrayBuffer: async () => imageBytes.buffer,
+  }),
+  Buffer.from(imageBytes),
+  'el mejorador debe aceptar directamente una respuesta binaria de imagen'
+)
+const localHdImage = await Jimp.create(24, 16, 0xff555555)
+const localHdInput = await localHdImage.getBufferAsync(Jimp.MIME_PNG)
+const localHdOutput = await Jimp.read(await enhanceImageLocally(localHdInput))
+assert.equal(localHdOutput.bitmap.width, 48, 'la mejora local debe duplicar la resolución horizontal')
+assert.equal(localHdOutput.bitmap.height, 32, 'la mejora local debe duplicar la resolución vertical')
+
+const toggleChat = { captureViewOnce: false }
+await captureHandler({ chat: groupJid }, {
+  conn: { user: { jid: 'bot@s.whatsapp.net' }, reply: async () => {} },
+  command: 'on',
+  text: 'unavez',
+  chat: toggleChat,
+  isOwner: true,
+})
+assert.equal(toggleChat.captureViewOnce, true, 'on unavez debe activar la captura automática')
 const stableMediaKey = getViewOnceMediaKey({
   key: { id: originalMessageId, remoteJid: groupJid },
 }, null)

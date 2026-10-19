@@ -3,6 +3,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import Jimp from 'jimp'
 
 const testDataDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'joa-king-mudae-test-'))
 process.env.MUDAE_DATA_DIR = testDataDirectory
@@ -16,6 +17,8 @@ const {
   getGiftRollProbability,
   hasQuotedMudaeImage,
   hasQuotedMudaeGif,
+  scheduleGuessGameTimeout,
+  renderGuessChallengeCard,
   makeCharacterIdentity,
   normalizeMudaeIdentity,
   normalizeMudaeLabel,
@@ -34,6 +37,8 @@ const groupSeven = '120363000000000007@g.us'
 const groupEight = '120363000000000008@g.us'
 const groupNine = '120363000000000009@g.us'
 const groupTen = '120363000000000010@g.us'
+const guessGroup = '120363000000000022@g.us'
+const guessTimeoutGroup = '120363000000000023@g.us'
 const paginationGroup = '120363000000000020@g.us'
 const gpjsGroup = '120363000000000021@g.us'
 const tradeGroup = '120363000000000016@g.us'
@@ -311,6 +316,26 @@ try {
     enabled: false,
     characters: [{ ...available, id: 'retired-character', name: 'Retired Character' }],
   })), 'utf8')
+  await fs.writeFile(filenameFor(guessGroup), JSON.stringify(createState(guessGroup, {
+    characters: [{ ...available }],
+    voteCooldowns: { [userOne]: Date.now() + 24 * 60 * 60 * 1000 },
+    pendingVotes: { [userOne]: true },
+    guessGame: {
+      characterId: available.id,
+      challengeMessageId: 'GUESS-CHALLENGE-WIN',
+      expiresAt: Date.now() + 60_000,
+      lives: {},
+    },
+  })), 'utf8')
+  await fs.writeFile(filenameFor(guessTimeoutGroup), JSON.stringify(createState(guessTimeoutGroup, {
+    characters: [{ ...available }],
+    guessGame: {
+      characterId: available.id,
+      challengeMessageId: 'GUESS-CHALLENGE-TIMEOUT',
+      expiresAt: Date.now() - 1,
+      lives: {},
+    },
+  })), 'utf8')
   await fs.writeFile(path.join(testDataDirectory, 'catalog.json'), JSON.stringify({
     version: 1,
     albums: [],
@@ -346,6 +371,33 @@ try {
   assert.ok(!legacySeriesHandler.command.includes('ainfo'))
   assert.ok(!handler.command.includes('top'))
   assert.ok(handler.command.includes('menumudae'))
+  assert.ok(handler.command.includes('adivinarpj'))
+  assert.ok(!handler.command.includes('adivinardb'))
+  assert.equal(MUDAE_CONFIG.GUESS_GAME_DURATION, 10 * 60 * 1000)
+  const placeholderSilhouette = await Jimp.create(80, 80, 0xff101827)
+  placeholderSilhouette.scan(20, 10, 40, 60, (_x, _y, index) => {
+    placeholderSilhouette.bitmap.data[index] = 245
+    placeholderSilhouette.bitmap.data[index + 1] = 245
+    placeholderSilhouette.bitmap.data[index + 2] = 245
+  })
+  const challengeCard = await Jimp.read(await renderGuessChallengeCard(await placeholderSilhouette.getBufferAsync(Jimp.MIME_PNG)))
+  assert.equal(challengeCard.bitmap.width, 900, 'el reto debe generar una tarjeta visual diseñada')
+  assert.equal(challengeCard.bitmap.height, 1100)
+
+  const winningGuess = groupMessage(guessGroup)
+  winningGuess.text = 'Trunks'
+  winningGuess.quoted = { id: 'GUESS-CHALLENGE-WIN' }
+  await handler.all.call(conn, winningGuess, {})
+  assert.equal((await readState(guessGroup)).guessVoteCredits[userOne], 1, 'ganar la ronda debe habilitar un voto extra')
+  await runCommand(conn, groupMessage(guessGroup), 'votarpj', 'Trunks')
+  assert.match(replies.at(-1).text, /VOTO REGISTRADO/, 'el crédito de la ronda permite votar durante el cooldown')
+  assert.equal((await readState(guessGroup)).guessVoteCredits[userOne], undefined, 'el crédito se consume al emitir el voto')
+
+  const expiredGuessState = await readState(guessTimeoutGroup)
+  scheduleGuessGameTimeout(conn, expiredGuessState, expiredGuessState.guessGame)
+  await new Promise((resolve) => setTimeout(resolve, 60))
+  assert.equal((await readState(guessTimeoutGroup)).guessGame, null, 'el temporizador cierra una ronda vencida sin esperar otra respuesta')
+  assert.ok(sent.some(({ jid, content }) => jid === guessTimeoutGroup && /Trunks/.test(content.caption || '')), 'al vencer debe revelar el personaje en el grupo')
 
   await runCommand(conn, groupMessage(groupOne), 'onmudae')
   assert.match(replies.at(-1).text, /Solo el owner/)

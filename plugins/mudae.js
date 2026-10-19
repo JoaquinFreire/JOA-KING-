@@ -6,6 +6,7 @@ import path from 'path'
 import fetch from 'node-fetch'
 import { Blob, FormData } from 'formdata-node'
 import Jimp from 'jimp'
+import { beginCommandExecution } from '../lib/command-execution.js'
 
 export const MUDAE_CONFIG = Object.freeze({
   ROLL_COOLDOWN: 5000,
@@ -27,7 +28,7 @@ export const MUDAE_CONFIG = Object.freeze({
   WISHLIST_LIMIT: 3,
   DEFAULT_CHARACTER_VALUE: 1000,
   GUESS_GAME_LIVES: 3,
-  GUESS_GAME_DURATION: 15 * 60 * 1000,
+  GUESS_GAME_DURATION: 10 * 60 * 1000,
 })
 
 const loadLocalEnv = () => {
@@ -68,6 +69,7 @@ let catalogCache = null
 let catalogFileSignature = null
 let catalogLoad = null
 const reactionListenerSymbol = Symbol.for('joa-king.mudae.reaction-listener')
+const guessGameTimers = new Map()
 
 export const normalizeMudaeIdentity = (value) => String(value || '')
   .normalize('NFD')
@@ -97,6 +99,7 @@ const defaultState = (groupId) => ({
   tradeCooldowns: {},
   voteCooldowns: {},
   pendingVotes: {},
+  guessVoteCredits: {},
   lastRollAt: 0,
   activeRolls: [],
   pendingTrade: null,
@@ -727,20 +730,76 @@ const makeMudaeSilhouette = async (imageUrl) => {
   return image.getBufferAsync(Jimp.MIME_PNG)
 }
 
+export const renderGuessChallengeCard = async (silhouetteBuffer) => {
+  const silhouette = await Jimp.read(silhouetteBuffer)
+  const width = 900
+  const height = 1100
+  const card = await Jimp.create(width, height, 0xff101827)
+  card.scan(0, 0, width, height, (_x, y, index) => {
+    const blend = Math.round(18 + 34 * (y / height))
+    card.bitmap.data[index] = 12 + blend / 3
+    card.bitmap.data[index + 1] = 17 + blend / 2
+    card.bitmap.data[index + 2] = 34 + blend
+  })
+  const accent = await Jimp.create(8, 170, 0xffc084fc)
+  card.composite(accent, 70, 74)
+  const titleFont = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE)
+  const subtitleFont = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE)
+  card.print(titleFont, 105, 85, { text: '¿QUIÉN ES ESTE PERSONAJE?', alignmentX: Jimp.HORIZONTAL_ALIGN_LEFT }, 700, 45)
+  card.print(subtitleFont, 106, 145, 'ADIVINÁ · 3 VIDAS · 10 MINUTOS')
+
+  const panel = await Jimp.create(760, 760, 0xff1b2638)
+  card.composite(panel, 70, 260)
+  silhouette.contain(650, 650)
+  card.composite(silhouette, Math.round((width - silhouette.bitmap.width) / 2), 315)
+  const footerFont = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE)
+  card.print(footerFont, 80, 1050, 'Respondé citando esta imagen · Si acertás, podés volver a votar', 740, 30)
+  return card.getBufferAsync(Jimp.MIME_PNG)
+}
+
+const makeGuessChallengeCard = async (imageUrl) => renderGuessChallengeCard(await makeMudaeSilhouette(imageUrl))
+
 const getQuotedMessageId = (m) => m?.quoted?.id || m?.quoted?.key?.id ||
   m?.msg?.contextInfo?.stanzaId || m?.message?.extendedTextMessage?.contextInfo?.stanzaId || ''
 
 const revealGuessGame = async (conn, state, game, winner = '') => {
+  const timer = guessGameTimers.get(state.groupId)
+  if (timer) clearTimeout(timer)
+  guessGameTimers.delete(state.groupId)
   const character = state.characters.find((item) => item.id === game.characterId)
   state.guessGame = null
+  if (winner) {
+    state.guessVoteCredits = state.guessVoteCredits && typeof state.guessVoteCredits === 'object' ? state.guessVoteCredits : {}
+    state.guessVoteCredits[winner] = Number(state.guessVoteCredits[winner] || 0) + 1
+  }
   await saveState(state)
   if (!character) return conn.reply(state.groupId, 'Terminó la ronda, pero el personaje ya no está en el catálogo.', null)
-  const winLine = winner ? `🎉 @${winner.split('@')[0]} adivinó correctamente y ganó la ronda.` : 'Se terminó la ronda. ¡Acá está la respuesta:'
+  const winLine = winner
+    ? `🎉 @${winner.split('@')[0]} adivinó correctamente y ganó la ronda. Puede volver a votar con *%votarpj*.`
+    : '⏰ Se terminó la ronda. ¡Acá está la respuesta:'
   return conn.sendMessage(state.groupId, {
     image: { url: character.imageUrl },
     caption: `${winLine}\n\n🎴 *${character.name}*\n📚 ${character.album}`,
     mentions: winner ? [winner] : [],
   })
+}
+
+export const scheduleGuessGameTimeout = (conn, state, game) => {
+  const previous = guessGameTimers.get(state.groupId)
+  if (previous) clearTimeout(previous)
+  const timer = setTimeout(() => {
+    withGroupLock(state.groupId, async () => {
+      const current = await loadState(state.groupId)
+      if (!current.guessGame || current.guessGame.challengeMessageId !== game.challengeMessageId) return
+      if (Number(current.guessGame.expiresAt) > Date.now()) {
+        scheduleGuessGameTimeout(conn, current, current.guessGame)
+        return
+      }
+      await revealGuessGame(conn, current, current.guessGame)
+    }).catch((error) => console.error('[MUDAE] No se pudo cerrar automáticamente la ronda:', error?.stack || error))
+  }, Math.max(0, Number(game.expiresAt) - Date.now()))
+  timer.unref?.()
+  guessGameTimers.set(state.groupId, timer)
 }
 
 const startGuessGame = async (m, conn, state) => {
@@ -755,11 +814,11 @@ const startGuessGame = async (m, conn, state) => {
   )
   if (!candidates.length) return conn.reply(m.chat, 'Todavía no hay personajes con imágenes normales para iniciar el juego.', m)
   const character = candidates[Math.floor(Math.random() * candidates.length)]
-  const silhouette = await makeMudaeSilhouette(character.imageUrl)
+  const challengeImage = await makeGuessChallengeCard(character.imageUrl)
   const challenge = await conn.sendMessage(m.chat, {
-    image: silhouette,
+    image: challengeImage,
     mimetype: 'image/png',
-    caption: `🔎 *¿Quién es este personaje?*\nRespondé a esta imagen con tu intento. Cada jugador tiene ${MUDAE_CONFIG.GUESS_GAME_LIVES} vidas; cada error consume una. Quien acierte gana la ronda.\n⏳ La ronda dura 15 minutos.`,
+    caption: `🔎 *¿QUIÉN ES ESTE PERSONAJE?*\n\nRespondé a esta imagen con tu intento. Cada jugador tiene *${MUDAE_CONFIG.GUESS_GAME_LIVES} vidas*; cada error consume una.\n\n🏆 Quien acierte gana y puede volver a votar con *%votarpj*.\n⏳ Tenés *10 minutos* para adivinar.`,
   }, { quoted: m })
   state.guessGame = {
     characterId: character.id,
@@ -769,6 +828,7 @@ const startGuessGame = async (m, conn, state) => {
     lives: {},
   }
   await saveState(state)
+  scheduleGuessGameTimeout(conn, state, state.guessGame)
   return challenge
 }
 
@@ -1071,21 +1131,31 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   const state = await ensureEnabled(m, conn)
   if (!state) return
 
-  if (action === 'adivinardb') {
-    if (normalizeMudaeIdentity(text) === 'terminar') {
-      return withGroupLock(m.chat, async () => {
-        const current = await loadState(m.chat)
-        if (!current.guessGame) return conn.reply(m.chat, 'No hay una ronda de adivinar activa.', m)
-        return revealGuessGame(conn, current, current.guessGame)
-      })
-    }
-    return withGroupLock(m.chat, async () => {
-      const current = await loadState(m.chat)
-      return startGuessGame(m, conn, current)
-    }).catch((error) => {
-      console.error('[MUDAE] No se pudo iniciar adivinardb:', error?.stack || error)
+  if (action === 'adivinarpj') {
+    const execution = beginCommandExecution(m, 'adivinarpj')
+    if (!execution) return
+    try {
+      await m.react?.('⏳')
+      if (normalizeMudaeIdentity(text) === 'terminar') {
+        await withGroupLock(m.chat, async () => {
+          const current = await loadState(m.chat)
+          if (!current.guessGame) return conn.reply(m.chat, 'No hay una ronda de adivinar activa.', m)
+          return revealGuessGame(conn, current, current.guessGame)
+        })
+      } else {
+        await withGroupLock(m.chat, async () => {
+          const current = await loadState(m.chat)
+          return startGuessGame(m, conn, current)
+        })
+      }
+      await m.react?.('✅')
+    } catch (error) {
+      await m.react?.('❌')
+      console.error('[MUDAE] No se pudo iniciar adivinarpj:', error?.stack || error)
       return conn.reply(m.chat, `No se pudo iniciar la ronda.\n> ${error.message}`, m)
-    })
+    } finally {
+      execution.finish()
+    }
   }
 
   if (action === 'addalbum') {
@@ -1737,12 +1807,18 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
       const now = Date.now()
       const availableAt = Number(current.voteCooldowns?.[actor] || 0)
-      if (availableAt > now && current.pendingVotes[actor]) {
+      const guessVoteCredits = current.guessVoteCredits && typeof current.guessVoteCredits === 'object' ? current.guessVoteCredits : (current.guessVoteCredits = {})
+      const hasGuessVoteCredit = Number(guessVoteCredits[actor] || 0) > 0
+      if (availableAt > now && current.pendingVotes[actor] && !hasGuessVoteCredit) {
         return conn.reply(m.chat, `Ya tenés un voto pendiente. Usá *${usedPrefix}rw* para tirar antes de volver a votar.`, m)
       }
-      if (availableAt > now) {
+      if (availableAt > now && !hasGuessVoteCredit) {
         const remainingHours = Math.ceil((availableAt - now) / (60 * 60 * 1000))
         return conn.reply(m.chat, `⏳ Ya votaste en las últimas 24 horas. Podés volver a votar en aproximadamente ${remainingHours} h.`, m)
+      }
+      if (hasGuessVoteCredit) {
+        guessVoteCredits[actor] -= 1
+        if (guessVoteCredits[actor] <= 0) delete guessVoteCredits[actor]
       }
       delete current.pendingVotes[actor]
       const increment = character.owner
@@ -1821,7 +1897,7 @@ handler.hasQuotedImage = hasQuotedMudaeImage
 handler.hasQuotedGif = hasQuotedMudaeGif
 handler.help = [
   'onmudae', 'offmudae',
-  'menumudae', 'adivinardb (responde a la imagen para adivinar)', 'adivinardb terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
+  'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
@@ -1831,7 +1907,7 @@ handler.help = [
 ]
 handler.tags = ['mudae']
 handler.command = [
-  'onmudae', 'offmudae', 'menumudae', 'adivinardb', 'addalbum', 'addpj', 'editpj', 'delpj',
+  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'editpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
   'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',

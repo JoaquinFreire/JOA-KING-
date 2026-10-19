@@ -3,6 +3,7 @@ const isAuthorized = isROwner || (m.isGroup && isAdmin)
 const directAction = ['on', 'off'].includes(command.toLowerCase())
 const action = directAction ? command.toLowerCase() : args[0]?.toLowerCase()
 const target = directAction ? args[0]?.toLowerCase() : 'bot'
+if (directAction && ['unavez', 'viewonce', 'view once'].includes(target)) return
 
 if (!isAuthorized) {
 if (chat.isBanned) return

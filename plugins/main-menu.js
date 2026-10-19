@@ -334,6 +334,8 @@ let txt = `
 > 𓃦 Votá y tirá; reclamá, liberá, regalá o cambiá uno propio por suerte cada 12 horas.
  ✿  *%cd • %votarpj <personaje>*
 > 𓃦 Ver cooldowns y votos para habilitar tiradas.
+ ✿  *%adivinarpj*
+> 𓃦 Adiviná el personaje en 10 minutos; quien gane puede volver a votar.
  ✿  *%cambiarpj <tuyo> + <del otro> • %aceptarcambio*
 > 𓃦 Proponé un intercambio; solo la otra persona puede aceptarlo en 30 segundos.
  ✿  *%personajes [página] [@usuario] • %pjs [página] [@usuario]*

@@ -1085,7 +1085,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%gpjs* — top 20 por valor; los GIF especiales sin reclamar aparecen bloqueados\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj [página]* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%gpjs* — top 20 por valor; los GIF especiales sin reclamar aparecen bloqueados\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%editimgpj <album> + <nombre>* — cambia la imagen (owner)\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -1274,6 +1274,79 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     })
   }
 
+  if (action === 'editimgpj') {
+    if (!isROwner && !isOwner) return conn.reply(m.chat, 'Solo el owner del bot puede cambiar imágenes de personajes.', m)
+    const parts = parseMudaeParts(text, 2)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}editimgpj <álbum> + <nombre>\nResponde a una imagen o envíala junto con el comando.`, m)
+    const imageMessage = getMudaeImage(m)
+    if (!imageMessage) return conn.reply(m.chat, `No detecté una imagen. Responde a una imagen o envíala con ${usedPrefix}editimgpj <álbum> + <nombre>.`, m)
+
+    try {
+      const media = typeof imageMessage.download === 'function'
+        ? await imageMessage.download()
+        : await conn.downloadM(imageMessage.media, 'image')
+      if (!Buffer.isBuffer(media) || !media.length) throw new Error('No se pudo descargar la imagen nueva.')
+      const mimeType = imageMessage.media?.mimetype || 'image/jpeg'
+      getCloudinaryCredentials()
+
+      return await withGroupLock(m.chat, async () => {
+        const current = await loadState(m.chat)
+        const catalog = await loadCatalog()
+        const matches = catalog.characters.filter((item) =>
+          makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(parts[0], parts[1])
+        )
+        if (matches.length !== 1) {
+          return conn.reply(m.chat, matches.length ? 'Hay personajes duplicados con ese álbum y nombre; no cambié ninguna imagen.' : 'No encontré ese personaje en el catálogo.', m)
+        }
+        const original = matches[0]
+        if (original.isGift || original.mediaType === 'video') {
+          return conn.reply(m.chat, 'Este comando solo cambia imágenes de personajes normales; los GIF especiales no se modificaron.', m)
+        }
+
+        const oldPublicId = original.cloudinaryPublicId
+        const oldMediaType = original.mediaType
+        const uploaded = await uploadCharacterImage(media, mimeType)
+        let catalogSaved = false
+        try {
+          await withCatalogLock(async () => {
+            const lockedCatalog = await loadCatalog()
+            const lockedCharacter = lockedCatalog.characters.find((item) => item.id === original.id)
+            if (!lockedCharacter) throw new Error('El personaje ya no existe en el catálogo global.')
+            lockedCharacter.imageUrl = uploaded.imageUrl
+            lockedCharacter.cloudinaryPublicId = uploaded.cloudinaryPublicId
+            lockedCharacter.mediaType = 'image'
+            lockedCharacter.isGift = false
+            await saveCatalog(lockedCatalog)
+            catalogSaved = true
+            syncStateWithCatalog(current, lockedCatalog)
+          })
+          await saveState(current)
+        } catch (error) {
+          if (!catalogSaved) {
+            try {
+              await deleteCloudinaryMedia(uploaded.cloudinaryPublicId, 'image')
+            } catch (cleanupError) {
+              console.error('[MUDAE] No se pudo limpiar la nueva imagen de Cloudinary:', cleanupError?.stack || cleanupError)
+              throw new Error(`${error.message} La nueva imagen ${uploaded.cloudinaryPublicId} también debe eliminarse manualmente de Cloudinary.`)
+            }
+          }
+          throw error
+        }
+
+        try {
+          await deleteCloudinaryMedia(oldPublicId, oldMediaType)
+        } catch (error) {
+          console.error('[MUDAE] La imagen nueva se guardó, pero no se pudo borrar la anterior de Cloudinary:', error?.stack || error)
+          return conn.reply(m.chat, `La imagen de *${original.name}* ya se actualizó para todos los grupos, pero Cloudinary no pudo borrar la imagen anterior (${oldPublicId || 'sin public_id'}).\n> ${error.message}`, m)
+        }
+        return conn.reply(m.chat, `✅ *IMAGEN ACTUALIZADA*\n🎴 *${original.name}* — ${original.album}\nLa imagen anterior se eliminó de Cloudinary.`, m)
+      })
+    } catch (error) {
+      console.error('[MUDAE] No se pudo cambiar la imagen de un personaje:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo cambiar la imagen del personaje.\n> ${error.message}`, m)
+    }
+  }
+
   if (action === 'delpj' || action === 'delchar') {
     if (!isROwner && !isOwner) return conn.reply(m.chat, 'Solo el owner del bot puede eliminar personajes.', m)
     const parts = parseMudaeParts(text, 2)
@@ -1329,6 +1402,11 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 
   if (action === 'albumespj') {
     if (!state.albums.length) return conn.reply(m.chat, '📚 Todavía no hay álbumes en este grupo.', m)
+    const pageText = String(text || '').trim()
+    const page = pageText ? Number(pageText) : 1
+    if (!/^\d+$/.test(pageText || '1') || !Number.isInteger(page) || page < 1) {
+      return conn.reply(m.chat, `Uso: ${usedPrefix}albumespj [página]`, m)
+    }
     const lines = state.albums
       .map((album) => {
         const count = state.characters.filter((character) =>
@@ -1337,10 +1415,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         return `📚 *${album}* — ${count} ${count === 1 ? 'personaje' : 'personajes'}`
       })
       .sort((first, second) => first.localeCompare(second, 'es'))
+    const pageSize = 40
+    const totalPages = Math.ceil(lines.length / pageSize)
+    if (page > totalPages) {
+      return conn.reply(m.chat, `Esa página no existe. Hay ${totalPages}; usa ${usedPrefix}albumespj 1 para empezar.`, m)
+    }
+    const pageLines = lines.slice((page - 1) * pageSize, page * pageSize)
+    const nextPageHint = page < totalPages ? `\n➡️ Siguiente página: ${usedPrefix}albumespj ${page + 1}` : ''
     return sendLongText(
       conn,
       m.chat,
-      `📚 *ÁLBUMES DE PERSONAJES*\n\n${lines.join('\n')}\n\nÁlbumes: ${lines.length} · Personajes: ${state.characters.length}`,
+      `📚 *ÁLBUMES DE PERSONAJES*\n📄 Página ${page} de ${totalPages}\n\n${pageLines.join('\n')}\n\nÁlbumes: ${lines.length} · Personajes: ${state.characters.length}${nextPageHint}`,
       m
     )
   }
@@ -1684,28 +1769,43 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!collection.length) return conn.reply(m.chat, `👑 *${ownerName} todavía no tiene personajes en este grupo.*`, m)
     const total = collection.reduce((sum, character) => sum + Number(character.value || 0), 0)
     const pageSize = 100
-    const totalPages = Math.ceil(collection.length / pageSize)
+    const grouped = new Map()
+    for (const character of collection) {
+      const key = normalizeMudaeIdentity(character.album)
+      const group = grouped.get(key) || { album: character.album, characters: [] }
+      group.characters.push(character)
+      grouped.set(key, group)
+    }
+    const pages = []
+    let pageGroups = []
+    let pageCharacterCount = 0
+    for (const group of grouped.values()) {
+      if (pageGroups.length && pageCharacterCount + group.characters.length > pageSize) {
+        pages.push(pageGroups)
+        pageGroups = []
+        pageCharacterCount = 0
+      }
+      pageGroups.push(group)
+      pageCharacterCount += group.characters.length
+    }
+    if (pageGroups.length) pages.push(pageGroups)
+    const totalPages = pages.length
     if (!Number.isInteger(page) || page < 1 || page > totalPages) {
       return conn.reply(m.chat, `📄 Página no válida. ${ownerName} tiene ${totalPages} ${totalPages === 1 ? 'página' : 'páginas'}; usá ${usedPrefix}pjs 1${target !== actor ? ` @${target.split('@')[0]}` : ''}.`, m)
     }
-    const pageStart = (page - 1) * pageSize
-    const pageCharacters = collection.slice(pageStart, pageStart + pageSize)
-    const grouped = new Map()
-    for (const character of pageCharacters) {
-      const albumCharacters = grouped.get(character.album) || []
-      albumCharacters.push(character)
-      grouped.set(character.album, albumCharacters)
-    }
-    let number = 1
-    const details = [...grouped].map(([album, characters]) =>
-      `📚 *${album}*\n${characters.map((character) => `${pageStart + number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
+    const currentPageGroups = pages[page - 1]
+    let number = pages.slice(0, page - 1).reduce((sum, groups) =>
+      sum + groups.reduce((count, group) => count + group.characters.length, 0), 0) + 1
+    const currentPageCount = currentPageGroups.reduce((sum, group) => sum + group.characters.length, 0)
+    const details = currentPageGroups.map(({ album, characters }) =>
+      `📚 *${album}*\n${characters.map((character) => `${number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
     ).join('\n\n')
     const nextPageHint = page < totalPages
       ? `\n➡️ Siguiente parte: ${usedPrefix}pjs ${page + 1}${target !== actor ? ` @${target.split('@')[0]}` : ''}`
       : ''
     return conn.reply(
       m.chat,
-      `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n📄 Parte ${page} de ${totalPages}\n\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}${nextPageHint}`,
+      `👑 *PERSONAJES DE ${ownerName.toLocaleUpperCase('es')}*\n📄 Parte ${page} de ${totalPages} · ${currentPageCount} personajes\n\n${details}\n\n🎴 Personajes: ${collection.length}\n💰 Valor total: ${formatMoney(total)}${nextPageHint}`,
       m
     )
   }
@@ -1719,12 +1819,14 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       .filter((character) => normalizeMudaeIdentity(character.album) === albumQuery)
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
     if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
-    const lines = characters.map((character, index) => {
+    const lines = await Promise.all(characters.map(async (character, index) => {
       if (!character.owner && (character.isGift || character.mediaType === 'video')) {
         return `${index + 1}. 🔒 *Bloqueado* — GIF oculto`
       }
-      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}`
-    })
+      const ownerName = character.owner ? await getDisplayName(conn, normalizeJid(character.owner)) : ''
+      const ownerText = ownerName ? ` · Lo tiene: ${ownerName}` : ''
+      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}${ownerText}`
+    }))
     return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
   }
 
@@ -1899,15 +2001,16 @@ handler.help = [
   'onmudae', 'offmudae',
   'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
+  'editimgpj <álbum> + <nombre> (responde a una imagen nueva; owner)',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
-  'personajes [página] [@usuario]', 'pjs [página] [@usuario]', 'albumespj', 'ainfo <álbum>', 'toppj', 'gpjs', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
+  'personajes [página] [@usuario]', 'pjs [página] [@usuario]', 'albumespj [página]', 'ainfo <álbum>', 'toppj', 'gpjs', 'verpj <personaje>', 'overpj <personaje>', 'votarpj <personaje>',
   'wish <personaje>', 'wishremove <personaje>', 'wishlist',
 ]
 handler.tags = ['mudae']
 handler.command = [
-  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'editpj', 'delpj',
+  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'editpj', 'editimgpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
   'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',

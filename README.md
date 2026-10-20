@@ -66,6 +66,8 @@ El menú principal acepta secciones, por ejemplo `%menu descargar`, `%menu fun` 
 
 Para agregar imágenes, configura Cloudinary en un archivo `.env` local. Puedes partir de `.env.example` con `Copy-Item .env.example .env` en PowerShell, completar los tres valores de Cloudinary y no subir `.env` a GitHub. Si recibes `Invalid Signature`, revisa que el cloud name, la API key y el API secret sean del mismo cloud y que el secret siga vigente.
 
+Para importar personajes desde un JSON con campos `nombre` e `imagen`, ejecuta `npm run mudae:import -- mudae/dragonball.json "Dragon Ball"` en una consola interactiva. El importador muestra el nombre y la URL de cada imagen y pregunta `[y/n]`; con `y` te permite cambiar el nombre (Enter conserva el original), luego sube la imagen a tu Cloudinary y guarda el personaje en `data/mudae/catalog.json`; con `n` lo omite. No agrega nombres que ya existan en ningún álbum, ignorando mayúsculas y tildes. Guarda el catálogo después de cada alta y omite personajes incompletos; el álbum puede indicarse como segundo argumento. Asegúrate de tener Cloudinary configurado antes de aceptar personajes.
+
 El catálogo (`data/mudae/catalog.json`) se comparte mediante Git y se sincroniza entre los grupos; el bot vuelve a revisar el archivo cuando se usa un comando de personajes, así que los cambios recibidos con `git pull` aparecen sin reiniciar. Los reclamos y demás estado de cada grupo son locales y no se suben a Git. De forma predeterminada se guardan en `data/mudae/instances/<nombre-del-equipo>`; también puedes configurar rutas explícitas diferentes en cada PC:
 
 ```dotenv
@@ -92,6 +94,8 @@ git restore --worktree -- .\data\mudae\group-*.json
 La copia se conserva localmente y no se mezcla con los reclamos de otra PC. Si la PC ya tenía cambios locales en `catalog.json`, consérvalos mediante un commit antes de actualizar; el catálogo es compartido y Git necesita integrar los cambios de ambas PCs. No restaures ni descartes el catálogo si contiene altas o bajas que quieres conservar.
 
 Para compartir altas y bajas del catálogo, primero trae los cambios de GitHub, detén el bot, realiza la operación en una PC y sube el `catalog.json` actualizado; luego haz pull y reinicia el bot en la otra. Evita editar el catálogo en ambas PCs a la vez: Git puede reportar un conflicto. Las bajas quedan registradas para evitar que estados antiguos vuelvan a agregar personajes eliminados.
+
+La lista de álbumes se pagina con `%albumespj [página]`, por ejemplo `%albumespj 2`. `%pjs [página]` también pagina la colección, pero mantiene cada álbum completo en una sola parte para que no aparezca repetido entre páginas. `%ainfo <álbum>` muestra junto a cada personaje el nombre de quien lo reclamó, como texto sin mención. El owner puede cambiar una imagen respondiendo a una imagen nueva con `%editimgpj <álbum> + <nombre>`; la actualización se sincroniza para todos los grupos y elimina de Cloudinary la imagen anterior.
 
 ## Instagram
 

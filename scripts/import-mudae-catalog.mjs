@@ -1,6 +1,8 @@
 import crypto from 'crypto'
 import fs from 'fs/promises'
 import path from 'path'
+import readline from 'readline/promises'
+import { stdin as input, stdout as output } from 'process'
 import {
   MUDAE_CONFIG,
   makeCharacterIdentity,
@@ -12,6 +14,7 @@ import {
 const dataDirectory = process.env.MUDAE_DATA_DIR || path.join(process.cwd(), 'data', 'mudae')
 const catalogFile = process.env.MUDAE_CATALOG_FILE || path.join(dataDirectory, 'catalog.json')
 const sourceFile = process.argv[2]
+const requestedAlbum = process.argv[3]
 
 const defaultCatalog = () => ({
   version: 1,
@@ -53,13 +56,20 @@ const ensureAlbum = (catalog, album) => {
 }
 
 if (!sourceFile) {
-  throw new Error('Uso: node scripts/import-mudae-catalog.mjs <archivo-personajes.json>')
+  throw new Error('Uso: npm run mudae:import -- <archivo-personajes.json> [álbum]')
+}
+if (!input.isTTY || !output.isTTY) {
+  throw new Error('Este importador necesita una consola interactiva para responder y/n por personaje.')
 }
 
-const source = await readJson(sourceFile)
+const source = await readJson(path.resolve(sourceFile))
 if (!Array.isArray(source)) {
   throw new Error(`El archivo ${sourceFile} debe ser un array de personajes.`)
 }
+
+const fallbackAlbum = path.basename(sourceFile, path.extname(sourceFile)).replace(/[-_]+/g, ' ').replace(/^dragon\s*ball$/i, 'Dragon Ball')
+const album = normalizeMudaeLabel(requestedAlbum || fallbackAlbum)
+if (!album) throw new Error('Indica el nombre del álbum como segundo argumento.')
 
 const catalog = {
   ...defaultCatalog(),
@@ -71,47 +81,72 @@ catalog.deletedCharacterIds = Array.isArray(catalog.deletedCharacterIds) ? catal
 
 let imported = 0
 let skipped = 0
+let failed = 0
+const prompt = readline.createInterface({ input, output })
 
-for (const [index, item] of source.entries()) {
-  const name = normalizeMudaeLabel(item.nombre || item.name)
-  const album = normalizeMudaeLabel(item.album)
-  const sourceImage = String(item.imagen || item.imageUrl || '').trim()
-  if (!name || !album || !sourceImage) {
-    skipped += 1
-    console.warn(`[${index + 1}/${source.length}] omitido por datos incompletos`)
-    continue
-  }
-  const id = makeCharacterId(album, name)
-  if (catalog.deletedCharacterIds.includes(id)) {
-    skipped += 1
-    continue
-  }
-  if (catalog.characters.some((character) =>
-    makeCharacterIdentity(character.album, character.name) === makeCharacterIdentity(album, name)
-  )) {
-    skipped += 1
-    continue
-  }
+console.log(`Álbum de destino para todos los personajes: ${album}`)
 
-  const normalizedAlbum = ensureAlbum(catalog, album)
-  const uploadKey = `${makeCharacterIdentity(normalizedAlbum, name)}\n${sourceImage}`
-  const uploaded = await uploadRemoteMudaeImage(sourceImage, uploadKey)
-  catalog.characters.push({
-    id,
-    name,
-    album: normalizedAlbum,
-    value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
-    imageUrl: uploaded.imageUrl,
-    cloudinaryPublicId: uploaded.cloudinaryPublicId,
-    createdAt: Date.now(),
-  })
-  imported += 1
+try {
+  for (const [index, item] of source.entries()) {
+    const name = normalizeMudaeLabel(item.nombre || item.name)
+    const sourceImage = String(item.imagen || item.imageUrl || '').trim()
+    if (!name || !sourceImage) {
+      skipped += 1
+      console.warn(`[${index + 1}/${source.length}] Omitido por datos incompletos.`)
+      continue
+    }
 
-  if (imported % 25 === 0) {
-    await writeJsonAtomic(catalogFile, catalog)
-    console.log(`Importados ${imported}; omitidos ${skipped}; procesados ${index + 1}/${source.length}`)
+    console.log(`\n[${index + 1}/${source.length}] ${name}\nImagen: ${sourceImage}`)
+    let answer = ''
+    while (!['y', 'n'].includes(answer)) {
+      answer = (await prompt.question('¿Agregar este personaje? [y/n] ')).trim().toLocaleLowerCase('es')
+      if (!['y', 'n'].includes(answer)) console.log('Responde y o n.')
+    }
+    if (answer === 'n') {
+      skipped += 1
+      continue
+    }
+
+    const suggestedName = normalizeMudaeLabel(await prompt.question(`Nombre del personaje (Enter conserva "${name}"): `))
+    const finalName = suggestedName || name
+    if (catalog.characters.some((character) =>
+      normalizeMudaeIdentity(character.name) === normalizeMudaeIdentity(finalName)
+    )) {
+      skipped += 1
+      console.log(`Ya existe un personaje llamado "${finalName}" en el catálogo; omitido.`)
+      continue
+    }
+
+    const id = makeCharacterId(album, finalName)
+    if (catalog.deletedCharacterIds.includes(id)) {
+      skipped += 1
+      console.log(`"${finalName}" ya fue eliminado del catálogo; omitido.`)
+      continue
+    }
+
+    try {
+      const normalizedAlbum = ensureAlbum(catalog, album)
+      const uploadKey = `${makeCharacterIdentity(normalizedAlbum, finalName)}\n${sourceImage}`
+      const uploaded = await uploadRemoteMudaeImage(sourceImage, uploadKey)
+      catalog.characters.push({
+        id,
+        name: finalName,
+        album: normalizedAlbum,
+        value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
+        imageUrl: uploaded.imageUrl,
+        cloudinaryPublicId: uploaded.cloudinaryPublicId,
+        createdAt: Date.now(),
+      })
+      await writeJsonAtomic(catalogFile, catalog)
+      imported += 1
+      console.log(`Agregado como "${finalName}" con imagen propia: ${uploaded.imageUrl}`)
+    } catch (error) {
+      failed += 1
+      console.error(`No se pudo agregar ${finalName}: ${error?.message || error}`)
+    }
   }
+} finally {
+  prompt.close()
 }
 
-await writeJsonAtomic(catalogFile, catalog)
-console.log(`Listo. Importados ${imported}; omitidos ${skipped}; total en catálogo ${catalog.characters.length}.`)
+console.log(`\nListo. Agregados ${imported}; omitidos ${skipped}; fallidos ${failed}; total en catálogo ${catalog.characters.length}.`)

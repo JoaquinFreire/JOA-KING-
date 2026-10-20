@@ -1,0 +1,2462 @@
+[
+  {
+    "nombre": "Androide Número 13",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f5/Androide13normal.png/revision/latest/scale-to-width-down/450?cb=20171004230033&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 14",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/59/14Dokkan.png/revision/latest/scale-to-width-down/450?cb=20200310204544&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 8",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/91/Androide_furioso_Octavio_%28enloquecido%29.png/revision/latest/scale-to-width-down/450?cb=20260929214023&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 9",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/89/Androide_9.png/revision/latest/scale-to-width-down/450?cb=20120522234237&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 15",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/15/15Dokkan.png/revision/latest/scale-to-width-down/450?cb=20200310204417&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 16",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0f/Androide_N%C3%BAmero_16.png/revision/latest/scale-to-width-down/450?cb=20170811013945&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 17",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/09/Androide_17_DBS_Artwork.png/revision/latest/scale-to-width-down/450?cb=20220225013049&path-prefix=es"
+  },
+  {
+    "nombre": "Nuevo Androide Número 16",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ef/Nuevo_Androide_N%C3%BAmero_16.png/revision/latest/scale-to-width-down/450?cb=20180124140822&path-prefix=es"
+  },
+  {
+    "nombre": "Peleador del Infierno Número 17",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/ff/Androide_N17_del_Infierno_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20220223180456&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 18",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/92/Androide_N%C3%BAmero_18_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20220301232447&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 21",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ca/Androide_21_Artwork_Toriyama.png/revision/latest/scale-to-width-down/450?cb=20170922204658&path-prefix=es"
+  },
+  {
+    "nombre": "Arale Norimaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/04/Arale_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161101232213&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 19",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/de/Androide_19_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160718013903&path-prefix=es"
+  },
+  {
+    "nombre": "Bio-Broly",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f0/Bio_Broly_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170722012502&path-prefix=es"
+  },
+  {
+    "nombre": "Bio-Androides",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f7/Cell-X_Jr._Egg_%28DBO%29.png/revision/latest/scale-to-width-down/450?cb=20131109042526&path-prefix=es"
+  },
+  {
+    "nombre": "Cell",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1e/Cell_Perfecto_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20210102170513&path-prefix=es"
+  },
+  {
+    "nombre": "Bio-Guerreros",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c4/Bioguerreros_pel%C3%ADcula.png/revision/latest/scale-to-width-down/450?cb=20180513224915&path-prefix=es"
+  },
+  {
+    "nombre": "Bio-Man",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ab/Bio-Man.png/revision/latest/scale-to-width-down/450?cb=20150318054336&path-prefix=es"
+  },
+  {
+    "nombre": "Cell-X",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/76/Cell-X_Render_%28Dragon_Ball_Online%29.png/revision/latest/scale-to-width-down/450?cb=20131104040128&path-prefix=es"
+  },
+  {
+    "nombre": "Cell Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b6/Cell_Xeno_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170220204222&path-prefix=es"
+  },
+  {
+    "nombre": "Cell del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/22/250px-FutureCellconfrontedbyFTrunks.Ep.194.DBZ.png/revision/latest/scale-to-width-down/450?cb=20190713220227&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Gero",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7a/Dr_Gero_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200614045552&path-prefix=es"
+  },
+  {
+    "nombre": "Cell Jr.",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/43/Propagaci%C3%B3n_espantosa_Cell_Jr._DBZ_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20260917032025&path-prefix=es"
+  },
+  {
+    "nombre": "Cell del Presente",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ee/Cell_presente.png/revision/latest/scale-to-width-down/450?cb=20130608223617&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Kochin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ea/Dr._Kochin_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181208185112&path-prefix=es"
+  },
+  {
+    "nombre": "Hatchiyack",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/99/Hatchiyack_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170923044515&path-prefix=es"
+  },
+  {
+    "nombre": "Obotchaman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1a/Obotchaman_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161101231640&path-prefix=es"
+  },
+  {
+    "nombre": "Sargento Metálico",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f9/Metallic.png/revision/latest/scale-to-width-down/450?cb=20221114195326&path-prefix=es"
+  },
+  {
+    "nombre": "Robot-espía",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d1/Dr.GerosSpyInsects.png/revision/latest/scale-to-width-down/450?cb=20200110184437&path-prefix=es"
+  },
+  {
+    "nombre": "Super Número 17",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c3/Super_17_SDBHWM.png/revision/latest/scale-to-width-down/450?cb=20200823141946&path-prefix=es"
+  },
+  {
+    "nombre": "Robot Pirata",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4f/Robot_Pirata_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730004638&path-prefix=es"
+  },
+  {
+    "nombre": "Bubbles",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d4/Bubbles_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170114153331&path-prefix=es"
+  },
+  {
+    "nombre": "Bee",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5b/Bee_Boo.png/revision/latest/scale-to-width-down/450?cb=20171123183123&path-prefix=es"
+  },
+  {
+    "nombre": "Aligator",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e5/Alligator_in_DB.png/revision/latest/scale-to-width-down/450?cb=20100303210647&path-prefix=es"
+  },
+  {
+    "nombre": "Ginyu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3a/Ginyu_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618233737&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Wheelo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0f/Dr_Uiro_SDBHWM.png/revision/latest/scale-to-width-down/450?cb=20190615212124&path-prefix=es"
+  },
+  {
+    "nombre": "Chobi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5a/DBKTFC_-_Chobi%21%21_Chobi%21%21.png/revision/latest/scale-to-width-down/450?cb=20170623223219&path-prefix=es"
+  },
+  {
+    "nombre": "Gregory",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cf/Gregory_Z.png/revision/latest/scale-to-width-down/450?cb=20180615120847&path-prefix=es"
+  },
+  {
+    "nombre": "Capitán Yellow",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/aa/Capitan_Yellow_Trans.png/revision/latest/scale-to-width-down/450?cb=20110831191134&path-prefix=es"
+  },
+  {
+    "nombre": "Konkichi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a5/Konkichi_trans.png/revision/latest/scale-to-width-down/450?cb=20120401164754&path-prefix=es"
+  },
+  {
+    "nombre": "Karin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1f/Karin_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20211227234812&path-prefix=es"
+  },
+  {
+    "nombre": "Jefe Conejo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e3/Jefe_Conejo_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170615225807&path-prefix=es"
+  },
+  {
+    "nombre": "Lagartija gigante",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/84/BigLizard.jpg/revision/latest/scale-to-width-down/450?cb=20100227235256&path-prefix=es"
+  },
+  {
+    "nombre": "Luchador Wolf",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/17/Fighter40.png/revision/latest/scale-to-width-down/450?cb=20130918051309&path-prefix=es"
+  },
+  {
+    "nombre": "Oso Ladrón",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e9/Oso_Ladr%C3%B3n_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20260214033815&path-prefix=es"
+  },
+  {
+    "nombre": "Oolong",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1e/Oolong_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170818005958&path-prefix=es"
+  },
+  {
+    "nombre": "Piano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8a/Piano_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181207215306&path-prefix=es"
+  },
+  {
+    "nombre": "Pippi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/ChuLi.png/revision/latest/scale-to-width-down/450?cb=20110828164913&path-prefix=es"
+  },
+  {
+    "nombre": "Pteranodon",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/33/Dragon_Ball_EP01_Escena_28.png/revision/latest/scale-to-width-down/450?cb=20240314210836&path-prefix=es"
+  },
+  {
+    "nombre": "Rey de las Naciones",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1e/Rey_Furry_en_DBGT.png/revision/latest/scale-to-width-down/450?cb=20120802192810&path-prefix=es"
+  },
+  {
+    "nombre": "Shu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/72/Shu_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181212001421&path-prefix=es"
+  },
+  {
+    "nombre": "Puar",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/74/Puar_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170114010737&path-prefix=es"
+  },
+  {
+    "nombre": "Tama",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9c/Tama_DB.png/revision/latest/scale-to-width-down/450?cb=20171220173508&path-prefix=es"
+  },
+  {
+    "nombre": "Tigre Dientes de Sable",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Tigre_Dientes_de_Sable.png/revision/latest/scale-to-width-down/450?cb=20180806201556&path-prefix=es"
+  },
+  {
+    "nombre": "Atla",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/90/Atla_DBZ.png/revision/latest/scale-to-width-down/450?cb=20180412000911&path-prefix=es"
+  },
+  {
+    "nombre": "Umigame",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/01/Umigame_Artwork.png/revision/latest/scale-to-width-down/450?cb=20171204214808&path-prefix=es"
+  },
+  {
+    "nombre": "Toh Toh",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1a/Toh_toh.png/revision/latest?cb=20131231072444&path-prefix=es"
+  },
+  {
+    "nombre": "Greger",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/aa/Greger.jpg/revision/latest/scale-to-width-down/450?cb=20100107002936&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Moai",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5f/Rey_Moai.png/revision/latest/scale-to-width-down/450?cb=20180411003558&path-prefix=es"
+  },
+  {
+    "nombre": "Lesoy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3d/Lesoy.jpg/revision/latest/scale-to-width-down/450?cb=20100104201956&path-prefix=es"
+  },
+  {
+    "nombre": "Yetti",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/17/Yetti_DBZ.jpg/revision/latest?cb=20110724131503&path-prefix=es"
+  },
+  {
+    "nombre": "Lemlia",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Lemuria.png/revision/latest/scale-to-width-down/450?cb=20220423175148&path-prefix=es"
+  },
+  {
+    "nombre": "Awamo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d7/Awamo.png/revision/latest/scale-to-width-down/450?cb=20170414202307&path-prefix=es"
+  },
+  {
+    "nombre": "Conic",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/30/Conic_en_Dragon_Ball_Super.png/revision/latest/scale-to-width-down/450?cb=20170414205334&path-prefix=es"
+  },
+  {
+    "nombre": "Kus",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4a/Kus.png/revision/latest/scale-to-width-down/450?cb=20170414224005&path-prefix=es"
+  },
+  {
+    "nombre": "Campahri",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/eb/Campahri.png/revision/latest/scale-to-width-down/450?cb=20170414204829&path-prefix=es"
+  },
+  {
+    "nombre": "Korn",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/78/Korn.png/revision/latest/scale-to-width-down/450?cb=20170414221839&path-prefix=es"
+  },
+  {
+    "nombre": "Marcarita",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/31/Marcarita.png/revision/latest?cb=20170312143823&path-prefix=es"
+  },
+  {
+    "nombre": "Gran Sacerdote",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Gran_Sacerdote_DBS.png/revision/latest/scale-to-width-down/450?cb=20160821014805&path-prefix=es"
+  },
+  {
+    "nombre": "Cucatail",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7c/Cucatail.png/revision/latest/scale-to-width-down/450?cb=20170414212327&path-prefix=es"
+  },
+  {
+    "nombre": "Mojito",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4f/Mojito_render.png/revision/latest/scale-to-width-down/450?cb=20170414223155&path-prefix=es"
+  },
+  {
+    "nombre": "Martine",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6a/Martine_en_Dragon_Ball_Super.png/revision/latest/scale-to-width-down/450?cb=20170414225603&path-prefix=es"
+  },
+  {
+    "nombre": "Sour",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9e/Sour.png/revision/latest/scale-to-width-down/450?cb=20170414203919&path-prefix=es"
+  },
+  {
+    "nombre": "Whis",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ac/Whis_en_Dragon_Ball_Super_Broly.png/revision/latest/scale-to-width-down/450?cb=20180812215444&path-prefix=es"
+  },
+  {
+    "nombre": "Vados",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/90/U06_buadosu.png/revision/latest?cb=20171205170003&path-prefix=es"
+  },
+  {
+    "nombre": "Tenshinhan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/02/Tenshinhan_Universo7.png/revision/latest/scale-to-width-down/450?cb=20170705063924&path-prefix=es"
+  },
+  {
+    "nombre": "Akkuman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/03/Akkuman_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160718013507&path-prefix=es"
+  },
+  {
+    "nombre": "Dabra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8d/Dabra_en_Daima.png/revision/latest/scale-to-width-down/450?cb=20250124231706&path-prefix=es"
+  },
+  {
+    "nombre": "Garlic",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cc/Garlic.png/revision/latest/scale-to-width-down/450?cb=20190713192221&path-prefix=es"
+  },
+  {
+    "nombre": "Fu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/bc/Arte_del_Joven_Fu_fusionado_con_Dogi-Dogi.png/revision/latest/scale-to-width-down/450?cb=20211025114739&path-prefix=es"
+  },
+  {
+    "nombre": "Makkora",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a6/Makkora_Full_HD_4K.png/revision/latest?cb=20171112025954&path-prefix=es"
+  },
+  {
+    "nombre": "Ghora",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4c/Gola_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160814004842&path-prefix=es"
+  },
+  {
+    "nombre": "Janemba",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8a/Janemba_artwork_SDBH.png/revision/latest/scale-to-width-down/450?cb=20200630222641&path-prefix=es"
+  },
+  {
+    "nombre": "Janemba Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0f/Janemba_Xeno_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170707002611&path-prefix=es"
+  },
+  {
+    "nombre": "Garlic Jr.",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/16/Garlick_Jr._SDBHWM.png/revision/latest/scale-to-width-down/450?cb=20190602202245&path-prefix=es"
+  },
+  {
+    "nombre": "Hildegarn",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/80/Hildegarn_Pre-Transformaci%C3%B3n_Artwork.png/revision/latest/scale-to-width-down/450?cb=20180607192019&path-prefix=es"
+  },
+  {
+    "nombre": "Majin Ozotto",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Ozotto_Scan_Toriyama.png/revision/latest/scale-to-width-down/450?cb=20180814225403&path-prefix=es"
+  },
+  {
+    "nombre": "Lucifer",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c7/Lucifer_Dokkan.png/revision/latest?cb=20190322213525&path-prefix=es"
+  },
+  {
+    "nombre": "Mechikabra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/94/Artwork_de_Mechickaboola_como_el_Rey_Oscuro_SDBH.png/revision/latest/scale-to-width-down/450?cb=20220123140707&path-prefix=es"
+  },
+  {
+    "nombre": "Melee",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e4/Melee_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722210914&path-prefix=es"
+  },
+  {
+    "nombre": "Lord Yao",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/eb/ReyYomaDokkan.png/revision/latest/scale-to-width-down/450?cb=20200310202352&path-prefix=es"
+  },
+  {
+    "nombre": "Shula",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/86/Shula_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722201922&path-prefix=es"
+  },
+  {
+    "nombre": "Kyoakkuman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c6/Kyoakkuman.png/revision/latest/scale-to-width-down/450?cb=20181022174719&path-prefix=es"
+  },
+  {
+    "nombre": "Psidevilman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6d/Artwork_de_Saiakkuman.png/revision/latest/scale-to-width-down/450?cb=20201112163417&path-prefix=es"
+  },
+  {
+    "nombre": "Towa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6c/Towa_SDBH_Big_Bang_artwork.png/revision/latest/scale-to-width-down/450?cb=20201020211506&path-prefix=es"
+  },
+  {
+    "nombre": "Putine",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c0/Artwork_de_Putine_en_SDBHBM.png/revision/latest/scale-to-width-down/450?cb=20201112161958&path-prefix=es"
+  },
+  {
+    "nombre": "Mira",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b4/Miira.png/revision/latest/scale-to-width-down/450?cb=20140927000710&path-prefix=es"
+  },
+  {
+    "nombre": "Gravy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c5/Artwork_de_Gravy_en_World_Mission.png/revision/latest/scale-to-width-down/450?cb=20200713230100&path-prefix=es"
+  },
+  {
+    "nombre": "Chamel",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ea/Artwork_de_Chamel.png/revision/latest/scale-to-width-down/450?cb=20201112161459&path-prefix=es"
+  },
+  {
+    "nombre": "Shen Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ef/Shen_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160919225353&path-prefix=es"
+  },
+  {
+    "nombre": "Shrum",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dd/Arte_de_Shrum_en_SDBH_BM9.png/revision/latest/scale-to-width-down/450?cb=20210623105406&path-prefix=es"
+  },
+  {
+    "nombre": "Gran Dragón",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/28/Gran_Dragon_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160918213500&path-prefix=es"
+  },
+  {
+    "nombre": "Super Shen Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/84/Pantallazo-340.png/revision/latest/scale-to-width-down/450?cb=20180918003539&path-prefix=es"
+  },
+  {
+    "nombre": "Rober",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/43/Artwork_de_Rober.png/revision/latest/scale-to-width-down/450?cb=20201112155944&path-prefix=es"
+  },
+  {
+    "nombre": "Shen Long Definitivo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3f/Shen_Long_Definitivo_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160806221049&path-prefix=es"
+  },
+  {
+    "nombre": "Shen Long de Humo Negro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/96/Shen_Long_de_Humo_Negro_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20200310211752&path-prefix=es"
+  },
+  {
+    "nombre": "Polunga",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a3/Polunga_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20251213045517&path-prefix=es"
+  },
+  {
+    "nombre": "Shen Long Oscuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/af/Shen_Long_Oscuro_SDBHWM.png/revision/latest/scale-to-width-down/450?cb=20251123081650&path-prefix=es"
+  },
+  {
+    "nombre": "Mr. Poko Poko",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5f/Mr._Poko_Poko.png/revision/latest/scale-to-width-down/450?cb=20200424191723&path-prefix=es"
+  },
+  {
+    "nombre": "San Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/68/San_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161007222347&path-prefix=es"
+  },
+  {
+    "nombre": "Er Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/97/Ryan_Shenron_Trans.png/revision/latest/scale-to-width-down/450?cb=20180701231241&path-prefix=es"
+  },
+  {
+    "nombre": "Qi Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c3/Qi_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161001204527&path-prefix=es"
+  },
+  {
+    "nombre": "Si Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9e/Si_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161007222712&path-prefix=es"
+  },
+  {
+    "nombre": "Liu Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/69/Liu_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161001204233&path-prefix=es"
+  },
+  {
+    "nombre": "Yi Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2c/Yi_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161001203403&path-prefix=es"
+  },
+  {
+    "nombre": "Wu Xing Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/92/Wu_Xing_Long_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161001204843&path-prefix=es"
+  },
+  {
+    "nombre": "Yi Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/75/Yi_Xing_Long_Xeno.png/revision/latest?cb=20180916043841&path-prefix=es"
+  },
+  {
+    "nombre": "San Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3b/San_Xing_Long_Xeno.png/revision/latest?cb=20180629170435&path-prefix=es"
+  },
+  {
+    "nombre": "Si Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ca/Si_Xing_Long_Xeno.png/revision/latest?cb=20180628194512&path-prefix=es"
+  },
+  {
+    "nombre": "Wu Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/af/Wu_Xing_Long_Xeno.png/revision/latest?cb=20180701175344&path-prefix=es"
+  },
+  {
+    "nombre": "Qi Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/52/Qi_Xing_Long.png/revision/latest?cb=20180701201838&path-prefix=es"
+  },
+  {
+    "nombre": "Mr. Popo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5f/Mr._Popo_Daima.png/revision/latest/scale-to-width-down/450?cb=20241129085523&path-prefix=es"
+  },
+  {
+    "nombre": "Er Xing Long Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4b/Er_Xing_Long_Xeno.png/revision/latest?cb=20180701215636&path-prefix=es"
+  },
+  {
+    "nombre": "Guerrero Fantasma de Turles",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Tullece_SDBHWM_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200409185554&path-prefix=es"
+  },
+  {
+    "nombre": "Obake",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/24/Ghost_Usher_Trans.png/revision/latest/scale-to-width-down/450?cb=20110901214913&path-prefix=es"
+  },
+  {
+    "nombre": "Guerrero Fantasma de Coola",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e1/Coola_guerrero_fantasma.png/revision/latest?cb=20120606185610&path-prefix=es"
+  },
+  {
+    "nombre": "Bojack",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1b/Boujack_artwork_DBDokkanBattle.png/revision/latest/scale-to-width-down/450?cb=20200701141639&path-prefix=es"
+  },
+  {
+    "nombre": "Guerrero Fantasma de Freezer",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4c/Guerrero_Fantasma_de_Freezer_.jpg/revision/latest/scale-to-width-down/450?cb=20120427185701&path-prefix=es"
+  },
+  {
+    "nombre": "Guerrero Fantasma de Slug",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d4/Slug_fantasma.png/revision/latest/scale-to-width-down/450?cb=20120502210255&path-prefix=es"
+  },
+  {
+    "nombre": "Bido",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Bido_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160514164031&path-prefix=es"
+  },
+  {
+    "nombre": "Zangya",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/71/Zangya_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160719171019&path-prefix=es"
+  },
+  {
+    "nombre": "Gokua",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9f/Gokua_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160514164400&path-prefix=es"
+  },
+  {
+    "nombre": "Bujin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/35/Bujin_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160710184922&path-prefix=es"
+  },
+  {
+    "nombre": "Tapion",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/82/Tapion_Artwork_Oficial.png/revision/latest/scale-to-width-down/450?cb=20160623163726&path-prefix=es"
+  },
+  {
+    "nombre": "Minoshiya",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6d/Minoshiya_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20171219123350&path-prefix=es"
+  },
+  {
+    "nombre": "Sacerdote Konatsiano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1a/Asistente_Konatsian.jpg/revision/latest/scale-to-width-down/450?cb=20120726030536&path-prefix=es"
+  },
+  {
+    "nombre": "Demetrious",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8c/DemetriousKannasanNV.png/revision/latest/scale-to-width-down/450?cb=20130502182154&path-prefix=es"
+  },
+  {
+    "nombre": "Comandante Kanassano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/13/Kanassajin_Commander.jpg/revision/latest/scale-to-width-down/450?cb=20131222214732&path-prefix=es"
+  },
+  {
+    "nombre": "Tooro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f2/Tooro.png/revision/latest/scale-to-width-down/450?cb=20110919034908&path-prefix=es"
+  },
+  {
+    "nombre": "Bobbidi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9d/Babidi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160920233319&path-prefix=es"
+  },
+  {
+    "nombre": "Baby Boo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1a/%C3%8Dcono_de_persona_confundida.png/revision/latest/scale-to-width-down/450?cb=20200921223924&path-prefix=es"
+  },
+  {
+    "nombre": "Bibbidi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cf/Bibidi_Trans.png/revision/latest/scale-to-width-down/450?cb=20110901021825&path-prefix=es"
+  },
+  {
+    "nombre": "Boo Bueno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/32/BuuGordo_Universo7.png/revision/latest/scale-to-width-down/450?cb=20170705061603&path-prefix=es"
+  },
+  {
+    "nombre": "Boo de Maldad Pura",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/17/Buu_Maldad.png/revision/latest/scale-to-width-down/450?cb=20160515204638&path-prefix=es"
+  },
+  {
+    "nombre": "Boo Malvado",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2e/Super_Buu_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170924020118&path-prefix=es"
+  },
+  {
+    "nombre": "Hoi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/77/Hoi.png/revision/latest?cb=20201024201322&path-prefix=es"
+  },
+  {
+    "nombre": "Boo Inocente",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/04/Majin-Boo_Inocente_Toriyama_Kanzenban.png/revision/latest/scale-to-width-down/450?cb=20190614055803&path-prefix=es"
+  },
+  {
+    "nombre": "Boo Puro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b9/Kid_Buu_oficial_art.png/revision/latest/scale-to-width-down/450?cb=20150818011315&path-prefix=es"
+  },
+  {
+    "nombre": "Boo Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/35/Majin_Buu_Xeno_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170707204337&path-prefix=es"
+  },
+  {
+    "nombre": "Coo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/15/Coo_en_Dragon_Ball_Daima.png/revision/latest/scale-to-width-down/450?cb=20241227174216&path-prefix=es"
+  },
+  {
+    "nombre": "Monstruo Satán",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dc/But%C3%A1n.png/revision/latest?cb=20160527134216&path-prefix=es"
+  },
+  {
+    "nombre": "Doo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/51/Doo_en_Dragon_Ball_Daima.png/revision/latest/scale-to-width-down/450?cb=20241223215728&path-prefix=es"
+  },
+  {
+    "nombre": "Ozotto",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Ozotto_Scan_Toriyama.png/revision/latest/scale-to-width-down/450?cb=20180814225403&path-prefix=es"
+  },
+  {
+    "nombre": "Señorita Boo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/94/Se%C3%B1orita_Boo-Titima_error_Taiw%C3%A1n.png/revision/latest/scale-to-width-down/450?cb=20200702152425&path-prefix=es"
+  },
+  {
+    "nombre": "Shun-Shun",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c1/Shun_Shun_arte_conceptual.png/revision/latest/scale-to-width-down/450?cb=20190414151602&path-prefix=es"
+  },
+  {
+    "nombre": "Super-Oob",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e2/Uub_fusion_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160514175511&path-prefix=es"
+  },
+  {
+    "nombre": "Haru Haru",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3f/Haru_Haru_arte_conceptual.png/revision/latest/scale-to-width-down/450?cb=20190414193804&path-prefix=es"
+  },
+  {
+    "nombre": "Garlick",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cc/Garlic.png/revision/latest/scale-to-width-down/450?cb=20190713192221&path-prefix=es"
+  },
+  {
+    "nombre": "Tard",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3c/Tard.png/revision/latest/scale-to-width-down/450?cb=20180423200532&path-prefix=es"
+  },
+  {
+    "nombre": "Ginger",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9c/Ginger_rostro.png/revision/latest/scale-to-width-down/450?cb=20171123150708&path-prefix=es"
+  },
+  {
+    "nombre": "Zald",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/54/Salt_1.png/revision/latest?cb=20120826022825&path-prefix=es"
+  },
+  {
+    "nombre": "Nicky",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/af/Nicky_rostro.png/revision/latest/scale-to-width-down/450?cb=20171123135832&path-prefix=es"
+  },
+  {
+    "nombre": "Cangrejo Gigante",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cf/Kyodai_Kani.png/revision/latest/scale-to-width-down/450?cb=20101023115307&path-prefix=es"
+  },
+  {
+    "nombre": "Sansho",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a8/Sansho.png/revision/latest/scale-to-width-down/450?cb=20171123135850&path-prefix=es"
+  },
+  {
+    "nombre": "Gash",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Gash_%28DBZ%29.png/revision/latest/scale-to-width-down/450?cb=20250917171730&path-prefix=es"
+  },
+  {
+    "nombre": "Vinegar",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/49/Vinegar_DBZ_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20260928210124&path-prefix=es"
+  },
+  {
+    "nombre": "Cymbal",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6e/Cymbal_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160728000637&path-prefix=es"
+  },
+  {
+    "nombre": "Drum",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2a/Drum_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160728000456&path-prefix=es"
+  },
+  {
+    "nombre": "Cargo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e1/Scargo_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181211215835&path-prefix=es"
+  },
+  {
+    "nombre": "Dendé",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/42/Arte_de_Dend%C3%A9_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20211013162437&path-prefix=es"
+  },
+  {
+    "nombre": "Dios",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ac/Kami.png/revision/latest/scale-to-width-down/450?cb=20160627004416&path-prefix=es"
+  },
+  {
+    "nombre": "Gran Patriarca",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a6/Gran_Patriarca_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20190316165041&path-prefix=es"
+  },
+  {
+    "nombre": "Esca",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/28/Artwork_de_Esca.png/revision/latest/scale-to-width-down/450?cb=20201105225758&path-prefix=es"
+  },
+  {
+    "nombre": "Nail",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/60/Nail_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722194728&path-prefix=es"
+  },
+  {
+    "nombre": "Piccolo Original",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/49/Nameless_Namek.jpg/revision/latest/scale-to-width-down/450?cb=20100116212516&path-prefix=es"
+  },
+  {
+    "nombre": "Katattsu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dc/155px-Genericnamek.jpg/revision/latest?cb=20100303133755&path-prefix=es"
+  },
+  {
+    "nombre": "Moori",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d8/Namekians05.png/revision/latest/scale-to-width-down/450?cb=20120924171711&path-prefix=es"
+  },
+  {
+    "nombre": "Piccolo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Piccolo_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20211227183911&path-prefix=es"
+  },
+  {
+    "nombre": "Namekiano 2",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Site-community-image/revision/latest?cb=20220307024230&path-prefix=es"
+  },
+  {
+    "nombre": "Namekiano 3",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Site-community-image/revision/latest?cb=20220307024230&path-prefix=es"
+  },
+  {
+    "nombre": "Namekiano Joven",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Site-community-image/revision/latest?cb=20220307024230&path-prefix=es"
+  },
+  {
+    "nombre": "Slug",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/60/Slug_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161223202743&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Demonio Piccolo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7d/Rey_Demonio_Piccolo_rejuvenecido_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170924020119&path-prefix=es"
+  },
+  {
+    "nombre": "Piccolo del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/26/PiccoloFutureVsAndroids.png/revision/latest/scale-to-width-down/450?cb=20171203231913&path-prefix=es"
+  },
+  {
+    "nombre": "Saonel",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/61/Saonel_Artwork.png/revision/latest?cb=20171016131555&path-prefix=es"
+  },
+  {
+    "nombre": "Pilina",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/37/Pilina_Artwork.png/revision/latest/scale-to-width-down/450?cb=20171016131540&path-prefix=es"
+  },
+  {
+    "nombre": "Tsuburi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Tsuburi_manga_a_color.png/revision/latest/scale-to-width-down/450?cb=20201107110602&path-prefix=es"
+  },
+  {
+    "nombre": "Tambourine",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d2/Tambourine_Oficial_Art.png/revision/latest/scale-to-width-down/450?cb=20150901003717&path-prefix=es"
+  },
+  {
+    "nombre": "Tanisshi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e8/Moro_estrangulando_a_Tanisshi_manga_a_color.png/revision/latest?cb=20201106175635&path-prefix=es"
+  },
+  {
+    "nombre": "Mesías de Namek",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cd/Mes%C3%ADas_de_Namek_manga_a_color_%282%29.png/revision/latest?cb=20201107144917&path-prefix=es"
+  },
+  {
+    "nombre": "Goz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c4/Arte_de_Goz_en_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20250921114954&path-prefix=es"
+  },
+  {
+    "nombre": "Mez",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/29/Arte_de_Mez_en_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20250923054459&path-prefix=es"
+  },
+  {
+    "nombre": "Enma Daioh",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3a/Rey_Enma_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20210102012735&path-prefix=es"
+  },
+  {
+    "nombre": "Princesa Serpiente",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/51/Princesa_Serpiente_Dokkan.png/revision/latest?cb=20190316164113&path-prefix=es"
+  },
+  {
+    "nombre": "Berserker del Clan de Freeza",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d3/Berserker_del_Clan_de_Freeza_en_Dragon_Ball_Heroes.png/revision/latest/scale-to-width-down/450?cb=20230712215955&path-prefix=es"
+  },
+  {
+    "nombre": "Chilled",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f8/Chilled_Artwork.png/revision/latest/scale-to-width-down/450?cb=20180429022728&path-prefix=es"
+  },
+  {
+    "nombre": "Saike",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/af/Psyche_Oni_Dokkan.png/revision/latest?cb=20210102012031&path-prefix=es"
+  },
+  {
+    "nombre": "Freezer",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e8/Freeza_artwork_Dragon_Ball_Super_Broly_%281%29.png/revision/latest/scale-to-width-down/450?cb=20200207113941&path-prefix=es"
+  },
+  {
+    "nombre": "Coola",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Coola_en_Dragon_Ball_Z.png/revision/latest/scale-to-width-down/450?cb=20220301190414&path-prefix=es"
+  },
+  {
+    "nombre": "Frost",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c5/Frost_Final_Artwork_.png/revision/latest/scale-to-width-down/450?cb=20210904140850&path-prefix=es"
+  },
+  {
+    "nombre": "Froze",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3f/Artwork_de_Froze_en_DBH.png/revision/latest/scale-to-width-down/450?cb=20201122211011&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Cold",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/bf/Rey_Cold_Dragon_Ball_Super_Broly_artwork.png/revision/latest/scale-to-width-down/450?cb=20181121145958&path-prefix=es"
+  },
+  {
+    "nombre": "Rezok",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1c/Artwork_de_Rezock_Super_Class-up_en_DBH.png/revision/latest/scale-to-width-down/450?cb=20201129042710&path-prefix=es"
+  },
+  {
+    "nombre": "Aeróbicas",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/38/AerobicsWomen.gif/revision/latest?cb=20100127211914&path-prefix=es"
+  },
+  {
+    "nombre": "Kuriza",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/56/Kuriza_artwork_a_color.png/revision/latest/scale-to-width-down/450?cb=20200330011835&path-prefix=es"
+  },
+  {
+    "nombre": "Angela",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/08/Angela_en_DBZ.png/revision/latest/scale-to-width-down/450?cb=20250211122127&path-prefix=es"
+  },
+  {
+    "nombre": "Alexi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/15/Alexi.png/revision/latest/scale-to-width-down/450?cb=20130131192833&path-prefix=es"
+  },
+  {
+    "nombre": "Anunciador",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/58/Anunciador_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181211235713&path-prefix=es"
+  },
+  {
+    "nombre": "Annin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/05/Annin_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20210106201555&path-prefix=es"
+  },
+  {
+    "nombre": "Barry Kahn",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c6/Barry_en_la_gran_pantalla.png/revision/latest/scale-to-width-down/450?cb=20170109030607&path-prefix=es"
+  },
+  {
+    "nombre": "Bulma",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/11/Bulma_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20220302000533&path-prefix=es"
+  },
+  {
+    "nombre": "Bora",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/46/Dbz13-07.jpg/revision/latest/scale-to-width-down/450?cb=20120915051721&path-prefix=es"
+  },
+  {
+    "nombre": "Bacterian",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/03/Bacterian_Artwork.png/revision/latest/scale-to-width-down/450?cb=20260622223552&path-prefix=es"
+  },
+  {
+    "nombre": "Capitán Chicken",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/80/Capit%C3%A1n_Chicken.png/revision/latest/scale-to-width-down/450?cb=20260904022653&path-prefix=es"
+  },
+  {
+    "nombre": "Chi-Chi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5d/Milk_DB_inicio.png/revision/latest/scale-to-width-down/450?cb=20160723132246&path-prefix=es"
+  },
+  {
+    "nombre": "Capitán Dock",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/72/Capitan_Dark1.png/revision/latest/scale-to-width-down/450?cb=20150510222059&path-prefix=es"
+  },
+  {
+    "nombre": "Caroni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/89/Caroninv.png/revision/latest/scale-to-width-down/450?cb=20120916120010&path-prefix=es"
+  },
+  {
+    "nombre": "Chaoz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ec/Chaoz2013.png/revision/latest?cb=20150812232717&path-prefix=es"
+  },
+  {
+    "nombre": "Coco",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f8/Coco_peli.jpg/revision/latest/scale-to-width-down/450?cb=20171121131842&path-prefix=es"
+  },
+  {
+    "nombre": "Coronel Silver",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/05/General_Silver_Trans.png/revision/latest/scale-to-width-down/450?cb=20110831190853&path-prefix=es"
+  },
+  {
+    "nombre": "Coronel Violet",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d1/Coronel_Violet_cara.png/revision/latest/scale-to-width-down/450?cb=20171121212052&path-prefix=es"
+  },
+  {
+    "nombre": "Cocoa Amaguri",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3f/Kokoa_escucha_a_Gohan.png/revision/latest/scale-to-width-down/450?cb=20170109081620&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Brief",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/42/Brief_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170811052304&path-prefix=es"
+  },
+  {
+    "nombre": "Dabu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/61/Dabu.png/revision/latest/scale-to-width-down/450?cb=20100209201713&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Flappe",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d9/Dr._Flappe.png/revision/latest/scale-to-width-down/450?cb=20170205180559&path-prefix=es"
+  },
+  {
+    "nombre": "Dictador",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/32/Hitler1.png/revision/latest/scale-to-width-down/450?cb=20120623021116&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Collie",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5f/Dr_Collie.jpg/revision/latest?cb=20111209142712&path-prefix=es"
+  },
+  {
+    "nombre": "Emi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3c/Emi.gif/revision/latest?cb=20091227145351&path-prefix=es"
+  },
+  {
+    "nombre": "Eliza",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/28/Iresa_DBK_TFC.png/revision/latest/scale-to-width-down/450?cb=20201216080754&path-prefix=es"
+  },
+  {
+    "nombre": "Fan-Fan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Fan-Fan3.png/revision/latest/scale-to-width-down/450?cb=20100303201814&path-prefix=es"
+  },
+  {
+    "nombre": "General Blue",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7d/General_Blue_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161101232511&path-prefix=es"
+  },
+  {
+    "nombre": "Freddy Hein",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/98/FreddyHein.png/revision/latest/scale-to-width-down/450?cb=20111012192255&path-prefix=es"
+  },
+  {
+    "nombre": "Equipo de Rugby",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/20/Equipo_de_Rugby.jpg/revision/latest/scale-to-width-down/450?cb=20100121233250&path-prefix=es"
+  },
+  {
+    "nombre": "General White",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e0/White_DB.png/revision/latest/scale-to-width-down/450?cb=20171204215243&path-prefix=es"
+  },
+  {
+    "nombre": "General Copper",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9d/Spoiler.png/revision/latest/scale-to-width-down/450?cb=20170709231423&path-prefix=es"
+  },
+  {
+    "nombre": "Comandante Red",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fa/Red_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181208182404&path-prefix=es"
+  },
+  {
+    "nombre": "General Black",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4b/General_Black_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160802212748&path-prefix=es"
+  },
+  {
+    "nombre": "Granjero",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fd/Granjero_EP1_DBZ.png/revision/latest/scale-to-width-down/450?cb=20160606175755&path-prefix=es"
+  },
+  {
+    "nombre": "Son Gohan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e0/Abuelo_Gohan_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170130010549&path-prefix=es"
+  },
+  {
+    "nombre": "Idasa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/Idasa.png/revision/latest/scale-to-width-down/450?cb=20150922053505&path-prefix=es"
+  },
+  {
+    "nombre": "Husky",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d3/Hasky.png/revision/latest/scale-to-width-down/450?cb=20100103212726&path-prefix=es"
+  },
+  {
+    "nombre": "Haru",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/16/Haru_sonriendo.png/revision/latest/scale-to-width-down/450?cb=20170807072634&path-prefix=es"
+  },
+  {
+    "nombre": "Gurumes",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/bf/Gurumes_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181226200059&path-prefix=es"
+  },
+  {
+    "nombre": "Ikose",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Ikose3.png/revision/latest/scale-to-width-down/450?cb=20101030162656&path-prefix=es"
+  },
+  {
+    "nombre": "Hermanos Murasaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/be/MurasakiBrothers1.png/revision/latest/scale-to-width-down/450?cb=20100228001938&path-prefix=es"
+  },
+  {
+    "nombre": "Hombre de la banda Conejo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0d/Conejo_1_Dokkan.png/revision/latest?cb=20181208184058&path-prefix=es"
+  },
+  {
+    "nombre": "Killa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/36/Killa_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160718014744&path-prefix=es"
+  },
+  {
+    "nombre": "Kame-Sen'nin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/ba/Roshi_Daima.png/revision/latest/scale-to-width-down/450?cb=20241129083514&path-prefix=es"
+  },
+  {
+    "nombre": "Honey",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e8/Honey_en_el_manga_a_color.png/revision/latest?cb=20191225192750&path-prefix=es"
+  },
+  {
+    "nombre": "Kinoko Sarada",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8e/Kinoko.png/revision/latest?cb=20161204050309&path-prefix=es"
+  },
+  {
+    "nombre": "Jewel",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d0/Jewel_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722201117&path-prefix=es"
+  },
+  {
+    "nombre": "Krilin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3d/Krillin_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20250130190933&path-prefix=es"
+  },
+  {
+    "nombre": "Kirano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Kirano.png/revision/latest/scale-to-width-down/450?cb=20180510020101&path-prefix=es"
+  },
+  {
+    "nombre": "Sr. Jaguar",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0b/Lord_Jaguar.png/revision/latest/scale-to-width-down/450?cb=20190323230824&path-prefix=es"
+  },
+  {
+    "nombre": "Lobo Hombre",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/df/Lobo_final.png/revision/latest/scale-to-width-down/450?cb=20110831195416&path-prefix=es"
+  },
+  {
+    "nombre": "Sr. Lao",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1c/Lao2.jpg/revision/latest/scale-to-width-down/450?cb=20101021220611&path-prefix=es"
+  },
+  {
+    "nombre": "Luchador 69",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/16/Babasky.png/revision/latest/scale-to-width-down/450?cb=20260904235425&path-prefix=es"
+  },
+  {
+    "nombre": "Luchador 83",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/96/Luchador_83.jpg/revision/latest/scale-to-width-down/450?cb=20100124124529&path-prefix=es"
+  },
+  {
+    "nombre": "Lunch",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a1/Lunch_traje_de_sirvienta_en_el_manga.png/revision/latest/scale-to-width-down/450?cb=20160726174631&path-prefix=es"
+  },
+  {
+    "nombre": "Luchador de Sumo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5d/Sumo.png/revision/latest/scale-to-width-down/450?cb=20130905064037&path-prefix=es"
+  },
+  {
+    "nombre": "Luchador 97",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fc/Yawara_Bear.png/revision/latest/scale-to-width-down/450?cb=20260928201816&path-prefix=es"
+  },
+  {
+    "nombre": "Maki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3a/Maki_DBS66.png/revision/latest/scale-to-width-down/450?cb=20161113183522&path-prefix=es"
+  },
+  {
+    "nombre": "Madre de Idasa e Ikose",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6e/Dbkai103-z13.png/revision/latest/scale-to-width-down/450?cb=20160706135837&path-prefix=es"
+  },
+  {
+    "nombre": "Maron",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/ba/Maron_Z.png/revision/latest/scale-to-width-down/450?cb=20171214002754&path-prefix=es"
+  },
+  {
+    "nombre": "Maloja",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fe/Maloja.jpg/revision/latest/scale-to-width-down/450?cb=20100109122152&path-prefix=es"
+  },
+  {
+    "nombre": "Marron",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/01/Marron_Daima.png/revision/latest/scale-to-width-down/450?cb=20241129090555&path-prefix=es"
+  },
+  {
+    "nombre": "Mighty Mask",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Mighty_Mask_89.png/revision/latest/scale-to-width-down/450?cb=20171116112417&path-prefix=es"
+  },
+  {
+    "nombre": "MenMen",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4a/MenMen_Dokkan.png/revision/latest?cb=20181208184430&path-prefix=es"
+  },
+  {
+    "nombre": "Mokekko",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d1/Mou_Kekko_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20210102013055&path-prefix=es"
+  },
+  {
+    "nombre": "Murdock",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1c/Murdock.png/revision/latest/scale-to-width-down/450?cb=20100401162853&path-prefix=es"
+  },
+  {
+    "nombre": "Monjes",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6a/Monjes.png/revision/latest/scale-to-width-down/450?cb=20100122002029&path-prefix=es"
+  },
+  {
+    "nombre": "Mr. Musaka",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5b/Sr._Musaka.jpg/revision/latest?cb=20110907000928&path-prefix=es"
+  },
+  {
+    "nombre": "Mutaito",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1e/Mutaito_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160713220306&path-prefix=es"
+  },
+  {
+    "nombre": "Nam",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b6/Nam4.png/revision/latest/scale-to-width-down/450?cb=20100416182842&path-prefix=es"
+  },
+  {
+    "nombre": "Niño ciego",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b6/Ni%C3%B1o_Ciego.png/revision/latest/scale-to-width-down/450?cb=20170921002822&path-prefix=es"
+  },
+  {
+    "nombre": "Ninja Murasaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/33/Ninja_Murasaki_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200326221754&path-prefix=es"
+  },
+  {
+    "nombre": "Otokosky",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e9/Otokosky.png/revision/latest/scale-to-width-down/450?cb=20260903042045&path-prefix=es"
+  },
+  {
+    "nombre": "Nock",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e4/Knock.png/revision/latest/scale-to-width-down/450?cb=20110908140731&path-prefix=es"
+  },
+  {
+    "nombre": "Pack",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/41/Pack_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20200217115036&path-prefix=es"
+  },
+  {
+    "nombre": "Panputt",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/87/Pamputt_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181207211157&path-prefix=es"
+  },
+  {
+    "nombre": "Pansy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/27/Pansy.png/revision/latest/scale-to-width-down/450?cb=20171220033436&path-prefix=es"
+  },
+  {
+    "nombre": "Panchy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/48/Panchy_DBS_Artwork.png/revision/latest?cb=20180118133355&path-prefix=es"
+  },
+  {
+    "nombre": "Peasuke",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e4/Peasuke1997.jpg/revision/latest/scale-to-width-down/450?cb=20100303200026&path-prefix=es"
+  },
+  {
+    "nombre": "Pizza",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/74/Pizza_dragon_ball_super.png/revision/latest/scale-to-width-down/450?cb=20171122094101&path-prefix=es"
+  },
+  {
+    "nombre": "Piroshki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ce/Pirozhk%C3%AD_en_Dragon_Ball_Super.png/revision/latest/scale-to-width-down/450?cb=20260907202232&path-prefix=es"
+  },
+  {
+    "nombre": "Pepper Johnson",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/02/Pepper_Johnson.png/revision/latest/scale-to-width-down/450?cb=20100407145237&path-prefix=es"
+  },
+  {
+    "nombre": "Princesa Misa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/90/Princesa_Misa.jpg/revision/latest/scale-to-width-down/450?cb=20100218222844&path-prefix=es"
+  },
+  {
+    "nombre": "Pocowatha",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3e/Pocowhata.png/revision/latest/scale-to-width-down/450?cb=20091226170316&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Gyuma",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a6/Gyuma_Daima.png/revision/latest/scale-to-width-down/450?cb=20241129080220&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Chapa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9f/Rey_Chapa_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161217082850&path-prefix=es"
+  },
+  {
+    "nombre": "Punta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Punta_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160718014450&path-prefix=es"
+  },
+  {
+    "nombre": "Ranfan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cf/Ranfan_Artwork.png/revision/latest/scale-to-width-down/450?cb=20171201162313&path-prefix=es"
+  },
+  {
+    "nombre": "Rising Dragon",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/68/Shaolong.png/revision/latest/scale-to-width-down/450?cb=20261011223010&path-prefix=es"
+  },
+  {
+    "nombre": "Rom",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/65/Romu.gif/revision/latest?cb=20101124163753&path-prefix=es"
+  },
+  {
+    "nombre": "Rocky Ríos",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c2/Rocky_R%C3%ADos.png/revision/latest/scale-to-width-down/450?cb=20100403142118&path-prefix=es"
+  },
+  {
+    "nombre": "Sarah",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fd/Sarah.png/revision/latest/scale-to-width-down/450?cb=20100218231834&path-prefix=es"
+  },
+  {
+    "nombre": "Senbei Norimaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dc/Senbei_Norimaki.png/revision/latest/scale-to-width-down/450?cb=20161204195552&path-prefix=es"
+  },
+  {
+    "nombre": "Mr. Satán",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/97/Mr_Satan_DBSuper.png/revision/latest/scale-to-width-down/450?cb=20161112215303&path-prefix=es"
+  },
+  {
+    "nombre": "Sherman Priest",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/bb/Sherman_Priest.png/revision/latest/scale-to-width-down/450?cb=20091226123920&path-prefix=es"
+  },
+  {
+    "nombre": "Shapner",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Shapner.jpg/revision/latest/scale-to-width-down/450?cb=20100117193332&path-prefix=es"
+  },
+  {
+    "nombre": "Baoya Ten Long",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a1/Baoya_Ten_Long_DB.png/revision/latest/scale-to-width-down/450?cb=20171204215859&path-prefix=es"
+  },
+  {
+    "nombre": "Sidonia",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/99/Lime_DBZ.png/revision/latest/scale-to-width-down/450?cb=20201015144918&path-prefix=es"
+  },
+  {
+    "nombre": "Sirena",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4e/Sirena.png/revision/latest/scale-to-width-down/450?cb=20100131130150&path-prefix=es"
+  },
+  {
+    "nombre": "Señorita Hamilton",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2f/Se%C3%B1orita_Hamilton.jpg/revision/latest/scale-to-width-down/450?cb=20101124170617&path-prefix=es"
+  },
+  {
+    "nombre": "Thunderbolt",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/68/Thunder0.jpg/revision/latest?cb=20130123053920&path-prefix=es"
+  },
+  {
+    "nombre": "Tao Pai Pai",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b2/Tao_Pai_Pai_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160718013132&path-prefix=es"
+  },
+  {
+    "nombre": "Suno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a3/Suno.png/revision/latest/scale-to-width-down/450?cb=20100124154002&path-prefix=es"
+  },
+  {
+    "nombre": "Smitty",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9e/238-45.jpg/revision/latest?cb=20100211121838&path-prefix=es"
+  },
+  {
+    "nombre": "Uranai Baba",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3e/Uranai_Baba_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170114185437&path-prefix=es"
+  },
+  {
+    "nombre": "Udoh",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/91/Udoh.jpg/revision/latest/scale-to-width-down/450?cb=20201229004126&path-prefix=es"
+  },
+  {
+    "nombre": "Upa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e5/Upa_ni%C3%B1o.png/revision/latest?cb=20210109154837&path-prefix=es"
+  },
+  {
+    "nombre": "Oob",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/27/Artwork_de_Oob_en_Bucchigiri_Match.png/revision/latest/scale-to-width-down/450?cb=20201122004634&path-prefix=es"
+  },
+  {
+    "nombre": "Videl",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a1/VidelDBSE.png/revision/latest?cb=20160122174526&path-prefix=es"
+  },
+  {
+    "nombre": "Tsuru-Sen'nin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a0/Tsuru-Sen%27nin.png/revision/latest/scale-to-width-down/450?cb=20170831003848&path-prefix=es"
+  },
+  {
+    "nombre": "Valese",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5e/Palace_GT.png/revision/latest/scale-to-width-down/450?cb=20171230002145&path-prefix=es"
+  },
+  {
+    "nombre": "Weaver",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6c/Weaver.jpg/revision/latest/scale-to-width-down/450?cb=20100118231823&path-prefix=es"
+  },
+  {
+    "nombre": "Van Zant",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b6/Van_Zant.jpg/revision/latest?cb=20100211124516&path-prefix=es"
+  },
+  {
+    "nombre": "Yamcha",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/10/Dragon_Ball_Super_Yamcha.png/revision/latest/scale-to-width-down/450?cb=20150807204201&path-prefix=es"
+  },
+  {
+    "nombre": "Yajirobe",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9a/Yajirobe_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170817194242&path-prefix=es"
+  },
+  {
+    "nombre": "Yaochun",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2a/Yaochun.png/revision/latest/scale-to-width-down/450?cb=20260906022157&path-prefix=es"
+  },
+  {
+    "nombre": "Bardock",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/30/Bardock_%28Super%29_artwork.png/revision/latest/scale-to-width-down/450?cb=20181121143103&path-prefix=es"
+  },
+  {
+    "nombre": "Bardock Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fb/SDBH_-_EP43_%2812%29.png/revision/latest/scale-to-width-down/450?cb=20220906145816&path-prefix=es"
+  },
+  {
+    "nombre": "Super Bardock",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fb/SDBH_-_EP43_%2812%29.png/revision/latest/scale-to-width-down/450?cb=20220906145816&path-prefix=es"
+  },
+  {
+    "nombre": "Bardock del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/26/Bardock_Futuro_Alternativo_artwork.png/revision/latest/scale-to-width-down/450?cb=20200416124218&path-prefix=es"
+  },
+  {
+    "nombre": "Broly",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b7/Broly_Dokkan_arte_conceptual.png/revision/latest/scale-to-width-down/450?cb=20220212153719&path-prefix=es"
+  },
+  {
+    "nombre": "Broly Dark",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/64/Artwork_de_Broly_Oscuro_Desenmascarado_en_SDBH.png/revision/latest/scale-to-width-down/450?cb=20201116114551&path-prefix=es"
+  },
+  {
+    "nombre": "Gogeta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9b/Gogeta_Super_artwork.png/revision/latest/scale-to-width-down/450?cb=20181223195723&path-prefix=es"
+  },
+  {
+    "nombre": "Brocco",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6d/Shorty_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160919225753&path-prefix=es"
+  },
+  {
+    "nombre": "Gine",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ae/Gine_artwork.png/revision/latest/scale-to-width-down/450?cb=20181121143520&path-prefix=es"
+  },
+  {
+    "nombre": "Son Goku",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c0/Son_Goku_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20220302091733&path-prefix=es"
+  },
+  {
+    "nombre": "Gogeta Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8d/Gogeta_Xeno_Artowrk.png/revision/latest/scale-to-width-down/450?cb=20170705011315&path-prefix=es"
+  },
+  {
+    "nombre": "Son Goku Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/23/Goku_Xeno_Dokkan_Battle_UM22.png/revision/latest/scale-to-width-down/450?cb=20200114205054&path-prefix=es"
+  },
+  {
+    "nombre": "Nappa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/77/Nappa_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160726001828&path-prefix=es"
+  },
+  {
+    "nombre": "Gogeta del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/81/Gogeta_del_Futuro_Alternativo.png/revision/latest/scale-to-width-down/450?cb=20160607225514&path-prefix=es"
+  },
+  {
+    "nombre": "Onio",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Onio_manga.png/revision/latest/scale-to-width-down/450?cb=20180512194105&path-prefix=es"
+  },
+  {
+    "nombre": "Son Goku del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/66/Son_Goku_del_Futuro_muerto.png/revision/latest/scale-to-width-down/450?cb=20181204154112&path-prefix=es"
+  },
+  {
+    "nombre": "Paragus",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d3/Paragus_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160515214137&path-prefix=es"
+  },
+  {
+    "nombre": "Raditz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/0b/Raditz_artwork_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20200614161542&path-prefix=es"
+  },
+  {
+    "nombre": "Panpukin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f9/Scarface_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160919225931&path-prefix=es"
+  },
+  {
+    "nombre": "Panppukin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e2/Panppukin_Artwork.png/revision/latest/scale-to-width-down/450?cb=20250918094801&path-prefix=es"
+  },
+  {
+    "nombre": "Tarble",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e1/Sangre_real_Tarble_DBZ_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20260923041426&path-prefix=es"
+  },
+  {
+    "nombre": "Selypa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8b/Selypa_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722195358&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Vegeta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e6/Rey_Vegeta_Dragon_Ball_Super_Broly_artwork.png/revision/latest/scale-to-width-down/450?cb=20181121150438&path-prefix=es"
+  },
+  {
+    "nombre": "Turles",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Tullece_SDBHWM_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200409185554&path-prefix=es"
+  },
+  {
+    "nombre": "Toteppo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/df/Toteppo_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160727235916&path-prefix=es"
+  },
+  {
+    "nombre": "Toma",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a5/Toma.png/revision/latest/scale-to-width-down/450?cb=20161201220425&path-prefix=es"
+  },
+  {
+    "nombre": "Vegeta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/14/Vegeta_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20220119211034&path-prefix=es"
+  },
+  {
+    "nombre": "Vegeta Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/97/Vegeta_Xeno_SDBHWM_UM22.png/revision/latest/scale-to-width-down/450?cb=20200114154007&path-prefix=es"
+  },
+  {
+    "nombre": "Vegetto",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c6/Arte_de_Vegetto_en_Dokkan_Battle.png/revision/latest/scale-to-width-down/450?cb=20210507224508&path-prefix=es"
+  },
+  {
+    "nombre": "Vegeks Xeno",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4b/Vegeks_Xeno_Render.png/revision/latest/scale-to-width-down/450?cb=20161021124339&path-prefix=es"
+  },
+  {
+    "nombre": "Vegeta del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/32/Vegeta_del_Futuro_Alternativo.png/revision/latest/scale-to-width-down/450?cb=20181205175948&path-prefix=es"
+  },
+  {
+    "nombre": "Yamoshi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e3/OriginalSuperSaiyan.png/revision/latest/scale-to-width-down/450?cb=20230430181144&path-prefix=es"
+  },
+  {
+    "nombre": "Zorn",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4d/Zorn.png/revision/latest/scale-to-width-down/450?cb=20130506230141&path-prefix=es"
+  },
+  {
+    "nombre": "Shallot",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Shallot_en_Dragon_Ball_Legends_%281%29.png/revision/latest?cb=20180609034749&path-prefix=es"
+  },
+  {
+    "nombre": "Cumber",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/59/Artwork_de_Cumber_en_SDBH.png/revision/latest/scale-to-width-down/450?cb=20201122170247&path-prefix=es"
+  },
+  {
+    "nombre": "Giboulette",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/18/Hombre_de_la_capucha.png/revision/latest?cb=20180427152826&path-prefix=es"
+  },
+  {
+    "nombre": "Cabba",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/60/U06_cabe.png/revision/latest?cb=20171205164739&path-prefix=es"
+  },
+  {
+    "nombre": "Caulifla",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d6/Caulifla_render.png/revision/latest?cb=20170729082618&path-prefix=es"
+  },
+  {
+    "nombre": "Kale",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c9/Kale_Artwork.png/revision/latest?cb=20180721074719&path-prefix=es"
+  },
+  {
+    "nombre": "Kefla",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8a/Kafla_artwork.png/revision/latest/scale-to-width-down/450?cb=20200215013851&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Sadala",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2a/Emblema_de_Sadala.png/revision/latest/scale-to-width-down/450?cb=20200706133845&path-prefix=es"
+  },
+  {
+    "nombre": "Rensou",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/Rensou.png/revision/latest/scale-to-width-down/450?cb=20170430184109&path-prefix=es"
+  },
+  {
+    "nombre": "Baby",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Baby_artwork_SDBHWM.png/revision/latest/scale-to-width-down/450?cb=20200925155047&path-prefix=es"
+  },
+  {
+    "nombre": "Baby Vegeta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/aa/Baby_Vegeta_Artwork.png/revision/latest?cb=20161201212134&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Tsufru",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1e/Rey_Tsufur.png/revision/latest/scale-to-width-down/450?cb=20171124180645&path-prefix=es"
+  },
+  {
+    "nombre": "Baby Hatchiyack",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/53/Baby_Hatchiyack_Arwork.png/revision/latest?cb=20160314171350&path-prefix=es"
+  },
+  {
+    "nombre": "Zarbuto",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/65/Zarbuto_render.png/revision/latest/scale-to-width-down/450?cb=20171006205811&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Lichi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d9/Lichi_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20171122090140&path-prefix=es"
+  },
+  {
+    "nombre": "Kamioran",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/aa/Artwork_de_Kamioran_en_SDBHUVM.png/revision/latest/scale-to-width-down/450?cb=20201116120733&path-prefix=es"
+  },
+  {
+    "nombre": "Kamin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2a/Artwork_de_Kamin_en_SDBH.png/revision/latest/scale-to-width-down/450?cb=20201122180438&path-prefix=es"
+  },
+  {
+    "nombre": "Oran",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/65/Artwork_de_Oran.png/revision/latest/scale-to-width-down/450?cb=20201112160251&path-prefix=es"
+  },
+  {
+    "nombre": "Trampire",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cd/Vampira.jpg/revision/latest/scale-to-width-down/450?cb=20190515183155&path-prefix=es"
+  },
+  {
+    "nombre": "Kishime",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Kishime3.png/revision/latest/scale-to-width-down/450?cb=20161217200924&path-prefix=es"
+  },
+  {
+    "nombre": "Conde Drac",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/14/CountDrac.png/revision/latest/scale-to-width-down/450?cb=20120214212103&path-prefix=es"
+  },
+  {
+    "nombre": "Bubibinman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c5/Bubibinman02.png/revision/latest/scale-to-width-down/450?cb=20100303184142&path-prefix=es"
+  },
+  {
+    "nombre": "Akane Kimidori",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/33/Akane2.png/revision/latest/scale-to-width-down/450?cb=20120624040354&path-prefix=es"
+  },
+  {
+    "nombre": "Mikokatsun",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f8/Mikokatsun_pel%C3%ADcula.png/revision/latest/scale-to-width-down/450?cb=20170908000451&path-prefix=es"
+  },
+  {
+    "nombre": "Gatchan Norimaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c1/Gatchan_Norimaki.png/revision/latest/scale-to-width-down/450?cb=20120604214128&path-prefix=es"
+  },
+  {
+    "nombre": "Midori Norimaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f4/Profesora_Midori.png/revision/latest/scale-to-width-down/450?cb=20191205173148&path-prefix=es"
+  },
+  {
+    "nombre": "Suppaman",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e5/Suppaman_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161101231932&path-prefix=es"
+  },
+  {
+    "nombre": "Ebifurya",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Ebibruya.png/revision/latest/scale-to-width-down/450?cb=20150826165721&path-prefix=es"
+  },
+  {
+    "nombre": "Taro Soramame",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d6/Taro_Soramame.png/revision/latest?cb=20140823163352&path-prefix=es"
+  },
+  {
+    "nombre": "Mr. Pig",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/71/Mr_Pig.png/revision/latest/scale-to-width-down/450?cb=20100304173257&path-prefix=es"
+  },
+  {
+    "nombre": "Tsukutsun Tsun",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e1/Tsukutsun_Tsun.jpg/revision/latest/scale-to-width-down/450?cb=20100103195958&path-prefix=es"
+  },
+  {
+    "nombre": "Pagos",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Pagos.jpg/revision/latest/scale-to-width-down/450?cb=20100226233942&path-prefix=es"
+  },
+  {
+    "nombre": "Gyaosu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7b/Gyaosu.png/revision/latest/scale-to-width-down/450?cb=20100226182327&path-prefix=es"
+  },
+  {
+    "nombre": "Turbo Norimaki",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b4/Turbo_N.jpg/revision/latest?cb=20161202224646&path-prefix=es"
+  },
+  {
+    "nombre": "Gara",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e3/Gara.jpg/revision/latest?cb=20100226182649&path-prefix=es"
+  },
+  {
+    "nombre": "Doore",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c8/Dore_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160712013541&path-prefix=es"
+  },
+  {
+    "nombre": "Yamada Charmy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/12/Yamada_Charmy.png/revision/latest/scale-to-width-down/450?cb=20100314205700&path-prefix=es"
+  },
+  {
+    "nombre": "Neiz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Neiz_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160710185227&path-prefix=es"
+  },
+  {
+    "nombre": "Salza",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/00/Salza_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160709234846&path-prefix=es"
+  },
+  {
+    "nombre": "Dracula Man",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/00/Dracula_Man_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160728000840&path-prefix=es"
+  },
+  {
+    "nombre": "Rey de Todo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/91/Zeno_Artwork.png/revision/latest?cb=20171104010631&path-prefix=es"
+  },
+  {
+    "nombre": "La Momia",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f2/Momia_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160728000228&path-prefix=es"
+  },
+  {
+    "nombre": "El Hombre Invisible",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6c/TheInvisibleManSukeru.png/revision/latest/scale-to-width-down/450?cb=20120918025951&path-prefix=es"
+  },
+  {
+    "nombre": "Beerus",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7c/Beerus_DBS_Broly_Artwork.png/revision/latest/scale-to-width-down/450?cb=20180812215445&path-prefix=es"
+  },
+  {
+    "nombre": "Rey de Todo del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a6/Zeno_del_futuro.png/revision/latest/scale-to-width-down/450?cb=20161120012402&path-prefix=es"
+  },
+  {
+    "nombre": "Araq",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/66/Araq_Render.png/revision/latest/scale-to-width-down/450?cb=20170416032850&path-prefix=es"
+  },
+  {
+    "nombre": "Champa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b9/Champa-1.png/revision/latest/scale-to-width-down/450?cb=20171224045411&path-prefix=es"
+  },
+  {
+    "nombre": "Rumoosh",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/19/Rumoosh_render.png/revision/latest/scale-to-width-down/450?cb=20170414224022&path-prefix=es"
+  },
+  {
+    "nombre": "Sidra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e6/Sidra.png/revision/latest/scale-to-width-down/450?cb=20170216220908&path-prefix=es"
+  },
+  {
+    "nombre": "Jerez",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c7/Heles_artwork.png/revision/latest/scale-to-width-down/450?cb=20170609212457&path-prefix=es"
+  },
+  {
+    "nombre": "Quitela",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2f/Quitela_render.png/revision/latest?cb=20190830120446&path-prefix=es"
+  },
+  {
+    "nombre": "Iwen",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b0/Iwen.png/revision/latest/scale-to-width-down/450?cb=20170414202846&path-prefix=es"
+  },
+  {
+    "nombre": "Toppo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4e/Toppo.png/revision/latest/scale-to-width-down/450?cb=20180128152453&path-prefix=es"
+  },
+  {
+    "nombre": "Geen",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c8/Geen_render.png/revision/latest?cb=20200413144134&path-prefix=es"
+  },
+  {
+    "nombre": "Vermoud",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/14/Vermoud.png/revision/latest/scale-to-width-down/450?cb=20170311133112&path-prefix=es"
+  },
+  {
+    "nombre": "Mule",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ab/Mosco2.png/revision/latest/scale-to-width-down/450?cb=20170312143952&path-prefix=es"
+  },
+  {
+    "nombre": "Liquir",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/ff/Liquir.png/revision/latest/scale-to-width-down/450?cb=20170414221801&path-prefix=es"
+  },
+  {
+    "nombre": "Caterpy",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8f/Caterpy_Render.png/revision/latest/scale-to-width-down/450?cb=20140630201927&path-prefix=es"
+  },
+  {
+    "nombre": "Arqua",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/24/Arqua_Trans.png/revision/latest/scale-to-width-down/450?cb=20110831224029&path-prefix=es"
+  },
+  {
+    "nombre": "Goku",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c0/Son_Goku_en_Super_Hero.png/revision/latest/scale-to-width-down/450?cb=20220302091733&path-prefix=es"
+  },
+  {
+    "nombre": "Chapuchai",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/43/Chapuchai_1.jpg/revision/latest/scale-to-width-down/450?cb=20121105070118&path-prefix=es"
+  },
+  {
+    "nombre": "Maraikoh",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1b/Maraikoh.png/revision/latest/scale-to-width-down/450?cb=20110831212045&path-prefix=es"
+  },
+  {
+    "nombre": "Froug",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dd/Froug.png/revision/latest/scale-to-width-down/450?cb=20110718033912&path-prefix=es"
+  },
+  {
+    "nombre": "Papoye",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1b/Papoi_DBZ.png/revision/latest/scale-to-width-down/450?cb=20171121120649&path-prefix=es"
+  },
+  {
+    "nombre": "Paikuhan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7a/PIKKON_Relleno.png/revision/latest/scale-to-width-down/450?cb=20160723165849&path-prefix=es"
+  },
+  {
+    "nombre": "Olivue",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Olibu_Trans.png/revision/latest/scale-to-width-down/450?cb=20110901002023&path-prefix=es"
+  },
+  {
+    "nombre": "Mijorin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/30/Mijorin_.png/revision/latest/scale-to-width-down/450?cb=20120429013631&path-prefix=es"
+  },
+  {
+    "nombre": "Sartay",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2c/Sarta_.png/revision/latest/scale-to-width-down/450?cb=20120429030428&path-prefix=es"
+  },
+  {
+    "nombre": "Commander Nezi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d1/Nezi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730215259&path-prefix=es"
+  },
+  {
+    "nombre": "Tapkar",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ad/Tapkar_DBZ.png/revision/latest/scale-to-width-down/450?cb=20180716025845&path-prefix=es"
+  },
+  {
+    "nombre": "Biz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/83/Biz_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730214624&path-prefix=es"
+  },
+  {
+    "nombre": "Dodoria",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cd/Dodoria_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618232454&path-prefix=es"
+  },
+  {
+    "nombre": "Tagoma",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/50/Tagoma.png/revision/latest/scale-to-width-down/450?cb=20141121011628&path-prefix=es"
+  },
+  {
+    "nombre": "Ribet",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/82/Ribet_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730214911&path-prefix=es"
+  },
+  {
+    "nombre": "Shisami",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/03/Shisami_%28La_resurrecci%C3%B3n_de_F%29.png/revision/latest?cb=20251203001953&path-prefix=es"
+  },
+  {
+    "nombre": "Natt",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/16/Natt_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730215140&path-prefix=es"
+  },
+  {
+    "nombre": "Zarbon",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/15/Zarbon_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618232633&path-prefix=es"
+  },
+  {
+    "nombre": "Sorbet",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/63/Sorbet.png/revision/latest/scale-to-width-down/450?cb=20141121011815&path-prefix=es"
+  },
+  {
+    "nombre": "Guldo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/44/Ghurd_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618232456&path-prefix=es"
+  },
+  {
+    "nombre": "Butta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d0/Butta_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618232455&path-prefix=es"
+  },
+  {
+    "nombre": "Jeice",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/35/Jheese_artwork_Broly.png/revision/latest?cb=20190618233202&path-prefix=es"
+  },
+  {
+    "nombre": "Appule",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1a/Appule_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170922225256&path-prefix=es"
+  },
+  {
+    "nombre": "Kewi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Kewi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722195916&path-prefix=es"
+  },
+  {
+    "nombre": "Recoome",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/72/Reacoom_artwork_Broly.png/revision/latest/scale-to-width-down/450?cb=20190618232455&path-prefix=es"
+  },
+  {
+    "nombre": "Chopsui",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3e/Chopsui_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170922234613&path-prefix=es"
+  },
+  {
+    "nombre": "Blueberry",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9e/Blueberry.png/revision/latest?cb=20120329125924&path-prefix=es"
+  },
+  {
+    "nombre": "Malaka",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ac/Malaka_DBZ_1.png/revision/latest/scale-to-width-down/450?cb=20191226092148&path-prefix=es"
+  },
+  {
+    "nombre": "Planthorr",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/84/Planthor.jpg/revision/latest/scale-to-width-down/450?cb=20120522231924&path-prefix=es"
+  },
+  {
+    "nombre": "Namole",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e9/Namole_DBZ.png/revision/latest?cb=20110724131253&path-prefix=es"
+  },
+  {
+    "nombre": "Raspberry",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9e/Raspberry_render.png/revision/latest/scale-to-width-down/450?cb=20120706085228&path-prefix=es"
+  },
+  {
+    "nombre": "Lemo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Lemo.png/revision/latest/scale-to-width-down/450?cb=20180810194949&path-prefix=es"
+  },
+  {
+    "nombre": "Banan",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/39/Site-community-image/revision/latest?cb=20220307024230&path-prefix=es"
+  },
+  {
+    "nombre": "Kikono",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f4/Kikono.png/revision/latest/scale-to-width-down/450?cb=20180810195034&path-prefix=es"
+  },
+  {
+    "nombre": "Cheelye",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/12/Cheelye_en_Broly.png/revision/latest/scale-to-width-down/450?cb=20180810195004&path-prefix=es"
+  },
+  {
+    "nombre": "Gran Kaio",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f1/Gran_kaio_sama12.png/revision/latest/scale-to-width-down/450?cb=20120213011713&path-prefix=es"
+  },
+  {
+    "nombre": "Soldado de Freezer 1",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6b/Ginyu_trans.png/revision/latest/scale-to-width-down/450?cb=20170901094140&path-prefix=es"
+  },
+  {
+    "nombre": "Soldado de Freezer 3",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6b/Ginyu_trans.png/revision/latest/scale-to-width-down/450?cb=20170901094140&path-prefix=es"
+  },
+  {
+    "nombre": "Soldado de Freezer 2",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6b/Ginyu_trans.png/revision/latest/scale-to-width-down/450?cb=20170901094140&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio del Este",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/59/East_Kai.png/revision/latest/scale-to-width-down/450?cb=20110831222922&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio del Norte",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/77/Kaio_del_Norte.png/revision/latest/scale-to-width-down/450?cb=20171121121215&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio del Oeste",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8d/Kaio_Oeste_Trans.png/revision/latest/scale-to-width-down/450?cb=20110831215442&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio del Sur",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Kaio_del_sur_cuerpo_completo.png/revision/latest/scale-to-width-down/450?cb=20130502050757&path-prefix=es"
+  },
+  {
+    "nombre": "Shin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/72/Shin_en_Dragon_Ball_Daima.png/revision/latest/scale-to-width-down/450?cb=20241105020140&path-prefix=es"
+  },
+  {
+    "nombre": "Kaioshin Anciano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e5/Kaio-shin_anciano_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160515203523&path-prefix=es"
+  },
+  {
+    "nombre": "Gran Kaioshin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8b/Gran_Kaio-shin_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161224004718&path-prefix=es"
+  },
+  {
+    "nombre": "Zamas",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ca/Zamas_Artwork.png/revision/latest/scale-to-width-down/450?cb=20190121171950&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio-shin del Norte",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/26/Kaio-shin_del_Norte_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181211213914&path-prefix=es"
+  },
+  {
+    "nombre": "Kibitoshin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b6/Kibito_shin_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160708004511&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio-shin del Sur",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f7/Kaio-shin_del_Sur_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181211214351&path-prefix=es"
+  },
+  {
+    "nombre": "Kaio Shin del Oeste",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/07/Kaio-shin_del_Oeste_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181211214450&path-prefix=es"
+  },
+  {
+    "nombre": "Chronoa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ec/Kaio-shin_del_Tiempo_Chronoa_Artwork.png/revision/latest/scale-to-width-down/450?cb=20161201214614&path-prefix=es"
+  },
+  {
+    "nombre": "Goku Black",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d6/Goku_Black_Artwork_DBS.png/revision/latest/scale-to-width-down/450?cb=20160725220415&path-prefix=es"
+  },
+  {
+    "nombre": "Gowas",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cd/Gowas_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200611090912&path-prefix=es"
+  },
+  {
+    "nombre": "Fuwa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3a/Fuwa.png/revision/latest?cb=20200422113155&path-prefix=es"
+  },
+  {
+    "nombre": "Zamas del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/79/Zamas_del_Futuro_Alternativo_artwork_%28Bucchigiri_Match%29.png/revision/latest/scale-to-width-down/450?cb=20200612163022&path-prefix=es"
+  },
+  {
+    "nombre": "Zamas Fusión",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ce/Zamas_Fusi%C3%B3n_render.png/revision/latest/scale-to-width-down/450?cb=20200610171034&path-prefix=es"
+  },
+  {
+    "nombre": "Anat",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/37/Anat.png/revision/latest?cb=20170312144129&path-prefix=es"
+  },
+  {
+    "nombre": "Kur",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e1/Kuru.png/revision/latest?cb=20170312144106&path-prefix=es"
+  },
+  {
+    "nombre": "Perú",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c2/Peru_render.png/revision/latest/scale-to-width-down/450?cb=20170414203306&path-prefix=es"
+  },
+  {
+    "nombre": "Ill",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/Ill2.png/revision/latest?cb=20170312144224&path-prefix=es"
+  },
+  {
+    "nombre": "Ogma",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e4/Ogma.png/revision/latest/scale-to-width-down/450?cb=20170312143904&path-prefix=es"
+  },
+  {
+    "nombre": "Ag",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/98/Ugg.png/revision/latest/scale-to-width-down/450?cb=20170312144325&path-prefix=es"
+  },
+  {
+    "nombre": "Kai",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/29/Kai.png/revision/latest/scale-to-width-down/450?cb=20170216221007&path-prefix=es"
+  },
+  {
+    "nombre": "Kibito",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Kibito_en_Dragon_Ball_Daima.png/revision/latest/scale-to-width-down/450?cb=20241105020131&path-prefix=es"
+  },
+  {
+    "nombre": "Asistente del Kaioshin del Sexto Universo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b0/Asistente_Shin-jin_del_Universo_6.png/revision/latest/scale-to-width-down/450?cb=20171027154336&path-prefix=es"
+  },
+  {
+    "nombre": "Ea",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3f/Ea.png/revision/latest?cb=20170312144027&path-prefix=es"
+  },
+  {
+    "nombre": "Angila",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5f/Angira_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181207205133&path-prefix=es"
+  },
+  {
+    "nombre": "Zeeun",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/13/Zeeun_SDBH.png/revision/latest/scale-to-width-down/450?cb=20190517131637&path-prefix=es"
+  },
+  {
+    "nombre": "Gyoshu y Kakuja",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e6/Gyoshu.jpg/revision/latest/scale-to-width-down/450?cb=20091217215803&path-prefix=es"
+  },
+  {
+    "nombre": "Medamatcha",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8e/MedamatchaDokkan.png/revision/latest/scale-to-width-down/450?cb=20181208181717&path-prefix=es"
+  },
+  {
+    "nombre": "Dorotabo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f1/Dorodabo_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20181207202622&path-prefix=es"
+  },
+  {
+    "nombre": "Soldados ordinarios de Slug",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8d/Ejercito_de_slug.jpg/revision/latest/scale-to-width-down/450?cb=20120411022558&path-prefix=es"
+  },
+  {
+    "nombre": "Dispo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/ce/Dispo_render.png/revision/latest/scale-to-width-down/450?cb=20170414223634&path-prefix=es"
+  },
+  {
+    "nombre": "Jiren",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/03/Jiren_render.png/revision/latest/scale-to-width-down/450?cb=20170414221953&path-prefix=es"
+  },
+  {
+    "nombre": "Cocotte",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8a/Cocotte_render.png/revision/latest/scale-to-width-down/450?cb=20171006204001&path-prefix=es"
+  },
+  {
+    "nombre": "Casseral",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/08/Casseral_Artwork.png/revision/latest?cb=20170610045816&path-prefix=es"
+  },
+  {
+    "nombre": "Zoirei",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ec/Zoirei_render.png/revision/latest/scale-to-width-down/450?cb=20171006204001&path-prefix=es"
+  },
+  {
+    "nombre": "Tupper",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ea/Tupper_render.png/revision/latest/scale-to-width-down/450?cb=20171006204002&path-prefix=es"
+  },
+  {
+    "nombre": "Kettle",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ac/Kettle_render.png/revision/latest/scale-to-width-down/450?cb=20171006204000&path-prefix=es"
+  },
+  {
+    "nombre": "Bergamo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f6/Bergamo.png/revision/latest/scale-to-width-down/450?cb=20170216221041&path-prefix=es"
+  },
+  {
+    "nombre": "Vuon",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Vuon_render.png/revision/latest/scale-to-width-down/450?cb=20171006204002&path-prefix=es"
+  },
+  {
+    "nombre": "Basil",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6e/Basil.png/revision/latest/scale-to-width-down/450?cb=20170216221107&path-prefix=es"
+  },
+  {
+    "nombre": "Lavenda",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/bd/Lavenda.png/revision/latest/scale-to-width-down/450?cb=20170703183700&path-prefix=es"
+  },
+  {
+    "nombre": "Bizu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/83/Biz_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730214624&path-prefix=es"
+  },
+  {
+    "nombre": "Comandante Nezi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d1/Nezi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160730215259&path-prefix=es"
+  },
+  {
+    "nombre": "General Rilld",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c3/Rildo_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160627003603&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Myu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/10/Dr._Myu_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160727010102&path-prefix=es"
+  },
+  {
+    "nombre": "Buyon",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f8/Buyon.png/revision/latest/scale-to-width-down/450?cb=20110831194417&path-prefix=es"
+  },
+  {
+    "nombre": "Giru",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c7/Gill_en_Dragon_Ball_GT.png/revision/latest?cb=20220314091005&path-prefix=es"
+  },
+  {
+    "nombre": "Oficial Mayor Black",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4b/General_Black_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160802212748&path-prefix=es"
+  },
+  {
+    "nombre": "Luud",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/00/Loud.png/revision/latest/scale-to-width-down/450?cb=20121231042625&path-prefix=es"
+  },
+  {
+    "nombre": "Daiz",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e3/Daiz_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160709235117&path-prefix=es"
+  },
+  {
+    "nombre": "Cacao",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2f/Cacao_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160709234417&path-prefix=es"
+  },
+  {
+    "nombre": "Almond",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d5/Almond_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160722194344&path-prefix=es"
+  },
+  {
+    "nombre": "Babidi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9d/Babidi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160920233319&path-prefix=es"
+  },
+  {
+    "nombre": "Rasin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b9/Rasin.png/revision/latest/scale-to-width-down/450?cb=20160515215153&path-prefix=es"
+  },
+  {
+    "nombre": "Lakasei",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4a/Lakasei_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160515214759&path-prefix=es"
+  },
+  {
+    "nombre": "Bibidi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cf/Bibidi_Trans.png/revision/latest/scale-to-width-down/450?cb=20110901021825&path-prefix=es"
+  },
+  {
+    "nombre": "Vieja Bruja",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ab/Vieja_Bruja_DBZ.png/revision/latest/scale-to-width-down/450?cb=20180608180818&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Galáctico",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/62/Rey_Galactico.png/revision/latest/scale-to-width-down/450?cb=20180328172408&path-prefix=es"
+  },
+  {
+    "nombre": "Merusu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/00/Merusu_artwork_Toyotaro.png/revision/latest/scale-to-width-down/450?cb=20181223211752&path-prefix=es"
+  },
+  {
+    "nombre": "Jiya",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Jiya.png/revision/latest?cb=20200218185510&path-prefix=es"
+  },
+  {
+    "nombre": "Jaco Teirimentenpibosshi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/47/Jaco_Thilimentempibossi_DBDokkanBattle.png/revision/latest/scale-to-width-down/450?cb=20200722171512&path-prefix=es"
+  },
+  {
+    "nombre": "Iriko",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/87/Irico_manga_a_color.png/revision/latest?cb=20201003025906&path-prefix=es"
+  },
+  {
+    "nombre": "Stece",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/67/Steth_forma_verdadera.png/revision/latest?cb=20190212133452&path-prefix=es"
+  },
+  {
+    "nombre": "Shiirasu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8b/Arte_conceptual_de_Sealas_en_World_Mission.png/revision/latest/scale-to-width-down/450?cb=20200715211732&path-prefix=es"
+  },
+  {
+    "nombre": "Ghetti Maccareni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b2/Ghetti_Maccareni_DBS.png/revision/latest?cb=20190302001231&path-prefix=es"
+  },
+  {
+    "nombre": "Pasta Maccareni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b3/Pastar_Macareni_manga_a_color.png/revision/latest/scale-to-width-down/450?cb=20201001174410&path-prefix=es"
+  },
+  {
+    "nombre": "Penne Maccareni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/33/Penne_Maccareni_DBS.png/revision/latest?cb=20190302001004&path-prefix=es"
+  },
+  {
+    "nombre": "Niño Verde Extraterrestre",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/cc/BabyBoy.png/revision/latest/scale-to-width-down/450?cb=20160121004616&path-prefix=es"
+  },
+  {
+    "nombre": "Brianne de Château",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/04/Brianne_de_Ch%C3%A2teau_render.png/revision/latest/scale-to-width-down/450?cb=20171006211633&path-prefix=es"
+  },
+  {
+    "nombre": "Lagss",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d4/Artwork_de_Laggs_en_SDBHUVM.png/revision/latest/scale-to-width-down/450?cb=20201116131540&path-prefix=es"
+  },
+  {
+    "nombre": "Hearts",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/76/Arte_de_Hearts_en_SDBHBM.png/revision/latest/scale-to-width-down/450?cb=20210319153505&path-prefix=es"
+  },
+  {
+    "nombre": "Rabanra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/04/Rabanra_render.png/revision/latest/scale-to-width-down/450?cb=20171006211634&path-prefix=es"
+  },
+  {
+    "nombre": "Sanka Ku",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9a/Sanka_Ku_render.png/revision/latest/scale-to-width-down/450?cb=20171006211634&path-prefix=es"
+  },
+  {
+    "nombre": "Sous Roas",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/65/Sous_Roas_render.png/revision/latest/scale-to-width-down/450?cb=20171006205814&path-prefix=es"
+  },
+  {
+    "nombre": "Bikal",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e0/Bikal_render.png/revision/latest/scale-to-width-down/450?cb=20171006211635&path-prefix=es"
+  },
+  {
+    "nombre": "Harmira",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/96/Harmira_render.png/revision/latest/scale-to-width-down/450?cb=20171006211635&path-prefix=es"
+  },
+  {
+    "nombre": "Jimizu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dc/Jimizu_render.png/revision/latest/scale-to-width-down/450?cb=20171006211635&path-prefix=es"
+  },
+  {
+    "nombre": "Prum",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/21/Prum.png/revision/latest/scale-to-width-down/450?cb=20171006211633&path-prefix=es"
+  },
+  {
+    "nombre": "Camparri",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/eb/Campahri.png/revision/latest/scale-to-width-down/450?cb=20170414204829&path-prefix=es"
+  },
+  {
+    "nombre": "Mosco",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ab/Mosco2.png/revision/latest/scale-to-width-down/450?cb=20170312143952&path-prefix=es"
+  },
+  {
+    "nombre": "Narirama",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fb/Narirama_render.png/revision/latest/scale-to-width-down/450?cb=20170609170223&path-prefix=es"
+  },
+  {
+    "nombre": "Zirloin",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Zirloin_render.png/revision/latest/scale-to-width-down/450?cb=20171006205811&path-prefix=es"
+  },
+  {
+    "nombre": "The Priccio",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d7/The_Priccio_render.png/revision/latest/scale-to-width-down/450?cb=20171006204000&path-prefix=es"
+  },
+  {
+    "nombre": "Catopesra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/02/Katopesla_render.png/revision/latest/scale-to-width-down/450?cb=20171006201923&path-prefix=es"
+  },
+  {
+    "nombre": "Boraleta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ed/Boraleta_render.png/revision/latest/scale-to-width-down/450?cb=20171006203959&path-prefix=es"
+  },
+  {
+    "nombre": "Nigrissi",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e9/Nigrissi_Artwork.png/revision/latest/scale-to-width-down/450?cb=20170609170205&path-prefix=es"
+  },
+  {
+    "nombre": "Koitsukai",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c8/Koitsukai_render.png/revision/latest/scale-to-width-down/450?cb=20171006201923&path-prefix=es"
+  },
+  {
+    "nombre": "Paparoni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/43/Paparoni_render.png/revision/latest/scale-to-width-down/450?cb=20171006201923&path-prefix=es"
+  },
+  {
+    "nombre": "Pancea",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e9/Pancea_render.png/revision/latest/scale-to-width-down/450?cb=20171006235042&path-prefix=es"
+  },
+  {
+    "nombre": "Maji-Kayo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/43/Maji_Kayo.png/revision/latest/scale-to-width-down/450?cb=20170917022859&path-prefix=es"
+  },
+  {
+    "nombre": "Biarra",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/86/Biarra_render.png/revision/latest/scale-to-width-down/450?cb=20171006201922&path-prefix=es"
+  },
+  {
+    "nombre": "Agnilasa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6b/Anilaza_Dokkan.png/revision/latest/scale-to-width-down/450?cb=20190316155835&path-prefix=es"
+  },
+  {
+    "nombre": "Koicealeta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b4/Koichealeta.png/revision/latest/scale-to-width-down/450?cb=20171217013056&path-prefix=es"
+  },
+  {
+    "nombre": "Damom",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1b/Damom_Artwork.png/revision/latest/scale-to-width-down/450?cb=20171006235704&path-prefix=es"
+  },
+  {
+    "nombre": "Nink",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e2/Nink_render.png/revision/latest/scale-to-width-down/450?cb=20171006201921&path-prefix=es"
+  },
+  {
+    "nombre": "Ganos",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e2/Ganos_render.png/revision/latest/scale-to-width-down/450?cb=20171006201922&path-prefix=es"
+  },
+  {
+    "nombre": "Majora",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Majora_render.png/revision/latest/scale-to-width-down/450?cb=20171006201920&path-prefix=es"
+  },
+  {
+    "nombre": "Caway",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/5c/Caway_render.png/revision/latest/scale-to-width-down/450?cb=20171006201922&path-prefix=es"
+  },
+  {
+    "nombre": "Shosa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/Shosa_render.png/revision/latest/scale-to-width-down/450?cb=20171006201920&path-prefix=es"
+  },
+  {
+    "nombre": "Dercori",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f5/Dercori_render.png/revision/latest/scale-to-width-down/450?cb=20171006201921&path-prefix=es"
+  },
+  {
+    "nombre": "Shantsa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/04/Shantsa_Artwork.png/revision/latest?cb=20171007001007&path-prefix=es"
+  },
+  {
+    "nombre": "Huwa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3a/Fuwa.png/revision/latest?cb=20200422113155&path-prefix=es"
+  },
+  {
+    "nombre": "Monna",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Monna_Artwork.png/revision/latest/scale-to-width-down/450?cb=20171006234548&path-prefix=es"
+  },
+  {
+    "nombre": "Gamisalas",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/c/c9/Imagen1-1.png/revision/latest/scale-to-width-down/450?cb=20171212173812&path-prefix=es"
+  },
+  {
+    "nombre": "Botamo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f2/U06_botamo.png/revision/latest/scale-to-width-down/450?cb=20171205164306&path-prefix=es"
+  },
+  {
+    "nombre": "Kafla",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8a/Kafla_artwork.png/revision/latest/scale-to-width-down/450?cb=20200215013851&path-prefix=es"
+  },
+  {
+    "nombre": "Auta Magetta",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/ee/Magetta_u6TOP.png/revision/latest/scale-to-width-down/450?cb=20171205164546&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Rota",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a2/Dr._Rota_render.png/revision/latest/scale-to-width-down/450?cb=20171006211636&path-prefix=es"
+  },
+  {
+    "nombre": "Hit",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/87/Hit_Artwork_Toei.png/revision/latest/scale-to-width-down/450?cb=20171202202622&path-prefix=es"
+  },
+  {
+    "nombre": "Lou",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a2/Rou.png/revision/latest/scale-to-width-down/450?cb=20170216220934&path-prefix=es"
+  },
+  {
+    "nombre": "Hop",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/26/Hop_render.png/revision/latest/scale-to-width-down/450?cb=20171006205812&path-prefix=es"
+  },
+  {
+    "nombre": "Chappil",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/20/Cheppil_render.png/revision/latest/scale-to-width-down/450?cb=20171006205812&path-prefix=es"
+  },
+  {
+    "nombre": "Comfrey",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/df/Comfrey_render.png/revision/latest/scale-to-width-down/450?cb=20171006205810&path-prefix=es"
+  },
+  {
+    "nombre": "Sorrel",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f1/Sorrel_render.png/revision/latest/scale-to-width-down/450?cb=20171006204002&path-prefix=es"
+  },
+  {
+    "nombre": "Hyssop",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/24/Hyssop_render.png/revision/latest/scale-to-width-down/450?cb=20171006205813&path-prefix=es"
+  },
+  {
+    "nombre": "Oregano",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e0/Oregano_render.png/revision/latest/scale-to-width-down/450?cb=20171006205813&path-prefix=es"
+  },
+  {
+    "nombre": "Roselle",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/6/6d/Roselle_render.png/revision/latest/scale-to-width-down/450?cb=20171006205813&path-prefix=es"
+  },
+  {
+    "nombre": "Mulithim",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/4d/Murichim_render.png/revision/latest/scale-to-width-down/450?cb=20171006195919&path-prefix=es"
+  },
+  {
+    "nombre": "Dium",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b8/Dium_render.png/revision/latest/scale-to-width-down/450?cb=20171006195921&path-prefix=es"
+  },
+  {
+    "nombre": "Napapa",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/2e/Napapa_render.png/revision/latest/scale-to-width-down/450?cb=20171006195920&path-prefix=es"
+  },
+  {
+    "nombre": "Ryllibeu",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/0/03/Lilibeu_render.png/revision/latest/scale-to-width-down/450?cb=20171006195921&path-prefix=es"
+  },
+  {
+    "nombre": "Methiop",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/8b/Methiop_render.png/revision/latest/scale-to-width-down/450?cb=20171006195920&path-prefix=es"
+  },
+  {
+    "nombre": "Obni",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/73/Obuni_render.png/revision/latest/scale-to-width-down/450?cb=20171006195919&path-prefix=es"
+  },
+  {
+    "nombre": "Murisarm",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/56/Murisarm_render.png/revision/latest/scale-to-width-down/450?cb=20171006195920&path-prefix=es"
+  },
+  {
+    "nombre": "Rubalt",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/38/Rubalt_render.png/revision/latest/scale-to-width-down/450?cb=20171006195918&path-prefix=es"
+  },
+  {
+    "nombre": "Zircol",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/27/Zircol_render.png/revision/latest/scale-to-width-down/450?cb=20171006195922&path-prefix=es"
+  },
+  {
+    "nombre": "Dyrasem",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/15/Jirasen_render.png/revision/latest/scale-to-width-down/450?cb=20171006195922&path-prefix=es"
+  },
+  {
+    "nombre": "Gitchen",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/a7/Gitchen_DBS.png/revision/latest/scale-to-width-down/450?cb=20181019001051&path-prefix=es"
+  },
+  {
+    "nombre": "Aragne",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e5/Aragne.png/revision/latest/scale-to-width-down/450?cb=20171121232651&path-prefix=es"
+  },
+  {
+    "nombre": "Tropas del Orgullo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/87/Tropas_del_Orgullo_Torneo_de_Fuerza.png/revision/latest/scale-to-width-down/450?cb=20170625194509&path-prefix=es"
+  },
+  {
+    "nombre": "Ugg",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/98/Ugg.png/revision/latest/scale-to-width-down/450?cb=20170312144325&path-prefix=es"
+  },
+  {
+    "nombre": "Sacher",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/dc/Zahha_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200403115237&path-prefix=es"
+  },
+  {
+    "nombre": "Androide 18 del futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d5/Androide_18_del_Futuro_Render-0.png/revision/latest/scale-to-width-down/450?cb=20171129065940&path-prefix=es"
+  },
+  {
+    "nombre": "Bardock del Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/26/Bardock_Futuro_Alternativo_artwork.png/revision/latest/scale-to-width-down/450?cb=20200416124218&path-prefix=es"
+  },
+  {
+    "nombre": "Androide 17 del futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/4/40/Androide_17_del_Futuro_Render.png/revision/latest/scale-to-width-down/450?cb=20171129065412&path-prefix=es"
+  },
+  {
+    "nombre": "Bulma del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/34/Bulma_Futuro_Artwork.png/revision/latest/scale-to-width-down/450?cb=20160918213249&path-prefix=es"
+  },
+  {
+    "nombre": "Freezer del Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d7/Freeza_Futuro_Alternativo_artwork.png/revision/latest/scale-to-width-down/450?cb=20200415191833&path-prefix=es"
+  },
+  {
+    "nombre": "Janemba Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7f/Janemba_Futuro_Alternativo_Artwork.png/revision/latest/scale-to-width-down/450?cb=20200420105225&path-prefix=es"
+  },
+  {
+    "nombre": "Rey Cold del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/25/Cold_del_Futuro_en_Dragon_Ball_Z.png/revision/latest/scale-to-width-down/450?cb=20220204120636&path-prefix=es"
+  },
+  {
+    "nombre": "Paikuhan Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/b/b1/%24R5H8VAO.JPG/revision/latest?cb=20120911172318&path-prefix=es"
+  },
+  {
+    "nombre": "Cell del futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/22/250px-FutureCellconfrontedbyFTrunks.Ep.194.DBZ.png/revision/latest/scale-to-width-down/450?cb=20190713220227&path-prefix=es"
+  },
+  {
+    "nombre": "Broly del Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/2/29/Broly_del_Futuro_Alternativo_Supersaiyano_de_Tipo_A_artwork.png/revision/latest/scale-to-width-down/450?cb=20200416095630&path-prefix=es"
+  },
+  {
+    "nombre": "Dabra del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/5/55/Darbra_Futuro_Alternativo_Shin_Budokai_artwork.png/revision/latest/scale-to-width-down/450?cb=20200417112131&path-prefix=es"
+  },
+  {
+    "nombre": "Chaoz Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/e4/250px-Future_Chiaotzu.JPG/revision/latest?cb=20111205180131&path-prefix=es"
+  },
+  {
+    "nombre": "Coola del Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/38/Coora_Futuro_Alternativo_artwork.png/revision/latest/scale-to-width-down/450?cb=20200415104421&path-prefix=es"
+  },
+  {
+    "nombre": "Dr. Gero del Futuro",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/73/250px-FutureDr.GeroFlashbackNV.png/revision/latest?cb=20111205151307&path-prefix=es"
+  },
+  {
+    "nombre": "Krilin del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/a/ad/Androide_17_atacando_a_Krilin_del_Futuro.png/revision/latest/scale-to-width-down/450?cb=20150614001326&path-prefix=es"
+  },
+  {
+    "nombre": "Gyumao del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/90/Rey_Gyuma_del_Futuro.jpg/revision/latest/scale-to-width-down/450?cb=20250223110124&path-prefix=es"
+  },
+  {
+    "nombre": "Son Gohan del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/98/Gohan_del_Futuro_Artwork.png/revision/latest?cb=20160808180824&path-prefix=es"
+  },
+  {
+    "nombre": "Tenshinhan del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/90/Ten_Shinhan_del_Futuro_en_Dragon_Ball_Z.png/revision/latest/scale-to-width-down/450?cb=20211231095627&path-prefix=es"
+  },
+  {
+    "nombre": "Trunks del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/1/1f/Trunks_Super_Render.png/revision/latest/scale-to-width-down/450?cb=20160606165728&path-prefix=es"
+  },
+  {
+    "nombre": "Yajirobe del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/fc/Yajirobe_del_Futuro_Alternativo.jpg/revision/latest/scale-to-width-down/450?cb=20160822171832&path-prefix=es"
+  },
+  {
+    "nombre": "Yamcha Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/8/83/250px-YamchaFutureEspecial_%281%29.png/revision/latest?cb=20111205174059&path-prefix=es"
+  },
+  {
+    "nombre": "Mai del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/e/eb/Mai_Futuro_Artwork.png/revision/latest?cb=20170729082618&path-prefix=es"
+  },
+  {
+    "nombre": "Chi-Chi futuro alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/d/d2/Chi_Chi_alt_timeline.jpg/revision/latest/scale-to-width-down/450?cb=20110224174920&path-prefix=es"
+  },
+  {
+    "nombre": "Babidi del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/f/f9/Bobbidi_del_futuro_DBS.png/revision/latest/scale-to-width-down/450?cb=20200417201004&path-prefix=es"
+  },
+  {
+    "nombre": "Zamas Infinito",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/9d/Zamas_Infinito.png/revision/latest/scale-to-width-down/450?cb=20170502111351&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 8 del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/7/7b/Androide_8_futuro.png/revision/latest?cb=20161115015545&path-prefix=es"
+  },
+  {
+    "nombre": "Androide Número 16 del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/9/93/Androide_16_del_Futuro_Alternativo.png/revision/latest/scale-to-width-down/450?cb=20171107191220&path-prefix=es"
+  },
+  {
+    "nombre": "Jiren del Futuro Alternativo",
+    "imagen": "https://static.wikia.nocookie.net/dragonball/images/3/3d/Jiren_Futuro_XV2.png/revision/latest/scale-to-width-down/450?cb=20180303003133&path-prefix=es"
+  }
+]

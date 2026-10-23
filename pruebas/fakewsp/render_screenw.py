@@ -11,7 +11,6 @@ from chatgen import Dialog, DeviceView, Generator, Image, Message, MessageStatus
 import chatgen
 from chatgen.assets import placeholder_avatar
 from chatgen.devices import get_device
-from chatgen.screenshot import html_to_png
 from chatgen.video import html_to_video
 from markupsafe import Markup
 
@@ -20,40 +19,57 @@ def emoji_key(value):
     return "-".join(f"{ord(character):x}" for character in value)
 
 
-def render_whatsapp_emojis(sequences):
+def render_whatsapp_emojis(sequences, browser=None):
+    sequences = list(dict.fromkeys(sequences))
+    if not sequences:
+        return {}
+
     cache_dir = Path(__file__).parent / ".cache" / "whatsapp-emojis"
     cache_dir.mkdir(parents=True, exist_ok=True)
     paths = {sequence: cache_dir / f"{emoji_key(sequence)}.png" for sequence in sequences}
     missing = [(sequence, path) for sequence, path in paths.items() if not path.is_file()]
+
     if missing:
-        font_path = Path(__file__).with_name("WhatsAppEmoji.ttf")
-        font_data = base64.b64encode(font_path.read_bytes()).decode("ascii")
+        font_data = base64.b64encode(
+            Path(__file__).with_name("WhatsAppEmoji.ttf").read_bytes()
+        ).decode("ascii")
         spans = "".join(
-            f'<span id="emoji-{index}">{html.escape(sequence)}</span>'
+            f'<span id="emoji-{index}" class="screenw-emoji">{html.escape(sequence)}</span>'
             for index, (sequence, _) in enumerate(missing)
         )
-        page_html = (
+        document = (
             '<!doctype html><html><head><meta charset="utf-8"><style>'
             f'@font-face{{font-family:WhatsAppEmoji;src:url(data:font/ttf;base64,{font_data}) format("truetype")}}'
-            'html,body{margin:0;background:transparent}body{display:flex;flex-wrap:wrap;align-items:center}'
-            'span{font-family:WhatsAppEmoji,"Segoe UI Emoji";font-size:100px;line-height:1.15;display:inline-block;padding:4px}'
+            'html,body{margin:0;background:transparent}.screenw-emoji{'
+            'display:inline-block;font-family:WhatsAppEmoji;font-size:100px;'
+            'line-height:1;width:120px;height:120px;text-align:center}'
             '</style></head><body>' + spans + '</body></html>'
         )
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch()
+
+        def capture(active_browser):
+            page = active_browser.new_page(viewport={"width": 130, "height": 130}, device_scale_factor=1)
             try:
-                page = browser.new_page(viewport={"width": 1200, "height": 500})
-                page.set_content(page_html, wait_until="load")
+                page.set_content(document, wait_until="load")
                 page.evaluate("() => document.fonts.ready")
                 for index, (_, path) in enumerate(missing):
                     page.locator(f"#emoji-{index}").screenshot(path=str(path), omit_background=True)
             finally:
-                browser.close()
+                page.close()
+
+        if browser is not None:
+            capture(browser)
+        else:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as playwright:
+                active_browser = playwright.chromium.launch()
+                try:
+                    capture(active_browser)
+                finally:
+                    active_browser.close()
+
     return {
-        sequence: f"data:image/png;base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
+        sequence: f'<img class="screenw-emoji" src="data:image/png;base64,{base64.b64encode(path.read_bytes()).decode("ascii")}" alt="{html.escape(sequence, quote=True)}">'
         for sequence, path in paths.items()
-        if path.is_file()
     }
 
 
@@ -68,8 +84,7 @@ def text_with_whatsapp_emojis(value, emoji_assets):
     parts.append(html.escape(text[cursor:], quote=False))
     escaped = "".join(parts)
     for sequence in sorted(emoji_assets, key=len, reverse=True):
-        image = f'<img class="screenw-emoji" alt="{html.escape(sequence, quote=True)}" src="{emoji_assets[sequence]}">'
-        escaped = escaped.replace(html.escape(sequence, quote=False), image)
+        escaped = escaped.replace(html.escape(sequence, quote=False), emoji_assets[sequence])
     # WhatsApp stores formatting markers in the message text. Convert them to
     # HTML only after escaping the original text and replacing emoji assets.
     formatting = re.compile(r'(\*[^*\n]+\*|_[^_\n]+_|~[^~\n]+~|```[\s\S]+?```|`[^`\n]+`)')
@@ -100,12 +115,36 @@ def reply_body(reply, emoji_assets):
     return Markup(f'<span class="screenw-quote-layout"><span class="screenw-quote-kind">{icon}<span>{label}</span></span>{thumbnail}</span>')
 
 
-def main():
-    # Node writes UTF-8 bytes to the child process pipe; decode JSON's bytes as UTF-8
-    # instead of using Windows' active console code page for sys.stdin.
-    payload = json.loads(sys.stdin.buffer.read())
+def render_png(html_document, width, height, scale, browser=None):
+    def capture(active_browser):
+        page = active_browser.new_page(
+            device_scale_factor=scale,
+            viewport={"width": int(width), "height": int(height)},
+        )
+        try:
+            page.set_content(html_document, wait_until="load")
+            page.evaluate("() => document.fonts.ready")
+            element = page.query_selector(".cg-device")
+            target = element or page
+            return target.screenshot()
+        finally:
+            page.close()
+
+    if browser is not None:
+        return capture(browser)
+
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as playwright:
+        active_browser = playwright.chromium.launch()
+        try:
+            return capture(active_browser)
+        finally:
+            active_browser.close()
+
+
+def render_payload(payload, browser=None):
     zone = timezone(timedelta(hours=-3))
-    emoji_assets = render_whatsapp_emojis(payload.get("emoji_sequences", []))
+    emoji_assets = render_whatsapp_emojis(payload.get("emoji_sequences", []), browser)
     participants = []
     by_id = {}
     for item in payload.get("participants", []):
@@ -201,19 +240,19 @@ def main():
         f"background-color:{wallpaper_color}!important;"
         f"background-size:{wallpaper_size}!important;"
         "background-position:center center!important;background-repeat:no-repeat!important}"
-        ".wa-bubble .cg-reply{display:block;width:100%;box-sizing:border-box;min-height:48px}"
-        ".screenw-quote-layout{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;width:100%}"
+        ".wa-bubble .cg-reply{display:block;width:100%;box-sizing:border-box;min-height:0}"
+        ".screenw-quote-layout{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px;min-height:0;width:100%}"
         ".screenw-quote-kind{display:inline-flex;align-items:center;gap:6px;min-width:0;color:#667781}"
         ".screenw-quote-kind span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
         ".screenw-quote-image-icon{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}"
-        ".screenw-quote-thumb{width:54px;height:54px;object-fit:cover;border-radius:4px;flex:0 0 54px}"
+        ".screenw-quote-thumb{display:block;width:128px;height:128px;object-fit:cover;border-radius:4px;flex:0 0 128px}"
         "[data-theme=dark] .screenw-quote-kind{color:#8696a0}"
         ".wa-mediabubble img.wa-img:not([src^='data:image/webp']){max-width:100%;height:auto;object-fit:cover}"
     )
     html_document = html_document.replace("</head>", f"<style>{wallpaper_overrides}</style></head>", 1)
     html_document = html_document.replace(
         "</head>",
-        '<style>html,body,.wa,.wa *{font-family:"Segoe UI",Roboto,Arial,sans-serif}.wa-text strong{font-weight:700}.wa-text em{font-style:italic}.wa-text del{text-decoration:line-through}.wa-text code{font-family:Consolas,"Courier New",monospace;background:rgba(127,127,127,.16);padding:0 3px;border-radius:3px}.screenw-emoji{display:inline-block;width:1.18em;height:1.18em;vertical-align:-.21em;object-fit:contain;margin:0 .025em}.screenw-mention{color:#008f72;font-weight:500}.wa-mediabubble:has(img.wa-img[src^="data:image/webp"]){width:max-content!important;max-width:42%;padding:3px!important;background:transparent!important;box-shadow:none!important}.wa-mediabubble img.wa-img[src^="data:image/webp"]{width:112px!important;height:112px;max-width:112px!important;object-fit:contain;border-radius:0}.wa-stickerbubble{display:flex;flex-direction:column;align-items:flex-start!important}.screenw-sticker-time{position:static;align-self:stretch;box-sizing:border-box;display:flex;justify-content:flex-end;align-items:center;gap:2px;margin:2px 3px 0 0;padding:2px 0;border-radius:6px;font-size:10px;line-height:1.2;white-space:nowrap}.wa-stickerbubble.wa-other .screenw-sticker-time{background:#fff;color:#667781}.wa-stickerbubble.wa-self .screenw-sticker-time{background:#d9fdd3;color:#667781}[data-theme="dark"] .wa-stickerbubble.wa-other .screenw-sticker-time{background:#202c33;color:#8696a0}[data-theme="dark"] .wa-stickerbubble.wa-self .screenw-sticker-time{background:#005c4b;color:#8696a0}[data-theme="dark"] .screenw-mention{color:#00a884}[data-theme="dark"] .wa-input{background:#0b141a}[data-theme="dark"] .wa-input .wa-send{background:#202c33;color:#8696a0}[data-theme="dark"] .wa-input .wa-send .cg-ic{color:#8696a0}.screenw-sticker-time .wa-read{color:#53bdeb}</style></head>',
+        '<style>html,body,.wa,.wa *{font-family:"Segoe UI",Roboto,Arial,sans-serif}.wa-text strong{font-weight:700}.wa-text em{font-style:italic}.wa-text del{text-decoration:line-through}.wa-text code{font-family:Consolas,"Courier New",monospace;background:rgba(127,127,127,.16);padding:0 3px;border-radius:3px}.screenw-emoji{display:inline-block;width:1.18em;height:1.18em;object-fit:contain;vertical-align:-.21em;margin:0 .025em}.screenw-mention{color:#008f72;font-weight:500}.wa-mediabubble:has(img.wa-img[src^="data:image/webp"]){width:max-content!important;max-width:42%;padding:3px!important;background:transparent!important;box-shadow:none!important}.wa-mediabubble img.wa-img[src^="data:image/webp"]{width:112px!important;height:112px;max-width:112px!important;object-fit:contain;border-radius:0}.wa-stickerbubble{display:flex;flex-direction:column;align-items:flex-start!important}.screenw-sticker-time{position:static;align-self:stretch;box-sizing:border-box;display:flex;justify-content:flex-end;align-items:center;gap:2px;margin:2px 3px 0 0;padding:2px 0;border-radius:6px;font-size:10px;line-height:1.2;white-space:nowrap}.wa-stickerbubble.wa-other .screenw-sticker-time{background:#fff;color:#667781}.wa-stickerbubble.wa-self .screenw-sticker-time{background:#d9fdd3;color:#667781}[data-theme="dark"] .wa-stickerbubble.wa-other .screenw-sticker-time{background:#202c33;color:#8696a0}[data-theme="dark"] .wa-stickerbubble.wa-self .screenw-sticker-time{background:#005c4b;color:#8696a0}[data-theme="dark"] .screenw-mention{color:#00a884}[data-theme="dark"] .wa-input{background:#0b141a}[data-theme="dark"] .wa-input .wa-send{background:#202c33;color:#8696a0}[data-theme="dark"] .wa-input .wa-send .cg-ic{color:#8696a0}.screenw-sticker-time .wa-read{color:#53bdeb}</style></head>',
         1,
     )
     html_document = html_document.replace(
@@ -238,17 +277,50 @@ def main():
                 animate_delay=animate_delay,
                 hold_ms=800,
             )
-            sys.stdout.buffer.write(output.read_bytes())
-        return
+            return output.read_bytes()
 
-    png = html_to_png(
+    return render_png(
         html_document,
-        width=device.width,
-        height=device.height,
-        scale=2,
+        device.width,
+        device.height,
+        1.5,
+        browser,
     )
-    sys.stdout.buffer.write(png)
+
+
+def main():
+    # Node writes UTF-8 bytes to the child process pipe; decode JSON's bytes as UTF-8
+    # instead of using Windows' active console code page for sys.stdin.
+    payload = json.loads(sys.stdin.buffer.read())
+    sys.stdout.buffer.write(render_payload(payload))
+
+
+def worker_main():
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            for raw_line in sys.stdin.buffer:
+                if not raw_line.strip():
+                    continue
+                request_id = None
+                try:
+                    line = raw_line.decode("utf-8")
+                    request = json.loads(line)
+                    request_id = request.get("id")
+                    image = render_payload(request["payload"], browser)
+                    response = {"id": request_id, "image": base64.b64encode(image).decode("ascii")}
+                except Exception as error:
+                    response = {"id": request_id, "error": str(error)}
+                sys.stdout.buffer.write((json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8"))
+                sys.stdout.buffer.flush()
+        finally:
+            browser.close()
 
 
 if __name__ == "__main__":
-    main()
+    if "--worker" in sys.argv:
+        worker_main()
+    else:
+        main()

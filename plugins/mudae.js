@@ -91,6 +91,7 @@ const defaultState = (groupId) => ({
   enabled: false,
   albums: [],
   characters: [],
+  pendingCharacterSuggestions: [],
   users: {},
   rollCounts: {},
   rollCooldowns: {},
@@ -374,6 +375,10 @@ const loadState = async (groupId) => {
       throw new Error('El archivo de Mudae tiene un grupo inválido o está dañado.')
     }
     state = { ...defaultState(groupId), ...state }
+    if (!Array.isArray(state.pendingCharacterSuggestions)) {
+      state.pendingCharacterSuggestions = []
+      migrated = true
+    }
     if (!Array.isArray(state.albums) || !Array.isArray(state.characters) || !state.users || typeof state.users !== 'object') {
       throw new Error('El archivo de Mudae no tiene una estructura válida.')
     }
@@ -480,6 +485,32 @@ const findCharacter = (state, query) => {
   return partialMatches.length === 1
     ? { character: partialMatches[0], matches: partialMatches }
     : { character: null, matches: [] }
+}
+
+const findPendingCharacterSuggestions = (state, query) => {
+  const parts = String(query || '').split('+').map((part) => part.trim())
+  const normalized = normalizeMudaeIdentity(query)
+  if (!normalized) return []
+  const suggestions = Array.isArray(state.pendingCharacterSuggestions) ? state.pendingCharacterSuggestions : []
+  if (parts.length === 2 && parts.every(Boolean)) {
+    return suggestions.filter((item) => makeCharacterIdentity(item.album, item.name) === makeCharacterIdentity(...parts))
+  }
+  const exact = suggestions.filter((item) => normalizeMudaeIdentity(item.name) === normalized)
+  if (exact.length) return exact
+  return suggestions.filter((item) => normalizeMudaeIdentity(item.name).includes(normalized))
+}
+
+const adjustInventoryValue = (state, jid, amount, chooseHighest) => {
+  const owned = state.characters.filter((character) => normalizeJid(character.owner) === jid)
+  if (!owned.length) return null
+  owned.sort((left, right) => {
+    const valueDifference = Number(left.value || 0) - Number(right.value || 0)
+    if (valueDifference) return chooseHighest ? -valueDifference : valueDifference
+    return left.name.localeCompare(right.name, 'es')
+  })
+  const character = owned[0]
+  character.value = Number(character.value || 0) + amount
+  return character
 }
 
 export const getCloudinaryCredentials = () => {
@@ -1085,7 +1116,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'menumudae') {
-    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj [página]* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%gpjs* — top 20 por valor; los GIF especiales sin reclamar aparecen bloqueados\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%editimgpj <album> + <nombre>* — cambia la imagen (owner)\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
+    return conn.reply(m.chat, `╭━━━〔 🎴 *MUDAE* 〕━━━╮\n\n*🎲 JUGAR*\n✦ *%rw* — después de votar, tirá personajes durante 24 h; reaccioná con ❤️ para reclamar. Si ya está reclamado, no hay que esperar.\n✦ *%cd* — consultar tus esperas\n✦ *%votarpj <nombre>* — sumar *125* al valor (*50* si ya está reclamado) y habilitar tiradas durante 24 h (un voto cada 24 h)\n\n*👑 TUS PERSONAJES*\n✦ *%personajes / %pjs [página] [@usuario]* — colección propia o de otra persona; cada parte muestra hasta 100 personajes (ej.: *%pjs 2* o *%pjs 2 @usuario*)\n✦ *%albumespj [página]* — álbumes y cantidad de personajes\n✦ *%quitarpj <nombre>* — liberá un personaje\n✦ *%regalarpj <nombre> @usuario* — regalá uno a otra persona\n✦ *%suertepj <nombre>* — cambiá uno propio por uno libre al azar (cada 12 h)\n✦ *%cambiarpj <tuyo> + <del otro>* — proponé un intercambio; el otro tiene 30 s para aceptar con *%aceptarcambio*\n✦ *%toppj* — ranking por valor total; 👑 marca a quien tiene más personajes\n✦ *%gpjs* — top 20 por valor; los GIF especiales sin reclamar aparecen bloqueados\n✦ *%verpj <nombre>* — ficha e imagen; los GIF especiales se revelan al reclamarlos\n✦ *%overpj <nombre>* — ver cualquier GIF especial (owner)\n✦ *%ainfo <álbum>* — muestra los nombres normales; los GIF especiales no reclamados aparecen bloqueados\n\n*💖 DESEOS*\n✦ *%wish <nombre>* — guardar (máximo 3)\n✦ *%wishremove <nombre>* — quitar de tu lista\n✦ *%wishlist* — ver tus deseados; te mencionamos cuando salgan\n\n*🛠️ ADMINISTRACIÓN · ADMINS*\n✦ *%addalbum <nombre>* — crear álbum\n✦ *%addpj <álbum> + <nombre>* — responder a una imagen normal para agregar (no acepta GIFs)\n\n*👑 NUEVOS PERSONAJES*\n- %addpj <album> + <nombre>: cualquiera puede proponer con imagen; el owner lo aprueba.\n- Admins y owner: alta inmediata; los demas usuarios esperan aprobacion.\n- %verpj <nombre>: consulta tambien personajes pendientes.\n- %sugpj: ver la lista de sugerencias (owner).\n- %aceptarpj <nombre>: aceptar una sugerencia (owner).\n- %denegarpj <nombre>: rechazar una sugerencia (owner).\n\n*OWNER*\n✦ *%editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>*\n✦ *%editimgpj <album> + <nombre>* — cambia la imagen (owner)\n✦ *%delpj <álbum> + <nombre>* — borrar personaje\n✦ *%delalbum <nombre>* — borrar álbum vacío\n✦ *%onmudae / %offmudae* — activar o desactivar\n╰━━━━━━━━━━━━━━━━━━━━╯`, m)
   }
 
   if (action === 'cd') {
@@ -1130,6 +1161,99 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
 
   const state = await ensureEnabled(m, conn)
   if (!state) return
+
+  if (action === 'sugpj') {
+    if (!isOwner && !isROwner) return conn.reply(m.chat, 'Solo el owner del bot puede ver las sugerencias pendientes.', m)
+    const suggestions = [...(state.pendingCharacterSuggestions || [])]
+      .sort((left, right) => Number(left.suggestedAt || 0) - Number(right.suggestedAt || 0))
+    if (!suggestions.length) return conn.reply(m.chat, 'No hay sugerencias de personajes pendientes en este grupo.', m)
+    const lines = await Promise.all(suggestions.map(async (item, index) => {
+      const suggester = normalizeJid(item.suggestedBy)
+      const suggesterName = await getDisplayName(conn, suggester)
+      const date = new Date(Number(item.suggestedAt || Date.now())).toLocaleString('es-AR')
+      return `${index + 1}. *${item.name}*\n   Album: ${item.album}\n   Sugirio: ${suggesterName} (@${suggester.split('@')[0]})\n   Fecha: ${date}`
+    }))
+    return sendLongText(conn, m.chat, `SUGERENCIAS PENDIENTES (${suggestions.length})\n\n${lines.join('\n\n')}\n\nAcepta con *${usedPrefix}aceptarpj <nombre>* o deniega con *${usedPrefix}denegarpj <nombre>*.`, m)
+  }
+
+  if (action === 'aceptarpj') {
+    if (!isOwner && !isROwner) return conn.reply(m.chat, 'Solo el owner del bot puede aceptar sugerencias.', m)
+    const query = String(text || '').trim()
+    if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}aceptarpj <nombre>`, m)
+    const pendingMatches = findPendingCharacterSuggestions(state, query)
+    if (pendingMatches.length > 1) return replyAmbiguous(conn, m, pendingMatches)
+    if (!pendingMatches.length) return conn.reply(m.chat, 'No encontre una sugerencia pendiente con ese nombre.', m)
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      current.pendingCharacterSuggestions = Array.isArray(current.pendingCharacterSuggestions) ? current.pendingCharacterSuggestions : []
+      const freshMatches = findPendingCharacterSuggestions(current, query)
+      if (freshMatches.length > 1) return replyAmbiguous(conn, m, freshMatches)
+      const suggestion = freshMatches[0]
+      if (!suggestion) return conn.reply(m.chat, 'Esa sugerencia ya no esta pendiente.', m)
+      const accepted = { ...suggestion, owner: null }
+      const identity = normalizeMudaeIdentity(accepted.name)
+      await withCatalogLock(async () => {
+        const catalog = await loadCatalog()
+        if (catalog.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
+          throw new Error('Ya existe un personaje con ese nombre en el catalogo global.')
+        }
+        catalog.characters.push(normalizeCatalogCharacter(accepted))
+        addCatalogAlbum(catalog, accepted.album)
+        await saveCatalog(catalog)
+        syncStateWithCatalog(current, catalog)
+      })
+      current.pendingCharacterSuggestions = current.pendingCharacterSuggestions.filter((item) => item.id !== suggestion.id)
+      const suggester = normalizeJid(suggestion.suggestedBy)
+      const bonusCharacter = adjustInventoryValue(current, suggester, 69, false)
+      await saveState(current)
+      const reward = bonusCharacter
+        ? `\n\n*${bonusCharacter.name}* subio +${formatMoney(69)} y ahora vale *${formatMoney(bonusCharacter.value)}*. Felicitaciones!`
+        : '\n\nNo se pudo aplicar el aumento porque todavia no tiene personajes reclamados.'
+      return conn.sendMessage(m.chat, {
+        text: `SUGERENCIA ACEPTADA\n\n*${accepted.name}*\nAlbum: ${accepted.album}${reward}\n\n@${suggester.split('@')[0]}, tu personaje fue aceptado.`,
+        mentions: suggester ? [suggester] : [],
+      }, { quoted: m })
+    }).catch(async (error) => {
+      console.error('[MUDAE] No se pudo aceptar una sugerencia:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo aceptar la sugerencia.\n> ${error.message}`, m)
+    })
+  }
+
+  if (action === 'denegarpj') {
+    if (!isOwner && !isROwner) return conn.reply(m.chat, 'Solo el owner del bot puede denegar sugerencias.', m)
+    const query = String(text || '').trim()
+    if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}denegarpj <nombre>`, m)
+    const pendingMatches = findPendingCharacterSuggestions(state, query)
+    if (pendingMatches.length > 1) return replyAmbiguous(conn, m, pendingMatches)
+    if (!pendingMatches.length) return conn.reply(m.chat, 'No encontre una sugerencia pendiente con ese nombre.', m)
+    return withGroupLock(m.chat, async () => {
+      const current = await loadState(m.chat)
+      current.pendingCharacterSuggestions = Array.isArray(current.pendingCharacterSuggestions) ? current.pendingCharacterSuggestions : []
+      const freshMatches = findPendingCharacterSuggestions(current, query)
+      if (freshMatches.length > 1) return replyAmbiguous(conn, m, freshMatches)
+      const suggestion = freshMatches[0]
+      if (!suggestion) return conn.reply(m.chat, 'Esa sugerencia ya no esta pendiente.', m)
+      current.pendingCharacterSuggestions = current.pendingCharacterSuggestions.filter((item) => item.id !== suggestion.id)
+      const suggester = normalizeJid(suggestion.suggestedBy)
+      const affectedCharacter = adjustInventoryValue(current, suggester, -69, false)
+      await saveState(current)
+      try {
+        await deleteCloudinaryMedia(suggestion.cloudinaryPublicId, suggestion.mediaType || 'image')
+      } catch (error) {
+        console.error('[MUDAE] Se rechazo la sugerencia, pero no se pudo borrar su imagen:', error?.stack || error)
+      }
+      const consequence = affectedCharacter
+        ? `\n\n*${affectedCharacter.name}* bajo ${formatMoney(69)} y ahora vale *${formatMoney(affectedCharacter.value)}*.`
+        : '\n\nNo se pudo aplicar la baja porque todavia no tiene personajes reclamados.'
+      return conn.sendMessage(m.chat, {
+        text: `SUGERENCIA DENEGADA\n\n*${suggestion.name}* no fue agregado al album *${suggestion.album}*.\n@${suggester.split('@')[0]}, tu sugerencia fue denegada.${consequence}`,
+        mentions: suggester ? [suggester] : [],
+      }, { quoted: m })
+    }).catch(async (error) => {
+      console.error('[MUDAE] No se pudo denegar una sugerencia:', error?.stack || error)
+      return conn.reply(m.chat, `No se pudo denegar la sugerencia.\n> ${error.message}`, m)
+    })
+  }
 
   if (action === 'adivinarpj') {
     const execution = beginCommandExecution(m, 'adivinarpj')
@@ -1179,13 +1303,10 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
   }
 
   if (action === 'addpj' || action === 'addchar') {
-    if (!isAdminOrOwner(isOwner, isAdmin)) {
-      return conn.reply(m.chat, 'Solo los administradores del grupo pueden agregar personajes.', m)
-    }
     const parts = parseMudaeParts(text, 2)
-    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <álbum> + <nombre>\nRespondé a una imagen normal o enviá el comando como descripción de la imagen.`, m)
+    if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}addpj <album> + <nombre>\nResponde a una imagen normal o envia el comando como descripcion de la imagen.`, m)
     const quotedMedia = getMudaeImage(m)
-    if (!quotedMedia) return conn.reply(m.chat, 'No detecté una imagen normal. %addpj no acepta GIFs; respondé a una imagen o enviá la imagen junto con %addpj <álbum> + <nombre>.', m)
+    if (!quotedMedia) return conn.reply(m.chat, 'No detecte una imagen normal. %addpj no acepta GIFs; responde a una imagen o envia la imagen junto con %addpj <album> + <nombre>.', m)
     try {
       const mediaType = 'image'
       const media = typeof quotedMedia.download === 'function'
@@ -1196,10 +1317,14 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         const current = await loadState(m.chat)
         const catalog = await loadCatalog()
         const album = catalog.albums.find((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(parts[0]))
-        if (!album) return conn.reply(m.chat, `No existe el álbum "${parts[0]}". Crealo primero con %addalbum.`, m)
+        if (!album) return conn.reply(m.chat, `No existe el album "${parts[0]}". Crealo primero con %addalbum.`, m)
         const identity = normalizeMudaeIdentity(parts[1])
         if (catalog.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
-          return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catálogo global. Los nombres deben ser únicos.', m)
+          return conn.reply(m.chat, 'Ya existe un personaje con ese nombre en el catalogo global. Los nombres deben ser unicos.', m)
+        }
+        current.pendingCharacterSuggestions = Array.isArray(current.pendingCharacterSuggestions) ? current.pendingCharacterSuggestions : []
+        if (current.pendingCharacterSuggestions.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
+          return conn.reply(m.chat, 'Ya hay una sugerencia pendiente con ese nombre en este grupo.', m)
         }
         getCloudinaryCredentials()
         const mimeType = quotedMedia.media.mimetype || 'image/jpeg'
@@ -1216,11 +1341,20 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           owner: null,
           createdAt: Date.now(),
         }
+        if (!isAdminOrOwner(isOwner, isAdmin)) {
+          current.pendingCharacterSuggestions.push({
+            ...normalizeCatalogCharacter(character),
+            suggestedBy: actor,
+            suggestedAt: Date.now(),
+          })
+          await saveState(current)
+          return conn.reply(m.chat, `SUGERENCIA ENVIADA\n\n*${character.name}*\nAlbum: ${album}\nEl owner la revisara; podes verla con *${usedPrefix}verpj ${character.name}*.`, m)
+        }
         try {
           await withCatalogLock(async () => {
             const lockedCatalog = await loadCatalog()
             if (lockedCatalog.characters.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
-              throw new Error('Ya existe un personaje con ese nombre en el catálogo global.')
+              throw new Error('Ya existe un personaje con ese nombre en el catalogo global.')
             }
             lockedCatalog.characters.push(normalizeCatalogCharacter(character))
             addCatalogAlbum(lockedCatalog, album)
@@ -1233,11 +1367,19 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
             await deleteCloudinaryMedia(uploaded.cloudinaryPublicId, mediaType)
           } catch (cleanupError) {
             console.error('[MUDAE] No se pudo limpiar de Cloudinary un medio sin registro:', cleanupError?.stack || cleanupError)
-            throw new Error(`${saveError.message} El medio ${uploaded.cloudinaryPublicId} también debe eliminarse manualmente de Cloudinary.`)
+            throw new Error(`${saveError.message} El medio ${uploaded.cloudinaryPublicId} tambien debe eliminarse manualmente de Cloudinary.`)
           }
           throw saveError
         }
-        return conn.reply(m.chat, `✅ *PERSONAJE AGREGADO PARA TODOS LOS GRUPOS*\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}`, m)
+        const bonusCharacter = adjustInventoryValue(current, actor, 69, true)
+        await saveState(current)
+        const bonusText = bonusCharacter
+          ? `\n\n*${bonusCharacter.name}* subio +${formatMoney(69)} y ahora vale *${formatMoney(bonusCharacter.value)}*. Felicitaciones!`
+          : '\n\nTodavia no tenes personajes reclamados para aplicar el aumento.'
+        return conn.sendMessage(m.chat, {
+          text: `PERSONAJE AGREGADO PARA TODOS LOS GRUPOS\n*${character.name}*\n${character.album}\n${formatMoney(character.value)}${bonusText}`,
+          mentions: bonusCharacter ? [actor] : [],
+        }, { quoted: m })
       })
     } catch (error) {
       console.error('[MUDAE] No se pudo agregar un personaje:', error?.stack || error)
@@ -1876,7 +2018,21 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!query) return conn.reply(m.chat, `Uso: ${usedPrefix}${action} <personaje>`, m)
     const { character, matches } = findCharacter(state, query)
     if (matches.length > 1) return replyAmbiguous(conn, m, matches)
-    if (!character) return conn.reply(m.chat, 'No encontré ese personaje en este grupo.', m)
+    if (!character && action === 'verpj') {
+      const pending = findPendingCharacterSuggestions(state, query)
+      if (pending.length > 1) return replyAmbiguous(conn, m, pending)
+      if (pending.length === 1) {
+        const suggestion = pending[0]
+        const suggestedBy = normalizeJid(suggestion.suggestedBy)
+        const suggestedName = await getDisplayName(conn, suggestedBy)
+        return conn.sendMessage(m.chat, {
+          image: { url: suggestion.imageUrl },
+          caption: `PERSONAJE PENDIENTE DE APROBACION\n\n*${suggestion.name}*\nAlbum: ${suggestion.album}\nSugerido por: @${suggestedBy.split('@')[0]} (${suggestedName})\n\nTodavia no esta agregado al catalogo ni puede salir en tiradas o reclamarse.`,
+          mentions: suggestedBy ? [suggestedBy] : [],
+        }, { quoted: m })
+      }
+    }
+    if (!character) return conn.reply(m.chat, 'No encontre ese personaje en este grupo.', m)
     const info = await buildCharacterInfo(conn, character)
     const isGift = character.isGift || character.mediaType === 'video'
     if (isGift && !character.owner && !ownerView) {
@@ -2000,6 +2156,7 @@ handler.hasQuotedGif = hasQuotedMudaeGif
 handler.help = [
   'onmudae', 'offmudae',
   'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
+  'sugpj (owner)', 'aceptarpj <nombre> (owner)', 'denegarpj <nombre> (owner)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'editimgpj <álbum> + <nombre> (responde a una imagen nueva; owner)',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
@@ -2010,7 +2167,7 @@ handler.help = [
 ]
 handler.tags = ['mudae']
 handler.command = [
-  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'editpj', 'editimgpj', 'delpj',
+  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'sugpj', 'aceptarpj', 'denegarpj', 'editpj', 'editimgpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
   'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',

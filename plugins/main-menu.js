@@ -350,8 +350,8 @@ let txt = `
 > 𓃦 Guardar hasta 3 deseados y recibir aviso cuando salgan.
  ✿  *%votarpj <personaje>*
 > 𓃦 Votar una vez cada 24 horas para sumar 125 (50 si ya está reclamado) y habilitar una tirada.
- ✿  *%addalbum • %addpj • %editpj • %delpj • %delalbum*
-> 𓃦 Los admins pueden agregar personajes normales con imagen; addpj no acepta GIFs.
+ ✿  *%addpj / %sugpj / %aceptarpj / %denegarpj / %addalbum / %editpj / %delpj / %delalbum*
+> 𓃦 Cualquiera puede sugerir personajes con imagen; el owner los acepta o deniega y los admins los agregan directamente.
  ✿  *%onmudae • %offmudae*
 > 𓃦 Activar o desactivar Mudae en este grupo (owner).
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

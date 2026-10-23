@@ -15,6 +15,8 @@ resolve()
 }, ms))
 
 const antideleteCacheFile = path.join(process.cwd(), "tmp", "antidelete-cache.json")
+let antideleteSaveTimer
+let antideleteSaveChain = Promise.resolve()
 const getBotChatKey = (conn, chatId) => {
 const safeChatId = String(chatId || '').trim()
 const botJid = String(conn?.user?.jid || conn?.user?.id || conn?.jid || global.conn?.user?.jid || '').trim()
@@ -47,13 +49,14 @@ console.error("[ANTIDELETE] No se pudo cargar cache persistente:", error?.messag
 return new Map()
 }
 const saveAntideleteCache = (map) => {
-try {
-fs.mkdirSync(path.dirname(antideleteCacheFile), { recursive: true })
-const safeData = Object.fromEntries([...map.entries()].slice(-5000))
-fs.writeFileSync(antideleteCacheFile, JSON.stringify(safeData, null, 2), "utf8")
-} catch (error) {
-console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.message || error)
-}
+clearTimeout(antideleteSaveTimer)
+antideleteSaveTimer = setTimeout(() => {
+	const safeData = Object.fromEntries([...map.entries()].slice(-5000))
+	antideleteSaveChain = antideleteSaveChain
+		.then(() => fs.promises.mkdir(path.dirname(antideleteCacheFile), { recursive: true }))
+		.then(() => fs.promises.writeFile(antideleteCacheFile, JSON.stringify(safeData), "utf8"))
+		.catch(error => console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.message || error))
+}, 300)
 }
 const isUnsupportedAntideleteContent = (content) => {
 if (!content || typeof content !== "object") return false

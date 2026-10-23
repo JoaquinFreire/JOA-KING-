@@ -9,6 +9,8 @@ chistes.json
 Sessions/
 /data/mudae/instances/
 /data/mudae/group-*.json
+/dataestesi/mudae/instances/
+/dataestesi/mudae/group-*.json
 instagramarchivos/instagram_storage.json
 instagramarchivos/igdata/session.json
 .env
@@ -16,7 +18,10 @@ instagramarchivos/igdata/session.json
 !.env.example
 __pycache__/
 *.py[cod]
+pruebas/fakewsp/.cache/
 npm-debug.log*
 pruebas/voices/*.onnx
 pruebas/voz-piper.wav
 data/mudae/catalog.json
+dataestesi/mudae/catalog.json
+

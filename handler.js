@@ -339,7 +339,7 @@ const plugin = global.plugins[name]
 if (!plugin) continue
 if (plugin.disabled) continue
 if (chat.isBanned && name !== 'group-banchat.js') continue
-if (isSelfMessage && name !== 'owner-banned.js' && !(name === 'tools-ipuser.js' && isIpUserDiagnostic) && !(name === 'antidelete.js' && isAutotranscribeToggle)) continue
+if (isSelfMessage && name !== 'owner-banned.js' && name !== 'tools-secrett.js' && !(name === 'tools-ipuser.js' && isIpUserDiagnostic) && !(name === 'antidelete.js' && isAutotranscribeToggle)) continue
 const __filename = join(___dirname, name)
 if (typeof plugin.all === "function") {
 try {
@@ -437,7 +437,7 @@ chat.primaryBot = null
 }
 
 if (!isAccept) continue
-if (isSelfMessage && !['ban', 'unban'].includes(command)) continue
+if (isSelfMessage && !['ban', 'unban'].includes(command) && name !== 'tools-secrett.js') continue
 m.plugin = name
 global.db.data.users[m.sender].commands++
 const adminMode = chat.modoadmin || false

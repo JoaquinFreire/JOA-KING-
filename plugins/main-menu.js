@@ -164,7 +164,7 @@ let txt = `
 
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('FUN')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Juegos y comandos para divertirse.
- ✿  *.screenwsp*
+ ✿  *.screenw*
 > 𓃦 Recrear una vista aproximada del grupo con los mensajes recientes que recibió el bot.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.

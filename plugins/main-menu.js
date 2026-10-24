@@ -102,8 +102,14 @@ let txt = `
 > 𓃦 Probar el texto citado y la respuesta visible del bot.
  ✿  *%fakemsg2* [texto] {respondiendo a un mensaje}
 > 𓃦 Editar un mensaje citado (admins del grupo o owner).
+ ✿  *%rev* {respondiendo al mensaje posterior}
+> 𓃦 Reenviar el mensaje anterior, incluso si ya fue borrado, cuando quedó guardado en el historial del grupo.
  ✿  *%owner*
 > 𓃦 Recibir el contacto del owner con su Instagram.
+ ✿  *%owners*
+> 𓃦 Recibir los contactos de todos los owners del bot.
+ ✿  *%addowner @usuario • %delowner @usuario*
+> 𓃦 El owner principal puede agregar o quitar owners del bot.
  ✿  *%vozarg • %vozloquendo • %vozloquendo2 • %vozanime* + [texto]
 > 𓃦 Generar audio con voz argentina, alternativa o anime; también puedes responder a un mensaje.
  ✿  *#ejecutar* + [HTML] o respondiendo a un mensaje con HTML

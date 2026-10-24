@@ -6,6 +6,7 @@ import fs, { unwatchFile, watchFile } from "fs"
 import chalk from "chalk"
 import fetch from "node-fetch"
 import ws from "ws"
+import { getAllOwnerNumbers, getPrimaryOwnerNumber } from "./lib/owner-management.js"
 
 const { proto } = (await import("@whiskeysockets/baileys")).default
 const isNumber = x => typeof x === "number" && !isNaN(x)
@@ -58,14 +59,6 @@ antideleteSaveTimer = setTimeout(() => {
 		.catch(error => console.error("[ANTIDELETE] No se pudo guardar cache persistente:", error?.message || error))
 }, 300)
 }
-const isUnsupportedAntideleteContent = (content) => {
-if (!content || typeof content !== "object") return false
-for (const [type, value] of Object.entries(content)) {
-if (type === "audioMessage") return true
-if (["ephemeralMessage", "documentWithCaptionMessage"].includes(type) && isUnsupportedAntideleteContent(value?.message)) return true
-}
-return false
-}
 global.__antideleteMessages = global.__antideleteMessages || loadAntideleteCache()
 
 export async function handler(chatUpdate) {
@@ -94,7 +87,6 @@ if (!validMessages.length) return
 const antideleteMap = global.__antideleteMessages || (global.__antideleteMessages = loadAntideleteCache())
 for (const message of validMessages) {
 if (!message?.key?.id || message?.mtype === "protocolMessage") continue
-if (isUnsupportedAntideleteContent(message.message)) continue
 const snapshot = {
 ...message,
 key: { ...(message.key || {}) },
@@ -297,11 +289,21 @@ const a = normalizeJidKey(left)
 const b = normalizeJidKey(right)
 return !!a && !!b && a === b
 }
+if (!Array.isArray(global.configuredOwnerNumbers)) {
+global.configuredOwnerNumbers = Array.isArray(global.owner) ? [...global.owner] : []
+}
+global.owner = await getAllOwnerNumbers()
 const ownerJids = global.owner.filter(Boolean).map(number => number.replace(/[^0-9]/g, "") + "@s.whatsapp.net")
 const ownerLids = (global.ownerLids || []).filter(Boolean).map(lid => `${String(lid).replace(/[^0-9]/g, "")}@lid`)
-const senderParticipant = participants.find((participant) => [participant.id, participant.jid, participant.lid].some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn))) || null
-const senderJids = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid, senderParticipant?.id, senderParticipant?.lid].filter(Boolean)
+const primaryOwnerNumber = getPrimaryOwnerNumber()
+const primaryOwnerJids = [
+...(primaryOwnerNumber ? [`${primaryOwnerNumber}@s.whatsapp.net`] : []),
+...ownerLids,
+]
+const senderParticipant = participants.find((participant) => [participant.id, participant.jid, participant.lid, participant.phoneNumber].some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn))) || null
+const senderJids = [m.sender, m.key?.participant, m.key?.senderPn, m.key?.remoteJidAlt, senderParticipant?.jid, senderParticipant?.id, senderParticipant?.lid, senderParticipant?.phoneNumber].filter(Boolean)
 const isROwner = [...ownerJids, ...ownerLids].some((ownerJid) => senderJids.some((jid) => matchesNormalizedJid(jid, ownerJid)))
+const isPrimaryOwner = primaryOwnerJids.some((ownerJid) => senderJids.some((jid) => matchesNormalizedJid(jid, ownerJid)))
 if (!isROwner && senderJids.some(jid => global.db.data.users[jid]?.banned)) {
 ignoredBannedMessage = true
 return
@@ -312,7 +314,7 @@ const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, "") + "@s
 const isOwners = [this.user.jid, conn.user?.lid, ...ownerJids, ...ownerLids].some((jid) => senderJids.some((candidate) => matchesNormalizedJid(candidate, jid)))
 const senderDigits = normalizeJidKey(m.sender)
 const userGroup = (m.isGroup ? participants.find((u) => {
-const memberIds = [u.id, u.jid, u.lid].filter(Boolean)
+const memberIds = [u.id, u.jid, u.lid, u.phoneNumber].filter(Boolean)
 return memberIds.some((candidate) => matchesNormalizedJid(candidate, m.sender) || matchesNormalizedJid(candidate, m.key?.participant) || matchesNormalizedJid(candidate, m.key?.senderPn)) || memberIds.some((candidate) => normalizeJidKey(candidate) === senderDigits)
 }) : {}) || {}
 const botGroup = (m.isGroup ? participants.find((u) => [u.id, u.jid, u.lid].some((candidate) => matchesNormalizedJid(candidate, this.user.jid) || matchesNormalizedJid(candidate, conn.user?.jid) || matchesNormalizedJid(candidate, conn.user?.lid))) : {}) || {}
@@ -384,6 +386,7 @@ groupMetadata,
 userGroup,
 botGroup,
 isROwner,
+isPrimaryOwner,
 isOwner,
 isRAdmin,
 isAdmin,
@@ -486,6 +489,7 @@ groupMetadata,
 userGroup,
 botGroup,
 isROwner,
+isPrimaryOwner,
 isOwner,
 isRAdmin,
 isAdmin,

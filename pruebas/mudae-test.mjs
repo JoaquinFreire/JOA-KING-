@@ -8,7 +8,9 @@ import Jimp from 'jimp'
 const testDataDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'joa-king-mudae-test-'))
 process.env.MUDAE_DATA_DIR = testDataDirectory
 process.env.MUDAE_CATALOG_FILE = path.join(testDataDirectory, 'catalog.json')
+process.env.BOT_ADDITIONAL_OWNERS_FILE = path.join(testDataDirectory, 'additional-owners.json')
 global.owner = ['5493513117202']
+global.ownerPrincipal = '5493513117202'
 
 const {
   default: handler,
@@ -26,6 +28,9 @@ const {
 } = await import('../plugins/mudae.js')
 const { default: animeInfoHandler } = await import('../plugins/anime-infoanime.js')
 const { default: legacySeriesHandler } = await import('../plugins/gacha-serielist.js')
+const { default: ownerManagementHandler } = await import('../plugins/owner-management.js')
+const { default: ownerContactHandler } = await import('../plugins/main-owner.js')
+const { getAllOwnerNumbers, removeAdditionalOwner } = await import('../lib/owner-management.js')
 
 const groupOne = '120363000000000001@g.us'
 const groupTwo = '120363000000000002@g.us'
@@ -135,6 +140,15 @@ const runCommand = (conn, m, command, text = '', extra = {}) => handler(m, {
   isOwner: false,
   isROwner: false,
   isAdmin: false,
+  ...extra,
+})
+const runOwnerCommand = (conn, m, command, text = '', extra = {}) => ownerManagementHandler(m, {
+  conn,
+  command,
+  text,
+  usedPrefix: '%',
+  isPrimaryOwner: true,
+  participants: [],
   ...extra,
 })
 const runCommandAfterRollCooldown = async (conn, m, command, text = '', extra = {}) => {
@@ -345,6 +359,23 @@ try {
   }), 'utf8')
 
   const { conn, sent, replies } = createConnection()
+  const ownerCommandMessage = { chat: groupOne, sender: userOne, mentionedJid: [userTwo] }
+  await runOwnerCommand(conn, ownerCommandMessage, 'addowner')
+  assert.deepEqual(await getAllOwnerNumbers(), ['5493513117202', '5491222222222'])
+  await ownerContactHandler(ownerCommandMessage, { conn, command: 'owners' })
+  assert.equal(sent.at(-1).content.contacts.contacts.length, 2, '%owners debe enviar el contacto de cada owner')
+  assert.ok(sent.at(-1).content.contacts.contacts.some(({ vcard }) => vcard.includes('waid=5493513117202')))
+  assert.ok(sent.at(-1).content.contacts.contacts.some(({ vcard }) => vcard.includes('waid=5491222222222')))
+  ownerCommandMessage.mentionedJid = ['5493513117202@s.whatsapp.net']
+  await runOwnerCommand(conn, ownerCommandMessage, 'delowner')
+  assert.match(replies.at(-1).text, /owner principal no se puede quitar/i)
+  assert.ok((await getAllOwnerNumbers()).includes('5493513117202'), 'el owner principal nunca se debe poder quitar')
+  ownerCommandMessage.mentionedJid = [userTwo]
+  await runOwnerCommand(conn, ownerCommandMessage, 'delowner')
+  assert.deepEqual(await getAllOwnerNumbers(), ['5493513117202'])
+  await runOwnerCommand(conn, ownerCommandMessage, 'addowner', '', { isPrimaryOwner: false })
+  assert.match(replies.at(-1).text, /Solo el owner principal/)
+  assert.deepEqual(await getAllOwnerNumbers(), ['5493513117202'], 'solo el owner principal puede administrar owners')
   await runCommand(conn, groupMessage(groupSeven), 'rw')
   assert.match(replies.at(-1).text, /desactivado/, 'Mudae debe comenzar apagado')
   assert.ok(!(await readState(groupSeven)).characters.some((character) => character.id === 'retired-character'), 'un personaje borrado no debe volver desde un estado antiguo')
@@ -367,6 +398,7 @@ try {
   assert.ok(handler.command.includes('gpjs'))
   assert.ok(handler.command.includes('overpj'))
   assert.ok(handler.command.includes('ainfo'))
+  assert.ok(handler.command.includes('editimpj'), 'editimpj debe funcionar como alias de editimgpj')
   assert.ok(!animeInfoHandler.command.includes('ainfo'))
   assert.ok(animeInfoHandler.command.includes('animedata'))
   assert.ok(!legacySeriesHandler.command.includes('ainfo'))
@@ -436,8 +468,14 @@ try {
   assert.match(replies.at(-1).text, /Goku/)
   assert.match(replies.at(-1).text, /\$1\.500/, 'ainfo debe mostrar el valor de los personajes desbloqueados')
   assert.match(replies.at(-1).text, /👑 = reclamado/, 'ainfo debe explicar el indicador de dueño')
-  assert.match(replies.at(-1).text, /Goku.*👑/, 'ainfo debe marcar con un símbolo los personajes reclamados')
-  assert.doesNotMatch(replies.at(-1).text, /Lo tiene:|@5491222222222/, 'ainfo no debe mostrar nombres ni etiquetar al dueño')
+  assert.match(replies.at(-1).text, /Goku.*👑 5491222222222/, 'ainfo debe mostrar el número real después de la corona, sin etiquetar')
+  assert.doesNotMatch(replies.at(-1).text, /Lo tiene:|@5491222222222/, 'ainfo no debe etiquetar al dueño')
+  const originalGetName = conn.getName
+  conn.getName = async (jid) => jid === userTwo ? 'Dueño de Goku' : originalGetName(jid)
+  await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
+  assert.match(replies.at(-1).text, /Goku.*👑 Dueño de Goku/, 'ainfo debe mostrar el nombre del dueño después de la corona cuando está disponible')
+  assert.doesNotMatch(replies.at(-1).text, /@5491222222222/, 'ainfo no debe mencionar al dueño aunque tenga nombre')
+  conn.getName = originalGetName
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
   await runCommand(conn, groupMessage(groupOne), 'albumespj')
@@ -473,6 +511,33 @@ try {
     characters: [secondCharacter],
     pendingCharacterSuggestions: [acceptedSuggestion],
   })), 'utf8')
+  const suggestionDisplayGroup = '120363000000000025@g.us'
+  const suggestedByLid = '207511361687632@lid'
+  const originalGroupMetadata = conn.groupMetadata
+  conn.groupMetadata = async () => ({
+    participants: [{
+      id: suggestedByLid,
+      jid: `${userTwo}`,
+      lid: suggestedByLid,
+      phoneNumber: userTwo.split('@')[0],
+    }],
+  })
+  await fs.writeFile(filenameFor(suggestionDisplayGroup), JSON.stringify(createState(suggestionDisplayGroup, {
+    pendingCharacterSuggestions: [{
+      ...acceptedSuggestion,
+      suggestedBy: suggestedByLid,
+    }],
+  })), 'utf8')
+  const originalSuggestionGetName = conn.getName
+  conn.getName = async (jid) => jid === userTwo ? 'Usuario Sugeridor' : originalSuggestionGetName(jid)
+  const sentBeforeSuggestions = sent.length
+  await runCommand(conn, groupMessage(suggestionDisplayGroup), 'sugpj', '', { isOwner: true })
+  const suggestionMessage = sent.slice(sentBeforeSuggestions).find(({ content }) => content.text?.includes('SUGERENCIAS PENDIENTES'))
+  assert.match(suggestionMessage.content.text, /Sugirio: @5491222222222 \(Usuario Sugeridor\)/, 'sugpj debe mostrar el nombre y etiquetar al sugeridor')
+  assert.deepEqual(suggestionMessage.content.mentions, [userTwo], 'sugpj debe mencionar al sugeridor de verdad')
+  assert.doesNotMatch(suggestionMessage.content.text, /207511361687632/, 'sugpj no debe mostrar el LID')
+  conn.getName = originalSuggestionGetName
+  conn.groupMetadata = originalGroupMetadata
   await runCommand(conn, groupMessage(bonusGroup), 'aceptarpj', acceptedSuggestion.name, { isOwner: true })
   assert.equal(
     (await readCatalog()).characters.find((character) => character.id === 'character-2').value,
@@ -1091,6 +1156,8 @@ try {
   assert.match(replies.at(-1).text, /Character 100/)
   assert.doesNotMatch(replies.at(-1).text, /Character 101/)
   assert.match(replies.at(-1).text, /%pjs 2 @5491222222222/, 'la primera parte debe indicar cómo pedir la siguiente para esa persona')
+  assert.match(replies.at(-1).text, /PERSONAJES DE 5491222222222/, 'pjs debe mostrar el número real en vez del identificador LID')
+  assert.doesNotMatch(replies.at(-1).text, /207511361687632/, 'pjs no debe mostrar el identificador LID en el nombre')
   assert.doesNotMatch(replies.at(-1).text, /@207511361687632/, 'la paginación no debe exponer el identificador interno tipo LID')
   await runCommand(conn, paginationMessage, 'personajes', '2 @5491222222222')
   assert.match(replies.at(-1).text, /Parte 2 de 3/)

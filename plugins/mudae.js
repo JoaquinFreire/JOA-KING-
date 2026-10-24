@@ -976,19 +976,114 @@ const getDisplayName = async (conn, jid, fallback = '') => {
   return fallback || jid.split('@')[0]
 }
 
-const sendLongText = async (conn, chat, text, quoted) => {
+const isPhoneNumberLabel = (value) => {
+  const label = String(value || '').trim()
+  return /^\+?[\d\s().-]+$/.test(label) && label.replace(/\D/g, '').length >= 7
+}
+
+const getPhoneNumber = (value) => {
+  const candidate = String(value || '').trim()
+  if (candidate.includes('@') && !candidate.endsWith('@s.whatsapp.net')) return ''
+  const digits = candidate.replace(/\D/g, '')
+  return digits.length >= 7 && digits.length <= 15 ? digits : ''
+}
+
+const createGroupUserDisplayResolver = (conn, groupId) => {
+  let participantsPromise
+  const displayCache = new Map()
+  const getParticipants = async () => {
+    if (!participantsPromise) {
+      participantsPromise = (async () => {
+        if (typeof conn.groupMetadata !== 'function') return []
+        try {
+          const metadata = await conn.groupMetadata(groupId)
+          return metadata?.participants || []
+        } catch (error) {
+          console.warn(`[MUDAE] No se pudieron resolver los participantes de ${groupId}:`, error?.message || error)
+          return []
+        }
+      })()
+    }
+    return participantsPromise
+  }
+
+  return async (jid, fallbackPhone = '') => {
+    const normalizedJid = normalizeJid(jid)
+    if (displayCache.has(normalizedJid)) return displayCache.get(normalizedJid)
+
+    let resolvedJid = normalizedJid
+    if (normalizedJid.endsWith('@lid')) {
+      const participants = await getParticipants()
+      const participant = participants.find((item) =>
+        [item.id, item.jid, item.lid].some((candidate) => normalizeJid(candidate) === normalizedJid)
+      )
+      const participantPhone = getPhoneNumber(participant?.phoneNumber) ||
+        getPhoneNumber(participant?.jid) ||
+        getPhoneNumber(participant?.id)
+      if (participantPhone) {
+        resolvedJid = `${participantPhone}@s.whatsapp.net`
+      } else {
+        try {
+          const userInfo = global.lidResolver?.getUserInfo?.(normalizedJid.split('@')[0])
+          const cachedJid = typeof userInfo?.jid === 'string' &&
+            !userInfo.jid.endsWith('@lid') &&
+            !userInfo.notFound &&
+            !userInfo.error
+            ? userInfo.jid
+            : ''
+          const resolved = cachedJid || await global.lidResolver?.resolveLid?.(normalizedJid, groupId, 2)
+          if (resolved && !String(resolved).endsWith('@lid')) resolvedJid = normalizeJid(resolved)
+        } catch (error) {
+          console.warn(`[MUDAE] No se pudo resolver el número real de ${normalizedJid}:`, error?.message || error)
+        }
+      }
+    }
+
+    const phoneNumber = getPhoneNumber(resolvedJid) || getPhoneNumber(fallbackPhone)
+    let name = ''
+    for (const candidate of [normalizedJid, resolvedJid]) {
+      if (!candidate) continue
+      try {
+        const value = await conn.getName?.(candidate)
+        if (value && !isPhoneNumberLabel(value)) {
+          name = String(value).trim()
+          break
+        }
+      } catch (error) {
+        console.warn(`[MUDAE] No se pudo resolver el nombre de ${candidate}:`, error?.message || error)
+      }
+    }
+
+    const mentionJid = phoneNumber
+      ? `${phoneNumber}@s.whatsapp.net`
+      : resolvedJid.endsWith('@s.whatsapp.net') ? resolvedJid : ''
+    const display = { label: name || phoneNumber || 'Usuario', phoneNumber, mentionJid }
+    displayCache.set(normalizedJid, display)
+    return display
+  }
+}
+
+const sendLongText = async (conn, chat, text, quoted, mentions = []) => {
   const lines = text.split('\n')
   let chunk = ''
+  const sendChunk = async (content) => {
+    const chunkMentions = mentions.filter((jid) => content.includes(`@${jid.split('@')[0]}`))
+    if (chunkMentions.length) {
+      await conn.sendMessage(chat, { text: content, mentions: chunkMentions }, { quoted })
+    } else {
+      await conn.reply(chat, content, quoted)
+    }
+  }
   for (const line of lines) {
     const next = chunk ? `${chunk}\n${line}` : line
     if (next.length > 3500 && chunk) {
-      await conn.reply(chat, chunk, quoted)
+      await sendChunk(chunk)
       chunk = line
     } else {
       chunk = next
     }
   }
-  if (chunk) await conn.reply(chat, chunk, quoted)
+  if (chunk) await sendChunk(chunk)
 }
 
 const ensureEnabled = async (m, conn) => {
@@ -1175,13 +1270,24 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const suggestions = [...(state.pendingCharacterSuggestions || [])]
       .sort((left, right) => Number(left.suggestedAt || 0) - Number(right.suggestedAt || 0))
     if (!suggestions.length) return conn.reply(m.chat, 'No hay sugerencias de personajes pendientes en este grupo.', m)
-    const lines = await Promise.all(suggestions.map(async (item, index) => {
+    const getUserDisplay = createGroupUserDisplayResolver(conn, m.chat)
+    const entries = await Promise.all(suggestions.map(async (item, index) => {
       const suggester = normalizeJid(item.suggestedBy)
-      const suggesterName = await getDisplayName(conn, suggester)
+      const { label: suggesterName, mentionJid } = await getUserDisplay(suggester)
       const date = new Date(Number(item.suggestedAt || Date.now())).toLocaleString('es-AR')
-      return `${index + 1}. *${item.name}*\n   Album: ${item.album}\n   Sugirio: ${suggesterName} (@${suggester.split('@')[0]})\n   Fecha: ${date}`
+      const taggedSuggester = mentionJid ? `@${mentionJid.split('@')[0]} (${suggesterName})` : suggesterName
+      return {
+        line: `${index + 1}. *${item.name}*\n   Album: ${item.album}\n   Sugirio: ${taggedSuggester}\n   Fecha: ${date}`,
+        mentionJid,
+      }
     }))
-    return sendLongText(conn, m.chat, `SUGERENCIAS PENDIENTES (${suggestions.length})\n\n${lines.join('\n\n')}\n\nAcepta con *${usedPrefix}aceptarpj <nombre>* o deniega con *${usedPrefix}denegarpj <nombre>*.`, m)
+    return sendLongText(
+      conn,
+      m.chat,
+      `SUGERENCIAS PENDIENTES (${suggestions.length})\n\n${entries.map(({ line }) => line).join('\n\n')}\n\nAcepta con *${usedPrefix}aceptarpj <nombre>* o deniega con *${usedPrefix}denegarpj <nombre>*.`,
+      m,
+      [...new Set(entries.map(({ mentionJid }) => mentionJid).filter(Boolean))]
+    )
   }
 
   if (action === 'aceptarpj') {
@@ -1424,7 +1530,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     })
   }
 
-  if (action === 'editimgpj') {
+  if (action === 'editimgpj' || action === 'editimpj') {
     if (!isROwner && !isOwner) return conn.reply(m.chat, 'Solo el owner del bot puede cambiar imágenes de personajes.', m)
     const parts = parseMudaeParts(text, 2)
     if (!parts) return conn.reply(m.chat, `Uso: ${usedPrefix}editimgpj <álbum> + <nombre>\nResponde a una imagen o envíala junto con el comando.`, m)
@@ -1914,12 +2020,17 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const page = pageMatch ? Number(pageMatch[1]) : 1
     const targetText = pageMatch ? rawText.slice(pageMatch[0].length).trim() : rawText
     const target = await getMentionTarget(m, conn, targetText)
-    const targetArgument = target === actor ? '' : ` ${targetText || '@usuario'}`
+    const getUserDisplay = createGroupUserDisplayResolver(conn, m.chat)
+    const targetFallbackPhone = getPhoneNumber(targetText.match(/@(\+?[\d\s().-]{7,25})/)?.[1])
+    const targetDisplay = await getUserDisplay(target, targetFallbackPhone)
+    const pushName = String(m.pushName || '').trim()
+    const ownerName = target === actor && pushName && !isPhoneNumberLabel(pushName)
+      ? pushName
+      : targetDisplay.label
+    const targetArgument = target === actor
+      ? ''
+      : ` @${targetDisplay.phoneNumber || (target.endsWith('@lid') ? 'usuario' : getPhoneNumber(target) || 'usuario')}`
     const collection = state.characters.filter((character) => normalizeJid(character.owner) === target)
-    let ownerName = target === actor ? (m.pushName || await getDisplayName(conn, target)) : await getDisplayName(conn, target)
-    if (target.endsWith('@lid') && /^\d{7,}$/.test(ownerName)) {
-      ownerName = /@([\d\s().+-]{7,25})/.exec(targetText)?.[1].trim() || 'Usuario'
-    }
     if (!collection.length) return conn.reply(m.chat, `👑 *${ownerName} todavía no tiene personajes en este grupo.*`, m)
     const total = collection.reduce((sum, character) => sum + Number(character.value || 0), 0)
     const pageSize = 100
@@ -1979,11 +2090,13 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       .filter((character) => normalizeMudaeIdentity(character.album) === albumQuery)
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
     if (!characters.length) return conn.reply(m.chat, `📚 *${album}* todavía no tiene personajes.`, m)
+    const getUserDisplay = createGroupUserDisplayResolver(conn, m.chat)
     const lines = await Promise.all(characters.map(async (character, index) => {
       if (!character.owner && (character.isGift || character.mediaType === 'video')) {
         return `${index + 1}. 🔒 *Bloqueado* — GIF oculto`
       }
-      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}${character.owner ? ' · 👑' : ''}`
+      const owner = character.owner ? await getUserDisplay(character.owner) : null
+      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}${owner ? ` · 👑 ${owner.label}` : ''}`
     }))
     return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}* (👑 = reclamado)\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
   }
@@ -2174,7 +2287,7 @@ handler.help = [
   'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
   'sugpj (owner)', 'aceptarpj <nombre> (owner)', 'denegarpj <nombre> (owner)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
-  'editimgpj <álbum> + <nombre> (responde a una imagen nueva; owner)',
+  'editimgpj <álbum> + <nombre> (alias: editimpj; responde a una imagen nueva; owner)',
   'delpj <álbum> + <nombre>', 'delalbum <nombre>',
   'rw', 'cd', 'quitarpj <nombre>', 'regalarpj <nombre> @usuario',
   'cambiarpj <tuyo> + <del otro>', 'aceptarcambio', 'suertepj <nombre>',
@@ -2183,7 +2296,7 @@ handler.help = [
 ]
 handler.tags = ['mudae']
 handler.command = [
-  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'sugpj', 'aceptarpj', 'denegarpj', 'editpj', 'editimgpj', 'delpj',
+  'onmudae', 'offmudae', 'menumudae', 'adivinarpj', 'addalbum', 'addpj', 'sugpj', 'aceptarpj', 'denegarpj', 'editpj', 'editimgpj', 'editimpj', 'delpj',
   'addchar', 'editchar', 'delchar', 'delalbum',
   'rw', 'cd', 'quitarpj', 'regalarpj', 'cambiarpj', 'aceptarcambio', 'suertepj',
   'personajes', 'pjs', 'albumespj', 'ainfo', 'toppj', 'gpjs', 'verpj', 'overpj', 'votarpj',

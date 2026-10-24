@@ -39,6 +39,8 @@ global.getSubBotPairingNumber = function (explicitValue = "", senderJid = "", fa
 global.owner = [
 "5493513117202",
 ]
+global.configuredOwnerNumbers = [...global.owner]
+global.ownerPrincipal = "5493513117202"
 global.ownerLids = ["114864672526580"]
 
 global.suittag = ["5493513117202"] 

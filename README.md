@@ -9,6 +9,7 @@ Bot de WhatsApp basado en Baileys.
 - Transcripción local de notas de voz: `python -m pip install -r requirements-transcription.txt` (el modelo Whisper `small` se descarga al primer uso)
 - Voz argentina en `%vozarg`: `python -m pip install -r requirements-voice.txt` (el modelo Piper se descarga al primer uso)
 - Dependencias de Python para `igstalk`: `python -m pip install -r instagramarchivos/igdata/requirements.txt`
+- Dependencias de Python y Chromium para `%screenw`: `python -m pip install -r requirements-screenw.txt` y `python -m playwright install chromium`
 - Primera sesión local de Instagram: `python instagramarchivos/igdata/main.py` (la sesión se guarda localmente y no se sube a Git)
 - Playwright y Chromium para Instagram
 - FFmpeg para stickers y conversiones
@@ -22,7 +23,11 @@ python -m playwright install chromium
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-transcription.txt
 .venv\Scripts\python.exe -m pip install -r requirements-voice.txt
+python -m pip install -r requirements-screenw.txt
+python -m playwright install chromium
 ```
+
+`%screenw` usa `SCREENWSP_PYTHON` si está configurado; de lo contrario, usa el entorno virtual local de `pruebas/fakewsp` si existe, o Python del sistema (`python` en Windows y `python3` en otros sistemas). Instala las dependencias y Chromium en el intérprete que vaya a usar el bot.
 
 El comando `%on autotranscribe` transcribe solo notas de voz PTT. La primera transcripción descarga el modelo Whisper `small`; después se reutiliza localmente para priorizar precisión en español.
 

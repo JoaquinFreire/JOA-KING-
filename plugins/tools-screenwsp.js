@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,9 +12,15 @@ const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = path.resolve(PLUGIN_DIR, '..')
 const FAKEWSP_DIR = path.join(ROOT_DIR, 'pruebas', 'fakewsp')
 const PYTHON_SCRIPT = path.join(FAKEWSP_DIR, 'render_screenw.py')
-const PYTHON = process.platform === 'win32'
-  ? path.join(FAKEWSP_DIR, '.venv', 'Scripts', 'python.exe')
-  : path.join(FAKEWSP_DIR, '.venv', 'bin', 'python')
+const VIRTUAL_ENV_PYTHON = path.join(
+  FAKEWSP_DIR,
+  '.venv',
+  process.platform === 'win32' ? 'Scripts' : 'bin',
+  process.platform === 'win32' ? 'python.exe' : 'python',
+)
+const PYTHON = process.env.SCREENWSP_PYTHON ||
+  process.env.PYTHON ||
+  (existsSync(VIRTUAL_ENV_PYTHON) ? VIRTUAL_ENV_PYTHON : process.platform === 'win32' ? 'python' : 'python3')
 let imageRenderer = null
 let renderRequestId = 0
 const pendingImageRenders = new Map()

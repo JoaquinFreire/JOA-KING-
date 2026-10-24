@@ -21,6 +21,7 @@ export const MUDAE_CONFIG = Object.freeze({
   GIFT_ROLL_PROBABILITY: 0.01,
   GIFT_CHARACTER_VALUE: 6767,
   GIFT_REVEAL_DELAY: 5000,
+  ADD_CHARACTER_COOLDOWN: 15 * 1000,
   TRADE_COOLDOWN: 12 * 60 * 60 * 1000,
   VOTE_COOLDOWN: 24 * 60 * 60 * 1000,
   VOTE_VALUE_INCREMENT: 125,
@@ -62,6 +63,7 @@ const catalogFile = process.env.MUDAE_CATALOG_FILE || (
 )
 const migrateLegacyState = !configuredDataDirectory
 const groupLocks = new Map()
+const addCharacterCooldowns = new Map()
 const stateCache = new Map()
 const stateLoads = new Map()
 let catalogLock = Promise.resolve()
@@ -202,12 +204,18 @@ const loadCatalog = async () => {
     }
 
     const characters = []
+    const characterIds = new Set()
     for (const character of catalog.characters) {
       const normalized = normalizeCatalogCharacter(character)
       if (!normalized.name || !normalized.album || !normalized.imageUrl) {
         migrated = true
         continue
       }
+      if (characterIds.has(normalized.id)) {
+        migrated = true
+        continue
+      }
+      characterIds.add(normalized.id)
       if (!albums.some((item) => normalizeMudaeIdentity(item) === normalizeMudaeIdentity(normalized.album))) {
         albums.push(normalized.album)
         migrated = true
@@ -271,6 +279,8 @@ const upsertCatalogCharacter = (catalog, character) => {
   const normalized = normalizeCatalogCharacter(character)
   if (!normalized.name || !normalized.album || !normalized.imageUrl) return { character: null, added: false }
   if (catalog.deletedCharacterIds.includes(normalized.id)) return { character: null, added: false }
+  const existingById = catalog.characters.find((item) => item.id === normalized.id)
+  if (existingById) return { character: existingById, added: false }
   addCatalogAlbum(catalog, normalized.album)
   const index = findCatalogCharacterIndex(catalog, normalized)
   if (index >= 0) return { character: catalog.characters[index], added: false }
@@ -1423,10 +1433,6 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     if (!quotedMedia) return conn.reply(m.chat, 'No detecte una imagen normal. %addpj no acepta GIFs; responde a una imagen o envia la imagen junto con %addpj <album> + <nombre>.', m)
     try {
       const mediaType = 'image'
-      const media = typeof quotedMedia.download === 'function'
-        ? await quotedMedia.download()
-        : await conn.downloadM(quotedMedia.media, mediaType)
-      if (!Buffer.isBuffer(media) || !media.length) throw new Error('No se pudo descargar la imagen citada.')
       return await withGroupLock(m.chat, async () => {
         const current = await loadState(m.chat)
         const catalog = await loadCatalog()
@@ -1440,6 +1446,20 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
         if (current.pendingCharacterSuggestions.some((item) => normalizeMudaeIdentity(item.name) === identity)) {
           return conn.reply(m.chat, 'Ya hay una sugerencia pendiente con ese nombre en este grupo.', m)
         }
+        const now = Date.now()
+        for (const [jid, availableAt] of addCharacterCooldowns) {
+          if (availableAt <= now) addCharacterCooldowns.delete(jid)
+        }
+        const availableAt = addCharacterCooldowns.get(actor) || 0
+        if (availableAt > now) {
+          const remainingSeconds = Math.ceil((availableAt - now) / 1000)
+          return conn.reply(m.chat, `⏳ Esperá ${remainingSeconds} segundos antes de volver a usar %addpj.`, m)
+        }
+        if (actor) addCharacterCooldowns.set(actor, now + MUDAE_CONFIG.ADD_CHARACTER_COOLDOWN)
+        const media = typeof quotedMedia.download === 'function'
+          ? await quotedMedia.download()
+          : await conn.downloadM(quotedMedia.media, mediaType)
+        if (!Buffer.isBuffer(media) || !media.length) throw new Error('No se pudo descargar la imagen citada.')
         getCloudinaryCredentials()
         const mimeType = quotedMedia.media.mimetype || 'image/jpeg'
         const uploaded = await uploadCharacterImage(media, mimeType)
@@ -1973,12 +1993,20 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       let sent
       try {
         const caption = `❤️ *PERSONAJE*\n\n🎴 *${character.name}*\n📚 ${character.album}\n💰 ${formatMoney(character.value)}${wishLine}${ownershipLine}${owner ? '' : '\n⏱️ Vence en 1 minuto.'}${rollCount + 1 >= MUDAE_CONFIG.ROLL_LIMIT ? '\n⏳ Agotaste tus 10 tiradas RW; podés volver a tirar en 30 minutos.' : ''}`
-        if (character.isGift || character.mediaType === 'video') {
+        if ((character.isGift || character.mediaType === 'video') && !owner) {
           await conn.sendMessage(m.chat, {
             text: `🎁 *PERSONAJE CON IMAGEN OCULTA DESBLOQUEADO*\n\n🎴 *${character.name}* apareció...\n⏳ En 5 segundos revelamos su GIF. ¡Atentos!`,
             mentions: wishers,
           }, { quoted: m })
           await new Promise((resolve) => setTimeout(resolve, MUDAE_CONFIG.GIFT_REVEAL_DELAY))
+          sent = await conn.sendMessage(m.chat, {
+            video: { url: character.imageUrl },
+            mimetype: 'video/mp4',
+            gifPlayback: true,
+            caption,
+            mentions,
+          }, { quoted: m })
+        } else if (character.isGift || character.mediaType === 'video') {
           sent = await conn.sendMessage(m.chat, {
             video: { url: character.imageUrl },
             mimetype: 'video/mp4',
@@ -2284,7 +2312,7 @@ handler.hasQuotedImage = hasQuotedMudaeImage
 handler.hasQuotedGif = hasQuotedMudaeGif
 handler.help = [
   'onmudae', 'offmudae',
-  'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo)',
+  'menumudae', 'adivinarpj (responde a la imagen para adivinar)', 'adivinarpj terminar', 'addalbum <nombre>', 'addpj <álbum> + <nombre> (con imagen o respondiendo; 15 s por usuario)',
   'sugpj (owner)', 'aceptarpj <nombre> (owner)', 'denegarpj <nombre> (owner)',
   'editpj <álbum actual> + <nombre actual> + <álbum nuevo> + <nombre nuevo>',
   'editimgpj <álbum> + <nombre> (alias: editimpj; responde a una imagen nueva; owner)',

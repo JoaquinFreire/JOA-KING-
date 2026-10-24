@@ -103,7 +103,7 @@ let txt = `
  ✿  *%fakemsg2* [texto] {respondiendo a un mensaje}
 > 𓃦 Editar un mensaje citado (admins del grupo o owner).
  ✿  *%rev* {respondiendo al mensaje posterior}
-> 𓃦 Reenviar el mensaje anterior, incluso si ya fue borrado, cuando quedó guardado en el historial del grupo.
+> 𓃦 Recuperar el mensaje anterior guardado, incluso si fue borrado; admite texto, imágenes y videos.
  ✿  *%owner*
 > 𓃦 Recibir el contacto del owner con su Instagram.
  ✿  *%owners*
@@ -170,7 +170,7 @@ let txt = `
 
 ╭───✱*.｡:｡✱*.:｡✧*✰${toRegionalText('FUN')}✰*.:｡✧*.｡:｡*.｡✱ ───
 > ✿ Juegos y comandos para divertirse.
- ✿  *.screenw*
+ ✿  *.screenw • .screenwsp*
 > 𓃦 Recrear una vista aproximada del grupo con los mensajes recientes que recibió el bot.
  ✿  *%arkanoid*
 > 𓃦 Jugar Arkanoid: rompe los bloques y supera 10 niveles.
@@ -357,7 +357,7 @@ let txt = `
  ✿  *%votarpj <personaje>*
 > 𓃦 Votar una vez cada 24 horas para sumar 125 (50 si ya está reclamado) y habilitar una tirada.
  ✿  *%addpj / %sugpj / %aceptarpj / %denegarpj / %addalbum / %editpj / %delpj / %delalbum*
-> 𓃦 Cualquiera puede sugerir personajes con imagen; el owner los acepta o deniega y los admins los agregan directamente.
+> 𓃦 Cualquiera puede sugerir personajes con imagen (una solicitud cada 15 s por usuario); el owner las revisa y los admins agregan directamente.
  ✿  *%onmudae • %offmudae*
 > 𓃦 Activar o desactivar Mudae en este grupo (owner).
 ╰ׅ───✱*.｡:｡✱*.:｡✧*.｡✰*.:｡✧*.｡:｡*.｡✱ ───

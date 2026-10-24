@@ -118,6 +118,7 @@ function extractKeys(relays) {
 
 // 2c) Grupo LID SIN phoneNumber en metadata: el PN debe venir de lidMapping USYNC
 {
+  const startedAt = Date.now()
   const { relays } = await runCase({
     m: {
       chat: '120363000000000003@g.us',
@@ -144,6 +145,7 @@ function extractKeys(relays) {
     'falta el PN resuelto vía signalRepository.lidMapping.getPNForLID'
   )
   assert.ok(keys.some((k) => k.participant === '111222333@lid'), 'falta el LID crudo')
+  assert.ok(Date.now() - startedAt < 1500, 'fakemsg no debe esperar varios segundos al resolver el LID')
   console.log(`✔ grupo LID sin phoneNumber: PN resuelto vía USYNC lidMapping (${keys.length} keys)`)
 }
 

@@ -241,11 +241,11 @@ def render_payload(payload, browser=None):
         f"background-size:{wallpaper_size}!important;"
         "background-position:center center!important;background-repeat:no-repeat!important}"
         ".wa-bubble .cg-reply{display:block;width:100%;box-sizing:border-box;min-height:0}"
-        ".screenw-quote-layout{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px;min-height:0;width:100%}"
+        ".screenw-quote-layout{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;min-height:0;width:100%;max-width:100%;overflow:hidden}"
         ".screenw-quote-kind{display:inline-flex;align-items:center;gap:6px;min-width:0;color:#667781}"
         ".screenw-quote-kind span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
         ".screenw-quote-image-icon{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}"
-        ".screenw-quote-thumb{display:block;width:128px;height:128px;object-fit:cover;border-radius:4px;flex:0 0 128px}"
+        ".screenw-quote-thumb{display:block;width:44px;height:44px;max-width:44px;max-height:44px;object-fit:cover;border-radius:4px;flex:0 0 44px}"
         "[data-theme=dark] .screenw-quote-kind{color:#8696a0}"
         ".wa-mediabubble img.wa-img:not([src^='data:image/webp']){max-width:100%;height:auto;object-fit:cover}"
     )

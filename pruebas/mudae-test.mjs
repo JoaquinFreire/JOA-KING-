@@ -69,6 +69,7 @@ const createState = (groupId, overrides = {}) => ({
   ...overrides,
 })
 const readState = async (groupId) => JSON.parse(await fs.readFile(filenameFor(groupId), 'utf8'))
+const readCatalog = async () => JSON.parse(await fs.readFile(process.env.MUDAE_CATALOG_FILE, 'utf8'))
 const available = {
   id: 'character-1',
   name: 'Trunks',
@@ -411,13 +412,18 @@ try {
   assert.equal(sent.length, sentBeforeUnvotedRoll, 'no debe tirar sin un voto pendiente')
 
   await runCommand(conn, groupMessage(groupTwo), 'votarpj', 'Trunks')
-  assert.match(replies.at(-1).text, /1\.125/)
+  assert.match(replies.at(-1).text, /1\.250/)
   assert.equal((await readState(groupTwo)).pendingVotes[userOne], true, 'un voto válido habilita una tirada')
   await runCommand(conn, groupMessage(groupTwo), 'votarpj', 'Trunks')
   assert.match(replies.at(-1).text, /voto pendiente/, 'no permite acumular votos pendientes')
   await runCommand(conn, groupMessage(groupTwo, userTwo), 'votarpj', 'Trunks')
-  assert.match(replies.at(-1).text, /1\.250/, 'otro usuario puede emitir su propio voto')
-  assert.equal((await readState(groupTwo)).characters[0].value, 1250)
+  assert.match(replies.at(-1).text, /1\.375/, 'otro usuario puede emitir su propio voto')
+  assert.equal((await readState(groupTwo)).characters[0].value, 1375)
+  assert.equal(
+    (await readCatalog()).characters.find((character) => character.id === 'character-1').value,
+    1375,
+    'los votos deben guardar el valor en el catálogo compartido'
+  )
   await runCommand(conn, groupMessage(groupOne), 'addalbum', 'Dragon Ball Z', { isAdmin: true })
   assert.match(replies.at(-1).text, /ya existe/, 'debe rechazar álbum duplicado ignorando case')
   assert.deepEqual((await readState(groupOne)).albums, ['Dragon Ball Z'])
@@ -425,10 +431,13 @@ try {
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Dragon Ball Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/)
   assert.match(replies.at(-1).text, /Trunks/, 'ainfo debe mostrar los personajes normales aunque no estén reclamados')
-  assert.match(replies.at(-1).text, /\$1\.000/, 'ainfo debe mostrar el valor de personajes normales sin reclamar')
+  assert.match(replies.at(-1).text, /\$1\.375/, 'ainfo debe mostrar el valor actualizado globalmente')
   assert.doesNotMatch(replies.at(-1).text, /Aún sin desbloquear/, 'ainfo no debe mostrar el estado de desbloqueo para personajes normales')
   assert.match(replies.at(-1).text, /Goku/)
   assert.match(replies.at(-1).text, /\$1\.500/, 'ainfo debe mostrar el valor de los personajes desbloqueados')
+  assert.match(replies.at(-1).text, /👑 = reclamado/, 'ainfo debe explicar el indicador de dueño')
+  assert.match(replies.at(-1).text, /Goku.*👑/, 'ainfo debe marcar con un símbolo los personajes reclamados')
+  assert.doesNotMatch(replies.at(-1).text, /Lo tiene:|@5491222222222/, 'ainfo no debe mostrar nombres ni etiquetar al dueño')
   await runCommand(conn, groupMessage(groupOne), 'ainfo', 'Drágon Báll Z')
   assert.match(replies.at(-1).text, /PERSONAJES DE DRAGON BALL Z/, 'ainfo debe encontrar álbumes aunque la consulta tenga tildes')
   await runCommand(conn, groupMessage(groupOne), 'albumespj')
@@ -441,6 +450,34 @@ try {
     (await readState(groupOne)).characters.find((character) => character.id === 'character-2').value,
     1550,
     'el voto debe guardar el nuevo valor del personaje reclamado'
+  )
+  assert.equal(
+    (await readCatalog()).characters.find((character) => character.id === 'character-2').value,
+    1550,
+    'los votos a personajes reclamados también deben actualizar el catálogo'
+  )
+  const bonusGroup = '120363000000000024@g.us'
+  const acceptedSuggestion = {
+    id: 'accepted-bonus-character',
+    name: 'Accepted Bonus Character',
+    album: 'Dragon Ball Z',
+    value: MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE,
+    imageUrl: 'https://res.cloudinary.com/example/image/upload/accepted-bonus.jpg',
+    cloudinaryPublicId: 'mudae/test/accepted-bonus',
+    mediaType: 'image',
+    isGift: false,
+    suggestedBy: userTwo,
+    suggestedAt: Date.now(),
+  }
+  await fs.writeFile(filenameFor(bonusGroup), JSON.stringify(createState(bonusGroup, {
+    characters: [secondCharacter],
+    pendingCharacterSuggestions: [acceptedSuggestion],
+  })), 'utf8')
+  await runCommand(conn, groupMessage(bonusGroup), 'aceptarpj', acceptedSuggestion.name, { isOwner: true })
+  assert.equal(
+    (await readCatalog()).characters.find((character) => character.id === 'character-2').value,
+    1619,
+    'el bonus de +69 por aceptar un personaje debe actualizar el catálogo'
   )
   await runCommand(conn, groupMessage(groupOne), 'votarpj', 'oku')
   assert.match(replies.at(-1).text, /voto pendiente/, 'votarpj debe resolver una palabra única que no esté al comienzo del nombre')
@@ -477,7 +514,7 @@ try {
     download: async () => Buffer.from('test image'),
   }
   await runCommand(conn, repliedImageCommand, 'addpj', 'Other Album + Trunks', { isOwner: true })
-  assert.match(replies.at(-1).text, /nombres deben ser únicos/, 'no permite repetir el nombre en otro álbum')
+  assert.match(replies.at(-1).text, /nombres deben ser unicos/, 'no permite repetir el nombre en otro álbum')
   await runCommand(conn, repliedImageCommand, 'addpj', 'Dragon Ball Z + nEW cHARACTER', { isAdmin: true })
   assert.match(replies.at(-1).text, /CLOUDINARY_URL/, 'quoted image and valid arguments must pass usage validation')
   assert.doesNotMatch(replies.at(-1).text, /Uso:/)
@@ -498,7 +535,7 @@ try {
   await runCommand(conn, mentionedUser, 'personajes', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/)
-  assert.match(replies.at(-1).text, /\$1\.550/)
+  assert.match(replies.at(-1).text, /\$1\.619/, 'pjs debe reflejar los aumentos compartidos desde otros grupos')
   await runCommand(conn, mentionedUser, 'pjs', '@5491222222222')
   assert.match(replies.at(-1).text, /PERSONAJES DE/)
   assert.match(replies.at(-1).text, /Goku/, 'pjs debe consultar la colección de la persona mencionada')
@@ -517,7 +554,7 @@ try {
   await runCommand(conn, groupMessage(groupFour), 'verpj', 'Trunks')
   assert.match(replies.at(-1).text, /más de un álbum/, 'debe informar nombres ambiguos')
   await runCommand(conn, groupMessage(groupFour), 'verpj', 'Tru')
-  assert.match(replies.at(-1).text, /No encontré ese personaje/, 'un fragmento ambiguo debe responder que no encontró el personaje')
+  assert.match(replies.at(-1).text, /No encontre ese personaje/, 'un fragmento ambiguo debe responder que no encontró el personaje')
   await runCommand(conn, groupMessage(groupFour), 'verpj', 'Dragon Ball Z Kai + Trunks')
   assert.match(sent.at(-1).content.caption, /\*Trunks\*/, 'debe permitir resolver la ambigüedad')
   await runCommand(conn, groupMessage(groupFive), 'wish', 'tella')
@@ -525,7 +562,7 @@ try {
   await runCommand(conn, groupMessage(groupTen), 'wish', 'Roll')
   assert.match(replies.at(-1).text, /No encontré ese personaje/, 'wish debe rechazar un fragmento que coincide con varios personajes')
   await runCommand(conn, groupMessage(groupTen), 'verpj', 'Roll')
-  assert.match(replies.at(-1).text, /No encontré ese personaje/, 'verpj debe rechazar un fragmento que coincide con varios personajes')
+  assert.match(replies.at(-1).text, /No encontre ese personaje/, 'verpj debe rechazar un fragmento que coincide con varios personajes')
   await runCommand(conn, groupMessage(groupOne), 'wish', 'Goku')
   assert.match(replies.at(-1).text, /WISHLIST/)
   await runCommand(conn, groupMessage(groupNine), 'cd')
@@ -1039,14 +1076,14 @@ try {
     album: 'Pagination Album',
     value: 1000,
     imageUrl: `https://res.cloudinary.com/example/image/upload/character-${index + 1}.jpg`,
-    owner: userTwo,
+    owner: '207511361687632@lid',
   }))
   await fs.writeFile(filenameFor(paginationGroup), JSON.stringify(createState(paginationGroup, {
     albums: ['Pagination Album'],
     characters: paginatedCharacters,
   })))
   const paginationMessage = groupMessage(paginationGroup)
-  paginationMessage.mentionedJid = [userTwo]
+  paginationMessage.mentionedJid = ['207511361687632@lid']
   const repliesBeforeFirstPage = replies.length
   await runCommand(conn, paginationMessage, 'pjs', '@5491222222222')
   assert.equal(replies.length, repliesBeforeFirstPage + 1, 'una consulta debe enviar solo una parte por mensaje')
@@ -1054,6 +1091,7 @@ try {
   assert.match(replies.at(-1).text, /Character 100/)
   assert.doesNotMatch(replies.at(-1).text, /Character 101/)
   assert.match(replies.at(-1).text, /%pjs 2 @5491222222222/, 'la primera parte debe indicar cómo pedir la siguiente para esa persona')
+  assert.doesNotMatch(replies.at(-1).text, /@207511361687632/, 'la paginación no debe exponer el identificador interno tipo LID')
   await runCommand(conn, paginationMessage, 'personajes', '2 @5491222222222')
   assert.match(replies.at(-1).text, /Parte 2 de 3/)
   assert.match(replies.at(-1).text, /Character 101/)

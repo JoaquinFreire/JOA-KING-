@@ -299,7 +299,7 @@ const syncStateWithCatalog = (state, catalog) => {
       )
     const next = {
       ...catalogCharacter,
-      value: Number(previous?.value || catalogCharacter.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
+        value: Number(catalogCharacter.value || MUDAE_CONFIG.DEFAULT_CHARACTER_VALUE),
       owner: previous?.owner ? normalizeJid(previous.owner) : null,
     }
     if (previous?.claimedAt) next.claimedAt = previous.claimedAt
@@ -500,7 +500,17 @@ const findPendingCharacterSuggestions = (state, query) => {
   return suggestions.filter((item) => normalizeMudaeIdentity(item.name).includes(normalized))
 }
 
-const adjustInventoryValue = (state, jid, amount, chooseHighest) => {
+const updateCatalogCharacterValue = async (state, characterId, amount) => withCatalogLock(async () => {
+  const catalog = await loadCatalog()
+  const catalogCharacter = catalog.characters.find((character) => character.id === characterId)
+  if (!catalogCharacter) throw new Error('El personaje ya no existe en el catálogo global.')
+  catalogCharacter.value = Number(catalogCharacter.value || 0) + amount
+  await saveCatalog(catalog)
+  syncStateWithCatalog(state, catalog)
+  return state.characters.find((character) => character.id === characterId)
+})
+
+const adjustInventoryValue = async (state, jid, amount, chooseHighest) => {
   const owned = state.characters.filter((character) => normalizeJid(character.owner) === jid)
   if (!owned.length) return null
   owned.sort((left, right) => {
@@ -508,9 +518,7 @@ const adjustInventoryValue = (state, jid, amount, chooseHighest) => {
     if (valueDifference) return chooseHighest ? -valueDifference : valueDifference
     return left.name.localeCompare(right.name, 'es')
   })
-  const character = owned[0]
-  character.value = Number(character.value || 0) + amount
-  return character
+  return updateCatalogCharacterValue(state, owned[0].id, amount)
 }
 
 export const getCloudinaryCredentials = () => {
@@ -1204,7 +1212,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       })
       current.pendingCharacterSuggestions = current.pendingCharacterSuggestions.filter((item) => item.id !== suggestion.id)
       const suggester = normalizeJid(suggestion.suggestedBy)
-      const bonusCharacter = adjustInventoryValue(current, suggester, 69, false)
+      const bonusCharacter = await adjustInventoryValue(current, suggester, 69, false)
       await saveState(current)
       const reward = bonusCharacter
         ? `\n\n*${bonusCharacter.name}* subio +${formatMoney(69)} y ahora vale *${formatMoney(bonusCharacter.value)}*. Felicitaciones!`
@@ -1235,7 +1243,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!suggestion) return conn.reply(m.chat, 'Esa sugerencia ya no esta pendiente.', m)
       current.pendingCharacterSuggestions = current.pendingCharacterSuggestions.filter((item) => item.id !== suggestion.id)
       const suggester = normalizeJid(suggestion.suggestedBy)
-      const affectedCharacter = adjustInventoryValue(current, suggester, -69, false)
+      const affectedCharacter = await adjustInventoryValue(current, suggester, -69, false)
       await saveState(current)
       try {
         await deleteCloudinaryMedia(suggestion.cloudinaryPublicId, suggestion.mediaType || 'image')
@@ -1371,7 +1379,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
           }
           throw saveError
         }
-        const bonusCharacter = adjustInventoryValue(current, actor, 69, true)
+        const bonusCharacter = await adjustInventoryValue(current, actor, 69, false)
         await saveState(current)
         const bonusText = bonusCharacter
           ? `\n\n*${bonusCharacter.name}* subio +${formatMoney(69)} y ahora vale *${formatMoney(bonusCharacter.value)}*. Felicitaciones!`
@@ -1906,8 +1914,12 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     const page = pageMatch ? Number(pageMatch[1]) : 1
     const targetText = pageMatch ? rawText.slice(pageMatch[0].length).trim() : rawText
     const target = await getMentionTarget(m, conn, targetText)
+    const targetArgument = target === actor ? '' : ` ${targetText || '@usuario'}`
     const collection = state.characters.filter((character) => normalizeJid(character.owner) === target)
-    const ownerName = target === actor ? (m.pushName || await getDisplayName(conn, target)) : await getDisplayName(conn, target)
+    let ownerName = target === actor ? (m.pushName || await getDisplayName(conn, target)) : await getDisplayName(conn, target)
+    if (target.endsWith('@lid') && /^\d{7,}$/.test(ownerName)) {
+      ownerName = /@([\d\s().+-]{7,25})/.exec(targetText)?.[1].trim() || 'Usuario'
+    }
     if (!collection.length) return conn.reply(m.chat, `👑 *${ownerName} todavía no tiene personajes en este grupo.*`, m)
     const total = collection.reduce((sum, character) => sum + Number(character.value || 0), 0)
     const pageSize = 100
@@ -1922,18 +1934,24 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
     let pageGroups = []
     let pageCharacterCount = 0
     for (const group of grouped.values()) {
-      if (pageGroups.length && pageCharacterCount + group.characters.length > pageSize) {
-        pages.push(pageGroups)
-        pageGroups = []
-        pageCharacterCount = 0
+      let offset = 0
+      while (offset < group.characters.length) {
+        const availableSlots = pageSize - pageCharacterCount
+        const characters = group.characters.slice(offset, offset + availableSlots)
+        pageGroups.push({ album: group.album, characters })
+        pageCharacterCount += characters.length
+        offset += characters.length
+        if (pageCharacterCount === pageSize) {
+          pages.push(pageGroups)
+          pageGroups = []
+          pageCharacterCount = 0
+        }
       }
-      pageGroups.push(group)
-      pageCharacterCount += group.characters.length
     }
     if (pageGroups.length) pages.push(pageGroups)
     const totalPages = pages.length
     if (!Number.isInteger(page) || page < 1 || page > totalPages) {
-      return conn.reply(m.chat, `📄 Página no válida. ${ownerName} tiene ${totalPages} ${totalPages === 1 ? 'página' : 'páginas'}; usá ${usedPrefix}pjs 1${target !== actor ? ` @${target.split('@')[0]}` : ''}.`, m)
+      return conn.reply(m.chat, `📄 Página no válida. ${ownerName} tiene ${totalPages} ${totalPages === 1 ? 'página' : 'páginas'}; usá ${usedPrefix}pjs 1${targetArgument}.`, m)
     }
     const currentPageGroups = pages[page - 1]
     let number = pages.slice(0, page - 1).reduce((sum, groups) =>
@@ -1943,7 +1961,7 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       `📚 *${album}*\n${characters.map((character) => `${number++}. *${character.name}* — ${formatMoney(character.value)}`).join('\n')}`
     ).join('\n\n')
     const nextPageHint = page < totalPages
-      ? `\n➡️ Siguiente parte: ${usedPrefix}pjs ${page + 1}${target !== actor ? ` @${target.split('@')[0]}` : ''}`
+      ? `\n➡️ Siguiente parte: ${usedPrefix}pjs ${page + 1}${targetArgument}`
       : ''
     return conn.reply(
       m.chat,
@@ -1965,11 +1983,9 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       if (!character.owner && (character.isGift || character.mediaType === 'video')) {
         return `${index + 1}. 🔒 *Bloqueado* — GIF oculto`
       }
-      const ownerName = character.owner ? await getDisplayName(conn, normalizeJid(character.owner)) : ''
-      const ownerText = ownerName ? ` · Lo tiene: ${ownerName}` : ''
-      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}${ownerText}`
+      return `${index + 1}. *${character.name}* — ${formatMoney(character.value)}${character.owner ? ' · 👑' : ''}`
     }))
-    return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}*\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
+    return sendLongText(conn, m.chat, `📚 *PERSONAJES DE ${album.toLocaleUpperCase('es')}* (👑 = reclamado)\n${lines.join('\n')}\n🎴 Total: ${characters.length}`, m)
   }
 
   if (action === 'toppj') {
@@ -2082,11 +2098,11 @@ const handler = async (m, { conn, text, command, isOwner, isROwner, isAdmin, use
       const increment = character.owner
         ? MUDAE_CONFIG.CLAIMED_VOTE_VALUE_INCREMENT
         : MUDAE_CONFIG.VOTE_VALUE_INCREMENT
-      character.value = Number(character.value || 0) + increment
+      const updatedCharacter = await updateCatalogCharacterValue(current, character.id, increment)
       current.voteCooldowns[actor] = now + MUDAE_CONFIG.VOTE_COOLDOWN
       current.pendingVotes[actor] = true
       await saveState(current)
-      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${character.name}* ahora vale *${formatMoney(character.value)}* (+${formatMoney(increment)}${character.owner ? ', ya reclamado' : ''}).\nPodés tirar con *%rw* durante las próximas 24 horas y votar de nuevo después.`, m)
+      return conn.reply(m.chat, `🗳️ *VOTO REGISTRADO*\n🎴 *${updatedCharacter.name}* ahora vale *${formatMoney(updatedCharacter.value)}* (+${formatMoney(increment)}${updatedCharacter.owner ? ', ya reclamado' : ''}).\nPodés tirar con *%rw* durante las próximas 24 horas y votar de nuevo después.`, m)
     })
   }
 
